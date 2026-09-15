@@ -109,6 +109,15 @@ function loadGame(opts) {
   const TC = window.TC;
   if (!TC) throw new Error('index.html 中没有挂载 window.TC，检查 <script> 是否被内联执行');
 
+  /* 真实浏览器里 boot 会自动播新手教程（第一优先级）。jsdom 里没有布局引擎，
+     高亮块量不出位置，而且教程会占住 UI.run，干扰其它用例的确定性。
+     这里统一把它摘掉 —— 但**不改存档**（done:false），需要测教程的用例
+     自己调 TC.UI.tutStart() 就行。 */
+  try {
+    if (!TC.UI || !TC.UI.ready) TC.boot();
+    if (TC.UI && TC.UI.tutActive && TC.UI.tutActive()) TC.UI.tutStop({ done: false });
+  } catch (e) { /* boot 失败由用例自己断言 TC.bootError */ }
+
   const game = { dom, window, document: window.document, TC, errors, html, jsdom: jsdomFrom };
   SINGLETON = game;
   return game;

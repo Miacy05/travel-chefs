@@ -74,7 +74,7 @@ test('售价含地区倍率与菜单等级加成', () => {
 
 test('小费＝(基础小费 + 加料台) × 顾客倍率 × 升级加成 × 地区装饰加成', () => {
   eq(C.tip('chowmein', 'office', 'asia_street', blank()), 4, '4 × 1.0');
-  eq(C.tip('chowmein', 'foodie', 'asia_street', blank()), 6, '4 × 1.6 = 6.4 → 6');
+  eq(C.tip('chowmein', 'tourist', 'asia_street', blank()), 5, '4 × 1.35 = 5.4 → 5');
   eq(C.tip('chowmein', 'office', 'asia_street', withUp('spice', 3)), 7, '(4+3) × 1.0');
   const s1 = withUp('decor_bonus', 5);
   eq(C.tip('chowmein', 'office', 'asia_street', s1), 5, '4 × 1.25 = 5');
@@ -112,25 +112,31 @@ test('stoveSlots 为 2/3/4', () => {
   eq(C.stoveSlots(withUp('stove_slots', 3)), 4);
 });
 
-test('seats = 关卡基础座位 + 加座，上限 4', () => {
+test('seats = 关卡基础座位 + 加座，上限 6（第六优先级：同屏最多 6 位）', () => {
   eq(C.seats('A1', blank()), 2, 'A1 基础 2 座');
   eq(C.seats('A4', blank()), 3, 'A4 基础 3 座');
   eq(C.seats('A1', withUp('seats', 1)), 3);
   eq(C.seats('A1', withUp('seats', 2)), 4);
-  eq(C.seats('A4', withUp('seats', 2)), 4, '3+2 应被夹到 4');
+  eq(C.seats('A4', withUp('seats', 3)), 6, '3 + 3 = 6，正好到同屏上限');
+  eq(C.seats('A1', withUp('seats', 3)), 5, '2 + 3 = 5，没到上限就不夹');
+  eq(C.SEAT_CAP, 6);
 });
 
 test('spawnInterval 随招牌灯箱拉长（减压）', () => {
-  eq(C.spawnInterval('A1', blank()), 7500);
-  eq(C.spawnInterval('A1', withUp('signboard', 3)), 8700, '7.5 + 1.2 = 8.7s');
-  eq(C.spawnInterval('A5', blank()), 4600);
+  eq(C.spawnInterval('A1', blank()), 6800);
+  eq(C.spawnInterval('A1', withUp('signboard', 3)), 8000, '6.8 + 1.2 = 8.0s');
+  eq(C.spawnInterval('A5', blank()), 4200);
 });
 
-test('patience = 顾客基础耐心 × 关卡 patienceScale', () => {
-  eq(C.patience('office', 'A1'), 24000);
-  eq(C.patience('office', 'A5'), 19200, '24000 × 0.80');
-  eq(C.patience('student', 'A5'), 14400, '18000 × 0.80');
-  eq(C.patience('granny', 'A1'), 40000);
+test('patience = 顾客基础耐心 × 关卡 patienceScale × 2（第三优先级把等待时间翻倍）', () => {
+  eq(TC.DATA.CONFIG.patienceMul, 2, '等待时间倍率必须是 2');
+  eq(C.patience('office', 'A1'), 48000, '24000 × 2');
+  eq(C.patience('office', 'A5'), 38400, '24000 × 0.80 × 2');
+  eq(C.patience('student', 'A5'), 28800, '18000 × 0.80 × 2');
+  eq(C.patience('granny', 'A1'), 80000);
+  /* 困难关卡用自己的倍率把等待时间压回去 —— 这才是「难」的来源之一 */
+  eq(C.patience('office', 'A1', { hard: { patienceMul: 0.55 } }), 13200);
+  eq(C.patience('nobody', 'A1'), 40000, '查不到的顾客回落到 20s × 2');
 });
 
 /* ------------------------------ Perfect 与连击 ------------------------------ */
@@ -230,7 +236,7 @@ test('collectionCount = 已解锁菜谱 + 见过的顾客 + 已解锁地区', ()
   s.stats.seenCustomers.office = 1;
   s.stats.seenCustomers.kid = 1;
   eq(C.collectionCount(s), 4);
-  eq(C.collectionTotal(), 25, '15 菜 + 5 顾客 + 5 明信片');
+  eq(C.collectionTotal(), 28, '15 菜 + 8 顾客 + 5 明信片');
 });
 
 test('eggCount 统计已触发的彩蛋', () => {
@@ -244,24 +250,25 @@ test('eggCount 统计已触发的彩蛋', () => {
 });
 
 /* ------------------------------ 星级 ------------------------------ */
+/* A1 的三星门槛（第三优先级调过）：服务 7 位 / 收入 150 / 流失 ≤1 且连击 ≥6 */
 test('starConditions 逐条给出达成情况与差值', () => {
-  const run = { served: 6, coins: 100, tips: 30, lost: 0, maxCombo: 6 };
+  const run = { served: 7, coins: 120, tips: 40, lost: 0, maxCombo: 7 };
   const conds = C.starConditions('A1', run);
   eq(conds.length, 3);
   eq(conds[0].key, 'served');
   eq(conds[0].ok, true);
-  eq(conds[1].ok, true, '100+30=130 ≥ 120');
-  eq(conds[2].ok, true, '流失 0 ≤ 1 且连击 6 ≥ 5');
-  eq(conds[1].val, 130, '收入应把订单金币与小费都算上');
-  eq(conds[1].goal, 120);
+  eq(conds[1].ok, true, '120+40=160 ≥ 150');
+  eq(conds[2].ok, true, '流失 0 ≤ 1 且连击 7 ≥ 6');
+  eq(conds[1].val, 160, '收入应把订单金币与小费都算上');
+  eq(conds[1].goal, 150);
 });
 
 test('星级按顺序累加，第二条不达标就停在 1 星', () => {
-  eq(C.stars('A1', { served: 6, coins: 40, tips: 10, lost: 0, maxCombo: 9 }), 1, '收入 50 < 120');
-  eq(C.stars('A1', { served: 5, coins: 200, tips: 50, lost: 0, maxCombo: 9 }), 0, '服务数不够 → 0 星');
-  eq(C.stars('A1', { served: 6, coins: 100, tips: 30, lost: 2, maxCombo: 9 }), 2, '流失 2 > 1 → 2 星');
-  eq(C.stars('A1', { served: 6, coins: 100, tips: 30, lost: 0, maxCombo: 4 }), 2, '连击 4 < 5 → 2 星');
-  eq(C.stars('A4', { served: 10, coins: 400, tips: 100, lost: 2, maxCombo: 8 }), 3, 'A4 允许流失 2、连击 8');
+  eq(C.stars('A1', { served: 7, coins: 40, tips: 10, lost: 0, maxCombo: 9 }), 1, '收入 50 < 150');
+  eq(C.stars('A1', { served: 6, coins: 200, tips: 50, lost: 0, maxCombo: 9 }), 0, '服务数不够 → 0 星');
+  eq(C.stars('A1', { served: 7, coins: 100, tips: 60, lost: 2, maxCombo: 9 }), 2, '流失 2 > 1 → 2 星');
+  eq(C.stars('A1', { served: 7, coins: 100, tips: 60, lost: 0, maxCombo: 5 }), 2, '连击 5 < 6 → 2 星');
+  eq(C.stars('A4', { served: 12, coins: 400, tips: 100, lost: 2, maxCombo: 10 }), 3, 'A4 允许流失 2、连击 10');
 });
 
 /* ------------------------------ 经验 ------------------------------ */
@@ -292,24 +299,24 @@ test('expFor = 每单 3 + 每星 8 + 通关奖励', () => {
 /* ------------------------------ 结算 ------------------------------ */
 test('settle：3 星通关，含通关奖励与首通奖励', () => {
   const s = blank();
-  const run = { served: 6, coins: 100, tips: 30, lost: 0, maxCombo: 6, perfect: 6 };
+  const run = { served: 7, coins: 120, tips: 40, lost: 0, maxCombo: 7, perfect: 7 };
   const r = C.settle({ levelId: 'A1', save: s, run, firstClear: true });
   eq(r.stars, 3);
   eq(r.cleared, true);
-  eq(r.coins, 100);
-  eq(r.tips, 30);
-  eq(r.income, 130);
+  eq(r.coins, 120);
+  eq(r.tips, 40);
+  eq(r.income, 160);
   eq(r.clearBonus, 40, 'A1 reward.coins = 40');
   eq(r.firstBonus, 80, '首通奖励');
-  eq(r.totalGain, 130 + 40 + 80);
-  eq(r.exp, 54);
+  eq(r.totalGain, 160 + 40 + 80);
+  eq(r.exp, 7 * 3 + 3 * 8 + 12, '21 + 24 + 12 = 57');
   eq(r.unlockLevelId, 'A2');
   eq(r.regionName, '亚洲街边摊');
 });
 
 test('settle：重玩已通关关卡不再给首通奖励', () => {
   const s = blank();
-  const run = { served: 6, coins: 100, tips: 30, lost: 0, maxCombo: 6 };
+  const run = { served: 7, coins: 120, tips: 40, lost: 0, maxCombo: 7 };
   const r = C.settle({ levelId: 'A1', save: s, run, firstClear: false });
   eq(r.firstBonus, 0);
   eq(r.clearBonus, 40);

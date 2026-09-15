@@ -119,12 +119,13 @@ test('所有菜品的步骤食材都被真正用到，且每个地区食材数 �
 });
 
 /* ------------------------------ 顾客 ------------------------------ */
-test('顾客共 5 种，耐心/小费/权重都为正', () => {
-  eq(D.CUSTOMERS.length, 5);
-  eq(new Set(D.CUSTOMERS.map((c) => c.id)).size, 5);
+test('顾客共 8 种职业（第五优先级），耐心/小费/权重都为正', () => {
+  eq(D.CUSTOMERS.length, 8);
+  eq(new Set(D.CUSTOMERS.map((c) => c.id)).size, 8);
+  eq(new Set(D.CUSTOMERS.map((c) => c.arch)).size, 8, '职业补丁不许重复');
   let totalWeight = 0;
   D.CUSTOMERS.forEach((c) => {
-    hasKeys(c, ['id', 'name', 'sprite', 'patience', 'tipMul', 'weight'], c.id);
+    hasKeys(c, ['id', 'arch', 'name', 'sprite', 'patience', 'tipMul', 'weight'], c.id);
     gt(c.patience, 0, c.id + ' 耐心应为正');
     gt(c.tipMul, 0, c.id + ' 小费倍率应为正');
     gt(c.weight, 0, c.id + ' 权重应为正');
@@ -134,10 +135,10 @@ test('顾客共 5 种，耐心/小费/权重都为正', () => {
   eq(totalWeight, 100, '权重合计应为 100，便于理解');
 });
 
-test('顾客耐心有梯度：最急 ≈ 18s、最耐心 ≈ 40s', () => {
+test('顾客耐心有梯度：最急 16s、最耐心 40s', () => {
   const arr = D.CUSTOMERS.map((c) => c.patience).sort((a, b) => a - b);
-  eq(arr[0], 18000);
-  eq(arr[4], 40000);
+  eq(arr[0], 16000, '快递员最急');
+  eq(arr[7], 40000, '老奶奶最耐心');
 });
 
 /* ------------------------------ 关卡 ------------------------------ */
@@ -189,8 +190,8 @@ test('关卡 unlockOnClear 串成链，第 5 关为 null（靠星星解锁下一
 test('关卡金币目标按地区 priceMul 缩放', () => {
   D.REGIONS.forEach((r) => {
     const lv = D.levelsOf(r.id);
-    eq(lv[0].stars.coins, Math.round(120 * r.priceMul), r.name + ' 第 1 关金币目标');
-    eq(lv[4].stars.coins, Math.round(420 * r.priceMul), r.name + ' 第 5 关金币目标');
+    eq(lv[0].stars.coins, Math.round(150 * r.priceMul), r.name + ' 第 1 关金币目标');
+    eq(lv[4].stars.coins, Math.round(500 * r.priceMul), r.name + ' 第 5 关金币目标');
   });
 });
 
@@ -299,7 +300,7 @@ test('索引函数能按 id 取回对象', () => {
   eq(D.region('asia_street').name, '亚洲街边摊');
   eq(D.dish('chowmein').name, '炒面');
   eq(D.level('C3').regionId, 'ramen_shop');
-  eq(D.customer('foodie').tipMul, 1.6);
+  eq(D.customer('tourist').tipMul, 1.35);
   eq(D.upgrade('stove_slots').maxLevel, 3);
   eq(D.achievement('egg_hunter').target, 3);
   eq(D.task('d_perfect').reward.gems, 1);

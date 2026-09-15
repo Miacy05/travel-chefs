@@ -6,12 +6,21 @@
 'use strict';
 const H = require('./harness');
 const { loadGame } = require('./helpers');
-const { test, ok, eq, no, section, deepEq, gt, lte } = H;
+const { test, ok, eq, no, section, deepEq, gt, gte, lte, includes } = H;
 
 section('TC.Pixel');
 const { TC } = loadGame();
 const P = TC.Pixel;
 const D = TC.DATA;
+
+/** 全部「职业 × 地区」造型键（第五优先级：8 × 5 = 40） */
+function custKeys() {
+  const out = [];
+  D.CUSTOMERS.forEach((c) => {
+    D.REGIONS.forEach((rg) => out.push(P.custKey(c.arch, rg.id)));
+  });
+  return out;
+}
 
 /** 记录调用的假 2D 上下文，用来断言绘制行为 */
 function fakeCtx() {
@@ -59,8 +68,8 @@ test('15 张菜品图互不相同', () => {
   });
 });
 
-test('5 种顾客都有 16×24 的像素图（同一身体模板换配色）', () => {
-  eq(Object.keys(P.CUST_SKINS).length, 5);
+test('8 种职业顾客都有 16×24 的像素图（共用身体模板 + 职业补丁）', () => {
+  eq(Object.keys(P.CUST_PATCH).length, 8);
   eq(P.CUST_BODY.length, 24);
   P.CUST_BODY.forEach((row, i) => eq(row.length, 16, '第 ' + i + ' 行宽度不是 16'));
   const sigs = new Set();
@@ -70,7 +79,7 @@ test('5 种顾客都有 16×24 的像素图（同一身体模板换配色）', (
     eq(m.length, 24);
     sigs.add(m.join('/'));
   });
-  eq(sigs.size, 5, '5 种顾客应该长得都不一样');
+  eq(sigs.size, 8, '8 种职业在同一个城市应该长得都不一样');
 });
 
 test('10 种食材形状都是 16×16', () => {
@@ -111,22 +120,94 @@ test('每道菜都有自己的配色表，主色/辅色都在 5 色板里', () =
   });
 });
 
-test('顾客上色后占位符 s/h/c/t 不残留', () => {
-  Object.keys(P.CUST_SKINS).forEach((k) => {
+test('顾客上色后占位符 s/h/c/t 不残留（职业 × 地区全组合）', () => {
+  eq(P.COLORS.length, 5);
+  custKeys().forEach((k) => {
     const m = P.custMatrix(k);
     ok(m, k);
     eq(m.length, 24);
+    m.forEach((row) => eq(row.length, P.CUST_W, k + ' 每行应 ' + P.CUST_W + ' 列'));
     no(/[shct]/.test(m.join('')), k + ' 上色后还残留占位符');
     m.forEach((row) => ok(/^[kwyrm.]+$/.test(row), k + ' 出现非 5 色像素：' + row));
   });
-  eq(P.custMatrix('cust_ghost'), null);
+  eq(P.custMatrix('cust_ghost'), null, '缺少地区段 → null');
+  eq(P.custMatrix('cust_ghost_asia_street'), null, '没有补丁的职业 → null');
+  eq(P.custMatrix('cust_office_nowhere'), null, '没有配色的地区 → null');
+  eq(P.custMatrix('dish_chowmein'), null, '不是顾客键 → null');
+});
+
+test('custKey / custParts 互为反函数', () => {
+  eq(P.custKey('office', 'paris_cafe'), 'cust_office_paris_cafe');
+  const p = P.custParts('cust_office_paris_cafe');
+  eq(p.archId, 'office');
+  eq(p.regionId, 'paris_cafe', '地区 id 里带下划线也要能解出来');
+  eq(P.custParts('cust_office'), null);
+});
+
+test('40 种造型真的互不相同：形状来自职业、配色来自地区', () => {
+  const keys = custKeys();
+  eq(keys.length, 8 * 5, '8 种职业 × 5 个地区');
+  const sigs = new Set(keys.map((k) => P.custMatrix(k).join('/')));
+  eq(sigs.size, keys.length, '每个造型都应独一无二，不允许撞款');
+
+  // 同一职业换地区 → 身体一模一样，只有「帽子 + 配色」跟着地区走
+  const a = P.custMatrix('cust_office_asia_street');
+  const b = P.custMatrix('cust_office_paris_cafe');
+  const shapeOf = (m) => m.map((r) => r.replace(/[^.]/g, '#')).join('/');
+  const bodyOf = (m) => shapeOf(m.slice(4));
+  eq(bodyOf(a), bodyOf(b), '地区只该换帽子与配色，不该改身体');
+  no(a.join('') === b.join(''), '换了地区必须看得出不一样');
+  no(shapeOf(a) === shapeOf(b), '亚洲头带 ≠ 巴黎贝雷帽，帽子区应该不同');
+
+  // 同一地区换职业 → 一定长得不一样（配色或轮廓至少变一处）
+  const c = P.custMatrix('cust_tourist_asia_street');
+  no(a.join('') === c.join(''), '游客和上班族在同一个城市也该长得不一样');
+  // 改变轮廓的补丁（鸭舌帽 / 厨师帽 / 头盔 / 双马尾…）确实生效
+  const silhouettes = new Set(D.CUSTOMERS.map((x) => shapeOf(P.custMatrix(x.sprite))));
+  gte(silhouettes.size, 4, '至少要有 4 种不同轮廓，不能全靠换色撑场面');
+});
+
+test('职业补丁：矩形不越界、色号合法、戴帽子的职业不再叠当地帽', () => {
+  Object.keys(P.CUST_PATCH).forEach((a) => {
+    const patch = P.CUST_PATCH[a];
+    ok(Array.isArray(patch.rects) && patch.rects.length, a + ' 应有补丁矩形');
+    patch.rects.forEach((r) => {
+      eq(r.length, 5, a + ' 的矩形应是 [x,y,w,h,色号]');
+      gte(r[0], 0);
+      gte(r[1], 0);
+      lte(r[0] + r[2], P.CUST_W, a + ' 补丁越右边界');
+      lte(r[1] + r[3], P.CUST_H, a + ' 补丁越下边界');
+      ok(P.CUST_CHARS.indexOf(r[4]) !== -1, a + ' 用了非法色号 ' + r[4]);
+    });
+  });
+  // 戴帽子的职业（学生 / 厨师 / 快递员）不该再被叠上当地帽子
+  const hats = ['student', 'chef', 'courier'];
+  hats.forEach((a) => eq(P.CUST_PATCH[a].hat, 1, a + ' 应自带帽子'));
+  hats.forEach((a) => {
+    const own = P.custMatrix(P.custKey(a, 'asia_street'));
+    const other = P.custMatrix(P.custKey(a, 'paris_cafe'));
+    const shapeOf = (m) => m.map((r) => r.replace(/[^.]/g, '#')).join('/');
+    eq(shapeOf(own), shapeOf(other), a + ' 自带帽子时不该再叠当地帽（形状应保持不变）');
+  });
+});
+
+test('validate 能抓出越界的顾客补丁', () => {
+  const good = P.validate();
+  eq(good.length, 0, '正常配置不该报错');
+  // 直接改一张真表来验证兜底（改完立刻还原）
+  const keep = P.CUST_PATCH.office.rects;
+  P.CUST_PATCH.office.rects = [[20, 30, 4, 4, 'z']];
+  const errs = P.validate({ dishes: [], customers: [], regions: D.REGIONS });
+  P.CUST_PATCH.office.rects = keep;
+  gt(errs.length, 0, '越界 + 非法色号应被 validate 抓出');
+  includes(errs.join('\n'), '超出');
 });
 
 test('matrix() 对菜品与顾客都返回 5 色矩阵', () => {
   const d = P.matrix('dish_nigiri');
   eq(d.length, 16);
   d.forEach((row) => ok(/^[kwyrm.]+$/.test(row)));
-  const c = P.matrix('cust_kid');
+  const c = P.matrix('cust_kid_asia_street');
   eq(c.length, 24);
   c.forEach((row) => ok(/^[kwyrm.]+$/.test(row)));
 });
@@ -265,17 +346,22 @@ test('toCanvas 在无 canvas 环境下不抛异常', () => {
 /* ------------------------------ 与数据层的一致性 ------------------------------ */
 test('数据里引用的 sprite / tpl 全部存在', () => {
   D.DISHES.forEach((d) => ok(P.DISHES[d.sprite], d.id + ' 的 sprite 不存在'));
-  D.CUSTOMERS.forEach((c) => ok(P.CUST_SKINS[c.sprite], c.id + ' 的 sprite 不存在'));
+  D.CUSTOMERS.forEach((c) => ok(P.CUST_PATCH[c.arch], c.id + ' 缺职业补丁 ' + c.arch));
+  D.CUSTOMERS.forEach((c) => ok(P.custMatrix(c.sprite), c.id + ' 的默认 sprite 合成不出矩阵'));
   D.INGREDIENTS.forEach((i) => ok(P.SHAPES[i.art.tpl], i.id + ' 的 tpl 不存在'));
 });
 
-test('顾客配色覆盖了 5 色板里的多种组合（不会全都一个颜色）', () => {
-  const hairs = new Set(D.CUSTOMERS.map((c) => P.CUST_SKINS[c.sprite].h));
-  const clothes = new Set(D.CUSTOMERS.map((c) => P.CUST_SKINS[c.sprite].c));
-  gt(hairs.size, 2, '头发颜色太单一');
-  gt(clothes.size, 2, '衣服颜色太单一');
-  Object.keys(P.CUST_SKINS).forEach((k) => {
-    const s = P.CUST_SKINS[k];
-    [s.h, s.c, s.t].forEach((c) => ok(P.COLORS.indexOf(c) !== -1, k + ' 用了非法颜色 ' + c));
+test('地区配色差异够大：不同地区的同一职业不该穿成一个样', () => {
+  const coats = new Set(D.REGIONS.map((rg) => P.CUST_REG_PAL[rg.id].c));
+  const hairs = new Set(D.REGIONS.map((rg) => P.CUST_REG_PAL[rg.id].h));
+  gt(coats.size, 2, '各地区的衣服颜色太单一');
+  gte(hairs.size, 2, '各地区的发色太单一');
+  D.REGIONS.forEach((rg) => {
+    const pal = P.CUST_REG_PAL[rg.id];
+    ok(pal, rg.id + ' 缺地区配色');
+    ['s', 'h', 'c', 't'].forEach((ch) => ok(P.COLORS.indexOf(pal[ch]) !== -1, rg.id + ' 的 ' + ch + ' 非法'));
+    no(pal.c === 'w', rg.id + ' 的衣服不能用奶油白（会和围裙 / 银发糊在一起）');
+    no(pal.c === pal.h, rg.id + ' 衣服和头发不能同色');
+    ok(P.CUST_REG_HAT[rg.id], rg.id + ' 缺当地帽子');
   });
 });

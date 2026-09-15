@@ -385,22 +385,36 @@ ul{margin:0;padding:0;list-style:none;}
   var(--cream);}
 .cust-band{
   flex:0 0 auto;
-  display:flex;align-items:flex-end;justify-content:center;
-  gap:7px;padding:8px 10px 4px;
+  /* 第五优先级：同屏最多 6 位顾客，排成 2 行 3 列 —— 1~3 人就自然占一行 */
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:end;justify-items:center;
+  gap:4px 6px;padding:8px 10px 4px;
   min-height:132px;
 }
+.cust-band.is-tight{min-height:176px;gap:2px 5px;padding-top:5px;}
 .cust-hint{
+  grid-column:1 / -1;
   align-self:center;padding-top:42px;
   font-size:12px;color:var(--ink-30);letter-spacing:.1em;
 }
 .cust{
   position:relative;
-  flex:1 1 0;max-width:118px;
+  width:100%;max-width:118px;
   display:flex;flex-direction:column;align-items:center;gap:4px;
   transition:transform .3s var(--ease),opacity .3s;
 }
+.cust-band.is-tight .cust{gap:2px;}
+.cust-band.is-tight .cust-name{font-size:10px;}
+.cust-band.is-tight .cust-bubble{padding:3px 6px;min-height:22px;}
+.cust-band.is-tight .cust-bubble .cb-name{font-size:9.5px;}
 .cust.is-sel .cust-sprite{border-color:var(--tomato);box-shadow:0 3px 0 var(--tomato);}
 .cust.is-lost{opacity:.35;filter:grayscale(1);}
+.cust.is-new{animation:custIn .34s var(--ease);}
+@keyframes custIn{
+  0%{transform:translateX(64px);opacity:0}
+  60%{opacity:1}
+  100%{transform:translateX(0);opacity:1}
+}
 .cust.is-leaving{animation:custLeave .6s var(--ease) forwards;}
 @keyframes custLeave{
   0%{transform:translateX(0);opacity:1}
@@ -1011,6 +1025,58 @@ ul{margin:0;padding:0;list-style:none;}
 .dialog-actions{display:flex;gap:9px;margin-top:17px;}
 .dialog-actions .btn{flex:1 1 0;}
 
+/* ==========================================================================
+   新手教程遮罩
+   半透明黑底 + 一块「挖空」的聚光高亮 + 一句引导气泡。
+   关键点：#tutHost 自己不接收指针事件（pointer-events:none），
+   只有气泡上的按钮可点 —— 否则玩家没法按提示真的去点食材 / 拖盘子。
+   ========================================================================== */
+#tutHost{position:fixed;inset:0;z-index:90;display:none;pointer-events:none;}
+#tutHost.is-on{display:block;}
+/* 用超大 box-shadow 的扩散把高亮块以外全部压暗，不用再叠一层 mask */
+.tut-spot{
+  position:absolute;left:0;top:0;width:0;height:0;
+  border:3px solid var(--yellow);border-radius:16px;
+  box-shadow:0 0 0 9999px rgba(61,43,31,.62), 0 0 0 7px rgba(255,209,102,.26);
+  animation:tutPulse 1.5s var(--ease) infinite;
+  transition:left .3s var(--ease),top .3s var(--ease),width .3s var(--ease),height .3s var(--ease);
+}
+@keyframes tutPulse{
+  0%,100%{border-color:var(--yellow);box-shadow:0 0 0 9999px rgba(61,43,31,.62),0 0 0 7px rgba(255,209,102,.26)}
+  50%{border-color:var(--cream);box-shadow:0 0 0 9999px rgba(61,43,31,.62),0 0 0 10px rgba(255,209,102,.16)}
+}
+.tut-bubble{
+  position:absolute;left:50%;top:0;width:min(80vw,306px);
+  transform:translateX(-50%);
+  pointer-events:auto;
+  animation:tutIn .28s var(--ease) both;
+}
+@keyframes tutIn{
+  from{opacity:0;transform:translateX(-50%) translateY(10px) scale(.94)}
+  to{opacity:1;transform:translateX(-50%)}
+}
+.tut-card{
+  padding:14px 15px;
+  background:var(--cream);border:var(--bd) solid var(--brown);border-radius:18px;
+  box-shadow:0 6px 0 var(--ink-30);
+}
+.tut-step{
+  font-family:var(--font-pixel);font-size:10.5px;font-weight:700;
+  color:var(--yellow);letter-spacing:.1em;
+  -webkit-text-stroke:.5px var(--brown);
+}
+.tut-text{font-size:13.5px;font-weight:800;line-height:1.6;margin-top:6px;}
+.tut-acts{display:flex;gap:8px;margin-top:13px;}
+.tut-acts .btn{flex:1 1 0;}
+.tut-tip{font-size:10.5px;color:var(--ink-50);margin-top:9px;text-align:center;letter-spacing:.04em;}
+.tut-dots{display:flex;gap:4px;justify-content:center;margin-top:10px;}
+.tut-dots > i{
+  width:16px;height:5px;border-radius:999px;background:var(--ink-16);
+  transition:background .2s var(--ease);
+}
+.tut-dots > i.is-on{background:var(--tomato);}
+.tut-dots > i.is-done{background:var(--mint);}
+
 /* 加载 */
 #boot{
   position:fixed;inset:0;z-index:100;
@@ -1210,6 +1276,23 @@ ul{margin:0;padding:0;list-style:none;}
   </div>
 </div>
 
+<!-- ================= 新手教程遮罩 ================= -->
+<div id="tutHost">
+  <div class="tut-spot" id="tutSpot"></div>
+  <div class="tut-bubble" id="tutBubble">
+    <div class="tut-card">
+      <div class="tut-step" id="tutStepLab">第 1 / 8 步</div>
+      <div class="tut-text" id="tutText"></div>
+      <div class="tut-dots" id="tutDots"></div>
+      <div class="tut-acts">
+        <button class="btn btn-ghost" id="btnTutSkip" type="button">跳过教程</button>
+        <button class="btn btn-primary" id="btnTutNext" type="button">下一步</button>
+      </div>
+      <div class="tut-tip" id="tutTip"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ================= 启动遮罩 ================= -->
 <div id="boot">
   <div class="boot-logo pixel pixel-outline">TRAVEL<br>CHEFS</div>
@@ -1226,7 +1309,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.1.2';
+TC.VERSION = '2.2.0';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -1334,7 +1417,7 @@ TC.bootError = null;
 
 /* --------------------------------------------------------------------------
    模块：TC.DATA —— 全部静态配置
-   5 地区 / 25 关卡 / 15 菜品 / 45 食材 / 5 顾客 / 25 项升级 / 10 成就 / 6 任务 / 3 彩蛋
+   5 地区 / 25 关卡 / 15 菜品 / 45 食材 / 8 顾客 / 25 项升级 / 10 成就 / 6 任务 / 3 彩蛋
    -------------------------------------------------------------------------- */
 (function (TC) {
   'use strict';
@@ -1357,6 +1440,12 @@ TC.bootError = null;
     zeroStarCoinRatio: 0.5,
     /** 顾客流失 & 超时上菜会清零连击 */
     comboBreakOnTimeout: true,
+    /**
+     * 顾客等待时间倍率（第三优先级：普通关卡等待时间加长到 2 倍）。
+     * 只对普通关卡生效 —— 困难关卡自己带更短的耐心，见 HARD_MODIFIERS。
+     * 具体的顾客耐心 = 顾客基础耐心 × 关卡 patienceScale × 本倍率。
+     */
+    patienceMul: 2,
     /** 装饰购买价（每地区 3 件） */
     decorPrice: 260,
     /** 每件装饰为该地区小费提供的永久加成 */
@@ -1538,27 +1627,47 @@ TC.bootError = null;
   ];
 
   /* ------------------------------ 顾客 ------------------------------ */
+  /**
+   * 普通顾客：8 种职业（第五优先级）。
+   * `arch` 指向 TC.Pixel 的职业补丁（决定「形状」）；衣服配色由地区决定（决定「本地化」），
+   * 两者相乘 = 8 × 5 = 40 种造型，全部程序化合成，没有一张外部图片。
+   * `sprite` 只是图鉴里的默认展示造型（第一站亚洲街边摊），进局后按 run.regionId 换成当地版本。
+   * 权重合计 100；耐心从 16s（快递员）到 40s（老奶奶）拉成一条梯度。
+   */
   var CUSTOMERS = [
-    { id: 'office', name: '上班族', sprite: 'cust_office', patience: 24000, tipMul: 1.0, weight: 22, note: '标准' },
-    { id: 'student', name: '学生党', sprite: 'cust_student', patience: 18000, tipMul: 0.9, weight: 26, note: '最急' },
-    { id: 'foodie', name: '美食博主', sprite: 'cust_foodie', patience: 32000, tipMul: 1.6, weight: 12, note: '高小费' },
-    { id: 'granny', name: '老奶奶', sprite: 'cust_granny', patience: 40000, tipMul: 1.1, weight: 18, note: '最耐心' },
-    { id: 'kid', name: '小朋友', sprite: 'cust_kid', patience: 20000, tipMul: 1.2, weight: 22, note: '急但给得多' }
+    { id: 'student', arch: 'student', name: '学生党', patience: 18000, tipMul: 0.9, weight: 16, note: '最急' },
+    { id: 'office', arch: 'office', name: '上班族', patience: 24000, tipMul: 1.0, weight: 16, note: '标准' },
+    { id: 'housewife', arch: 'housewife', name: '家庭主妇', patience: 28000, tipMul: 1.05, weight: 13, note: '不紧不慢' },
+    { id: 'granny', arch: 'granny', name: '老奶奶', patience: 40000, tipMul: 1.1, weight: 13, note: '最耐心' },
+    { id: 'kid', arch: 'kid', name: '小朋友', patience: 20000, tipMul: 1.2, weight: 13, note: '急但给得多' },
+    { id: 'tourist', arch: 'tourist', name: '背包游客', patience: 30000, tipMul: 1.35, weight: 12, note: '爱拍照、给得多' },
+    { id: 'chef', arch: 'chef', name: '同行厨师', patience: 26000, tipMul: 1.25, weight: 9, note: '挑手艺' },
+    { id: 'courier', arch: 'courier', name: '快递员', patience: 16000, tipMul: 1.15, weight: 8, note: '赶时间、给得多' }
   ];
+  CUSTOMERS.forEach(function (c) { c.sprite = 'cust_' + c.arch + '_' + REGIONS[0].id; });
 
   /* ------------------------------ 关卡模板 ------------------------------ */
-  /* 难度曲线五区通用；金币按地区 priceMul 缩放，其余参数一致，保证曲线可预期 */
+  /**
+   * 难度曲线五区通用；金币按地区 priceMul 缩放，其余参数一致，保证曲线可预期。
+   *
+   * 第三优先级调整记录（等待时间 ×2 之后如何保住三星的挑战性）：
+   *   等待时间翻倍 → 「不让顾客流失」这条几乎白送，所以把挑战性挪到
+   *   ① 上门的节奏变快（spawnInterval 全面缩短）→ 座位压力与出餐吞吐成为瓶颈
+   *   ② 服务量 / 收入门槛各提高约 15%~25%
+   *   ③ 最高连击门槛提高（连击靠 Perfect，与耐心无关，是真正吃操作的那条）
+   *   可达性由 tests/difficulty.test.js 用「到场人数 ≥ 服务量门槛」守着，防止调过头。
+   */
   var LEVEL_TEMPLATE = [
-    { idx: 1, name: '夜市开张', duration: 90, seats: 2, spawnInterval: 7.5, patienceScale: 1.00, dishCount: 1,
-      served: 6, coin: 120, maxLost: 1, minCombo: 5, exp: 12, rewardCoins: 40 },
-    { idx: 2, name: '新菜上架', duration: 90, seats: 2, spawnInterval: 6.5, patienceScale: 0.95, dishCount: 2,
-      served: 7, coin: 180, maxLost: 1, minCombo: 5, exp: 16, rewardCoins: 60 },
-    { idx: 3, name: '人气爆棚', duration: 100, seats: 2, spawnInterval: 6.0, patienceScale: 0.90, dishCount: 3,
-      served: 8, coin: 240, maxLost: 1, minCombo: 6, exp: 20, rewardCoins: 80 },
-    { idx: 4, name: '晚高峰', duration: 110, seats: 3, spawnInterval: 5.2, patienceScale: 0.85, dishCount: 3,
-      served: 10, coin: 320, maxLost: 2, minCombo: 8, exp: 26, rewardCoins: 110 },
-    { idx: 5, name: '美食节', duration: 120, seats: 3, spawnInterval: 4.6, patienceScale: 0.80, dishCount: 3,
-      served: 12, coin: 420, maxLost: 2, minCombo: 10, exp: 34, rewardCoins: 150 }
+    { idx: 1, name: '夜市开张', duration: 90, seats: 2, spawnInterval: 6.8, patienceScale: 1.00, dishCount: 1,
+      served: 7, coin: 150, maxLost: 1, minCombo: 6, exp: 12, rewardCoins: 40 },
+    { idx: 2, name: '新菜上架', duration: 90, seats: 2, spawnInterval: 6.0, patienceScale: 0.95, dishCount: 2,
+      served: 8, coin: 210, maxLost: 1, minCombo: 7, exp: 16, rewardCoins: 60 },
+    { idx: 3, name: '人气爆棚', duration: 100, seats: 2, spawnInterval: 5.4, patienceScale: 0.90, dishCount: 3,
+      served: 10, coin: 290, maxLost: 1, minCombo: 8, exp: 20, rewardCoins: 80 },
+    { idx: 4, name: '晚高峰', duration: 110, seats: 3, spawnInterval: 4.8, patienceScale: 0.85, dishCount: 3,
+      served: 12, coin: 380, maxLost: 2, minCombo: 10, exp: 26, rewardCoins: 110 },
+    { idx: 5, name: '美食节', duration: 120, seats: 3, spawnInterval: 4.2, patienceScale: 0.80, dishCount: 3,
+      served: 15, coin: 500, maxLost: 2, minCombo: 12, exp: 34, rewardCoins: 150 }
   ];
 
   var LEVELS = [];
@@ -1609,9 +1718,9 @@ TC.bootError = null;
       effect: ['每单小费 +1', '每单小费 +2', '每单小费 +3'] },
 
     /* --- 餐厅装修 --- */
-    { id: 'seats', tab: 'decor', name: '加座', icon: '🪑', start: 0, maxLevel: 2,
-      cost: [400, 900], value: [0, 1, 2],
-      effect: ['同时在场 +1 位顾客', '同时在场 +2 位顾客'] },
+    { id: 'seats', tab: 'decor', name: '加座', icon: '🪑', start: 0, maxLevel: 3,
+      cost: [400, 900, 1400], value: [0, 1, 2, 3],
+      effect: ['同时在场 +1 位顾客', '同时在场 +2 位顾客', '同时在场 +3 位顾客（同屏上限 6）'] },
     { id: 'signboard', tab: 'decor', name: '招牌灯箱', icon: '🪧', start: 0, maxLevel: 3,
       cost: [160, 340, 560], value: [0, 0.4, 0.8, 1.2],
       effect: ['顾客上门间隔 +0.4s', '+0.8s', '+1.2s'] },
@@ -1881,10 +1990,12 @@ TC.bootError = null;
   };
   C.plateLife = function (save) { return D.CONFIG.plateLifeMs + C.upVal(save, 'warmer') * 1000; };
   C.stoveSlots = function (save) { return C.upVal(save, 'stove_slots') || 2; };
+  /** 同屏座位数：上限 SEAT_CAP（第六优先级要求最多 6 位顾客同屏，2 行 3 列排队） */
+  C.SEAT_CAP = 6;
   C.seats = function (levelId, save) {
     var l = D.level(levelId);
     if (!l) return 2;
-    return Math.min(4, l.seats + C.upVal(save, 'seats'));
+    return Math.min(C.SEAT_CAP, l.seats + C.upVal(save, 'seats'));
   };
   /** 顾客上门间隔（ms），招牌灯箱会拉长间隔减压 */
   C.spawnInterval = function (levelId, save) {
@@ -1893,12 +2004,18 @@ TC.bootError = null;
     var s = l.spawnInterval + C.upVal(save, 'signboard');
     return Math.round(s * 1000);
   };
-  /** 顾客实际耐心（ms） */
-  C.patience = function (customerId, levelId) {
-    var c = D.customer(customerId), l = D.level(levelId);
-    if (!c) return 20000;
+  /**
+   * 顾客实际耐心（ms）
+   * = 顾客基础耐心 × 关卡 patienceScale × CONFIG.patienceMul（普通关卡 ×2）
+   * @param {object} [run] 传了本局就再乘一次困难修正（run.hard.patienceMul）
+   */
+  C.patience = function (customerId, levelId, run) {
+    var c = D.customer(customerId);
+    var l = D.level(levelId);
     var scale = l ? l.patienceScale : 1;
-    return Math.round(c.patience * scale);
+    var mul = (run && run.hard && run.hard.patienceMul) || D.CONFIG.patienceMul;
+    var base = c ? c.patience : 20000;
+    return Math.max(1000, Math.round(base * scale * mul));
   };
 
   /* ------------------------- 连击与 Perfect ------------------------- */
@@ -2116,6 +2233,16 @@ TC.bootError = null;
   };
 
   C.expToNext = function (level) { return D.CONFIG.levelExpBase * level; };
+
+  /**
+   * 顾客造型键（第五优先级）：职业形状 × 地区配色。
+   * 生客时按run.regionId 换成当地版本，于是同一职业在巴黎与在墨西哥穿得不一样。
+   */
+  C.custSprite = function (customerId, regionId) {
+    var c = D.customer(customerId);
+    var arch = (c && c.arch) || customerId;
+    return 'cust_' + arch + '_' + (regionId || D.REGIONS[0].id);
+  };
 
   /** 加经验并处理连续升级 */
   C.applyExp = function (save, exp) {
@@ -2671,7 +2798,9 @@ TC.bootError = null;
    * 开一局
    * @param {object} save
    * @param {string} levelId
-   * @param {object} [opts] { rand: ()=>number, firstSpawn: ms }
+   * @param {object} [opts] { rand: ()=>number, firstSpawn: ms, tutorial: boolean }
+   *   tutorial:true —— 教学局：只坐 1 位顾客、倒计时不走、耐心按 8% 速消耗。
+   *   这样新手可以慢慢跟着提示做，不会因为超时 / 顾客跑掉而卡在教程里。
    */
   L.create = function (save, levelId, opts) {
     opts = opts || {};
@@ -2681,7 +2810,7 @@ TC.bootError = null;
     var pots = [];
     for (var i = 0; i < slots; i++) pots.push(null);
     runSeq += 1;
-    return {
+    var run = {
       uid: 'run' + runSeq,
       levelId: levelId,
       level: lv,
@@ -2721,10 +2850,26 @@ TC.bootError = null;
       helperInterval: C.upVal(save, 'helper') * 1000,
       waiterInterval: C.upVal(save, 'waiter') * 1000,
 
+      /* 困难模式（第四优先级）的干扰与加成，普通关卡保持空对象 */
+      hard: null,
+      breakers: [],
+
+      /* 特殊顾客（第六优先级）：本局生效的临时道具 */
+      guestBuff: null,
+
       encounterIds: {},
+      tutorial: !!opts.tutorial,
       over: false
     };
+    if (run.tutorial) {
+      run.seats = 1;              // 教学局只坐 1 位，跟着一个顾客走完整条流程
+      run.spawnInterval = 2500;   // 上完一位后很快就来下一位，步骤 5/7 才有东西可高亮
+    }
+    return run;
   };
+
+  /** 教学局的耐心消耗倍率：放慢到 8%，让新手有时间看清每一步 */
+  L.TUTORIAL_PATIENCE_MUL = 0.08;
 
   /* ------------------------- 查询辅助 ------------------------- */
   L.waiting = function (run) {
@@ -2804,12 +2949,12 @@ TC.bootError = null;
     var type = pickCustomerType(run);
     if (!type) return null;
     var dishId = U.pick(run.level.dishPool, run.rand);
-    var max = C.patience(type.id, run.levelId);
+    var max = C.patience(type.id, run.levelId, run);
     var c = {
       uid: 'c' + (run.customers.length + 1) + '_' + Math.floor(run.rand() * 100000),
       id: type.id,
       name: type.name,
-      sprite: type.sprite,
+      sprite: C.custSprite(type.id, run.regionId),
       dishId: dishId,
       patienceMax: max,
       patienceLeft: max,
@@ -2833,18 +2978,20 @@ TC.bootError = null;
     if (run.over || dtMs <= 0) return events;
 
     run.runtime += dtMs;
-    run.timeLeft -= dtMs;
+    /* 教学局不推进营业倒计时：新手可以停在任意一步慢慢看 */
+    if (!run.tutorial) run.timeLeft = Math.max(0, run.timeLeft - dtMs);
 
     /* 道具冷却 */
     for (var k in run.toolCd) {
       if (run.toolCd[k] > 0) run.toolCd[k] = Math.max(0, run.toolCd[k] - dtMs);
     }
 
-    /* 顾客耐心 */
+    /* 顾客耐心（教学局放慢到 8%） */
+    var pmul = run.tutorial ? L.TUTORIAL_PATIENCE_MUL : 1;
     for (var i = 0; i < run.customers.length; i++) {
       var c = run.customers[i];
       if (c.state !== 'waiting') continue;
-      c.patienceLeft -= dtMs;
+      c.patienceLeft -= dtMs * pmul;
       if (c.patienceLeft <= 0) {
         c.patienceLeft = 0;
         c.state = 'lost';
@@ -2919,8 +3066,8 @@ TC.bootError = null;
       }
     }
 
-    /* 营业结束 */
-    if (run.timeLeft <= 0) {
+    /* 营业结束（教学局永不结束） */
+    if (!run.tutorial && run.timeLeft <= 0) {
       run.timeLeft = 0;
       run.over = true;
       emit(events, 'end', {});
@@ -3919,12 +4066,80 @@ TC.bootError = null;
     '................'
   ];
 
-  var CUST_SKINS = {
-    cust_office: { h: 'k', c: 'y', t: 'r' },
-    cust_student: { h: 'k', c: 'm', t: 'k' },
-    cust_foodie: { h: 'r', c: 'k', t: 'y' },
-    cust_granny: { h: 'w', c: 'k', t: 'y' },
-    cust_kid: { h: 'y', c: 'r', t: 'm' }
+  /* ======================== 顾客换装系统 ========================
+     第五优先级：每地区 8 种职业顾客模型，全部程序化合成，不引入任何外部图片。
+
+     三张表相乘，得到 8 × 5 = 40 种造型：
+       CUST_BODY    共用身体线稿（16×24，占位符 s 肤色 / h 头发 / c 衣服 / t 配饰）
+       CUST_PATCH   职业补丁 —— 决定「形状」（鸭舌帽、围裙、双马尾、相机…）
+       CUST_REG_PAL 地区配色 —— 决定「本地化」（巴黎是金发 + 薄荷绿，墨西哥是红衣 + 奶油饰）
+     再加上 CUST_REG_HAT：职业本身没戴帽子时，改戴当地帽子（贝雷帽 / 头巾 / 草帽…），
+     让同一职业在不同城市一眼能认出来。
+
+     补丁用「矩形列表」而不是整张手绘线稿：一个矩形 = [x, y, 宽, 高, 色号]，
+     越界和非法色号都由 P.validate() 兜底，加一个新职业只要加几行数字。
+     色号可以是最终色（k/w/y/r/m），也可以是占位符（s/h/c/t）——后者跟着地区配色走。
+     ============================================================ */
+  var CUST_CHARS = ['k', 'w', 'y', 'r', 'm', 's', 'h', 'c', 't'];
+
+  var CUST_PATCH = {
+    /* 学生党：鸭舌帽 + 短袖 */
+    student: {
+      hat: 1,
+      rects: [[4, 0, 8, 1, 'k'], [3, 1, 10, 2, 't'], [3, 3, 10, 1, 'k'],
+        [3, 11, 2, 2, 's'], [11, 11, 2, 2, 's']]
+    },
+    /* 上班族：短袖衬衫 + 领带夹 + 口袋巾 */
+    office: {
+      rects: [[3, 11, 2, 2, 's'], [11, 11, 2, 2, 's'], [7, 13, 2, 2, 'w'], [4, 16, 2, 1, 'w']]
+    },
+    /* 家庭主妇：发带 + 围裙 */
+    housewife: {
+      rects: [[4, 3, 8, 1, 't'], [5, 12, 4, 6, 'w']]
+    },
+    /* 老奶奶：满头银发 + 老花镜 + 披肩 */
+    granny: {
+      rects: [[5, 2, 6, 1, 'w'], [4, 3, 8, 1, 'w'], [4, 4, 1, 1, 'w'], [11, 4, 1, 1, 'w'],
+        [4, 6, 3, 1, 'k'], [9, 6, 3, 1, 'k'],
+        [5, 10, 6, 1, 'w'], [3, 11, 2, 2, 'w'], [11, 11, 2, 2, 'w']]
+    },
+    /* 小朋友：双马尾 + 短袖 + 背带裤 */
+    kid: {
+      rects: [[2, 4, 2, 4, 'h'], [12, 4, 2, 4, 'h'], [3, 11, 2, 2, 's'], [11, 11, 2, 2, 's'],
+        [5, 12, 1, 5, 'k'], [10, 12, 1, 5, 'k']]
+    },
+    /* 背包游客：胸前挂相机 + 卷起袖口 */
+    tourist: {
+      rects: [[6, 13, 4, 2, 'k'], [7, 13, 2, 1, 'w'], [3, 11, 2, 2, 't'], [11, 11, 2, 2, 't']]
+    },
+    /* 同行厨师：高帽（帽子用当地点缀色 → 不同城市的高帽颜色也不同）+ 白围裙 */
+    chef: {
+      hat: 1,
+      rects: [[4, 0, 8, 1, 't'], [3, 1, 10, 2, 't'], [3, 3, 10, 1, 'k'], [5, 12, 4, 6, 'w']]
+    },
+    /* 快递员：深色头盔 + 反光条 */
+    courier: {
+      hat: 1,
+      rects: [[5, 0, 6, 1, 'k'], [4, 1, 8, 2, 'k'], [4, 3, 8, 1, 'k'], [4, 17, 8, 1, 'w']]
+    }
+  };
+
+  /** 当地帽子：职业补丁没占帽子位时才戴上 */
+  var CUST_REG_HAT = {
+    asia_street: [[4, 3, 8, 1, 'y']],                                        // 街边头带
+    paris_cafe: [[4, 0, 8, 1, 'k'], [3, 1, 10, 2, 'r']],                     // 贝雷帽
+    ramen_shop: [[4, 0, 8, 1, 'w'], [3, 1, 10, 1, 'w'], [3, 2, 10, 1, 'k']], // 暖帘头巾
+    pizza_house: [[5, 0, 6, 1, 'k'], [4, 1, 8, 1, 'r'], [4, 3, 8, 1, 'k']],  // 报童帽
+    taco_stand: [[5, 0, 6, 2, 'y'], [2, 2, 12, 1, 'y'], [2, 3, 12, 1, 'k']]  // 宽檐草帽
+  };
+
+  /** 地区配色：同一套补丁，换一组颜色就是当地人的穿法 */
+  var CUST_REG_PAL = {
+    asia_street: { s: 'w', h: 'k', c: 'r', t: 'y' },
+    paris_cafe: { s: 'w', h: 'y', c: 'm', t: 'r' },
+    ramen_shop: { s: 'w', h: 'k', c: 'r', t: 'm' },
+    pizza_house: { s: 'w', h: 'k', c: 'y', t: 'r' },
+    taco_stand: { s: 'w', h: 'k', c: 'r', t: 'w' }
   };
 
   /* ======================== 地球仪（程序化像素球） ========================
@@ -4166,6 +4381,20 @@ TC.bootError = null;
   P.GLOBE_SPEC = GLOBE_SPEC;
 
   /* ======================== 内部工具 ======================== */
+  /** 在 rows 的副本上填一块矩形（越界静默跳过，P.validate 会另行报错） */
+  function putRect(rows, r) {
+    var x = r[0], y0 = r[1], w = r[2], h = r[3], ch = r[4];
+    for (var j = 0; j < h; j++) {
+      var y = y0 + j;
+      if (!rows[y]) continue;
+      var line = rows[y].split('');
+      for (var i = 0; i < w; i++) {
+        if (line[x + i] !== undefined) line[x + i] = ch;
+      }
+      rows[y] = line.join('');
+    }
+  }
+
   function colorize(matrix, map) {
     var out = [];
     for (var y = 0; y < matrix.length; y++) {
@@ -4185,7 +4414,10 @@ TC.bootError = null;
   P.DISHES = DISHES;
   P.DISH_PAL = DISH_PAL;
   P.CUST_BODY = CUST_BODY;
-  P.CUST_SKINS = CUST_SKINS;
+  P.CUST_CHARS = CUST_CHARS;
+  P.CUST_PATCH = CUST_PATCH;
+  P.CUST_REG_HAT = CUST_REG_HAT;
+  P.CUST_REG_PAL = CUST_REG_PAL;
 
   P.shape = function (tpl) { return SHAPES[tpl] || null; };
 
@@ -4201,18 +4433,34 @@ TC.bootError = null;
     return colorize(DISHES[key], DISH_PAL[key]);
   };
 
-  /** 顾客的像素矩阵：身体线稿 + 该顾客的皮肤配色（肤色统一用奶油白） */
-  P.custMatrix = function (key) {
-    var skin = CUST_SKINS[key];
-    if (!skin) return null;
-    return colorize(CUST_BODY, { s: 'w', h: skin.h, c: skin.c, t: skin.t });
+  /** 顾客造型键：cust_<职业>_<地区>，例如 cust_tourist_paris_cafe */
+  P.custKey = function (archId, regionId) { return 'cust_' + archId + '_' + regionId; };
+  /** 反解造型键；不是顾客键就返回 null */
+  P.custParts = function (key) {
+    var m = /^cust_([a-z]+)_([a-z_]+)$/.exec(key || '');
+    return m ? { archId: m[1], regionId: m[2] } : null;
   };
 
-  /** 统一的取矩阵入口：dish_xxx / cust_xxx（返回的都是已上色、只含 5 色的矩阵） */
+  /**
+   * 顾客的像素矩阵：共用线稿 → 叠职业补丁（没帽子就戴当地帽子）→ 按地区配色上色。
+   * @param {string} key cust_<职业>_<地区>
+   */
+  P.custMatrix = function (key) {
+    var p = P.custParts(key);
+    if (!p) return null;
+    var patch = CUST_PATCH[p.archId], pal = CUST_REG_PAL[p.regionId];
+    if (!patch || !pal) return null;
+    var rows = CUST_BODY.slice();
+    patch.rects.forEach(function (r) { putRect(rows, r); });
+    if (!patch.hat) CUST_REG_HAT[p.regionId].forEach(function (r) { putRect(rows, r); });
+    return colorize(rows, pal);
+  };
+
+  /** 统一的取矩阵入口：dish_xxx / cust_<职业>_<地区>（返回的都是已上色、只含 5 色的矩阵） */
   P.matrix = function (key) {
     if (!key) return null;
     if (DISHES[key]) return P.dishMatrix(key);
-    if (CUST_SKINS[key]) return P.custMatrix(key);
+    if (key.indexOf('cust_') === 0) return P.custMatrix(key);
     return null;
   };
 
@@ -4371,18 +4619,36 @@ TC.bootError = null;
       checkMatrix(k + '(上色后)', P.dishMatrix(k), P.DISH_SIZE, P.DISH_SIZE, LEGAL_FINAL);
     });
 
-    /* 3) 顾客：身体线稿 + 每套配色的成品 */
-    checkMatrix('cust_body', CUST_BODY, P.CUST_H, P.CUST_W, LEGAL_CUST);    var ph = {};
-    CUST_BODY.join('').split('').forEach(function (ch) { if (ch !== '.') ph[ch] = 1; });
-    Object.keys(CUST_SKINS).forEach(function (k) {
-      if (ph['s'] && P.COLORS.indexOf(P.CUST_SKINS[k].s || 'w') === -1) errors.push('顾客 ' + k + '：肤色非法');
-      ['h', 'c', 't'].forEach(function (ch) {
-        if (!ph[ch]) return;
-        if (P.COLORS.indexOf(P.CUST_SKINS[k][ch]) === -1) {
-          errors.push('顾客 ' + k + '：占位符 ' + ch + ' 没有合法颜色（' + P.CUST_SKINS[k][ch] + '）');
+    /* 3) 顾客：共用线稿 + 职业补丁 + 地区配色 → 逐一套「职业 × 地区」校验成品 */
+    checkMatrix('cust_body', CUST_BODY, P.CUST_H, P.CUST_W, LEGAL_CUST);
+    Object.keys(CUST_PATCH).forEach(function (a) {
+      var patch = CUST_PATCH[a];
+      (patch.rects || []).forEach(function (r) {
+        if (r.length !== 5) { errors.push('顾客补丁 ' + a + '：矩形应为 5 个数字 [x,y,w,h,色号]'); return; }
+        if (r[0] < 0 || r[1] < 0 || r[0] + r[2] > P.CUST_W || r[1] + r[3] > P.CUST_H) {
+          errors.push('顾客补丁 ' + a + '：矩形 [' + r.join(',') + '] 超出 ' + P.CUST_W + '×' + P.CUST_H);
+        }
+        if (CUST_CHARS.indexOf(r[4]) === -1) errors.push('顾客补丁 ' + a + '：非法色号 ' + r[4]);
+      });
+    });
+    Object.keys(CUST_REG_HAT).forEach(function (rg) {
+      if (!CUST_REG_PAL[rg]) { errors.push('地区帽子 ' + rg + '：没有对应的地区配色'); return; }
+      CUST_REG_HAT[rg].forEach(function (r) {
+        if (r[0] < 0 || r[1] < 0 || r[0] + r[2] > P.CUST_W || r[1] + r[3] > P.CUST_H) {
+          errors.push('地区帽子 ' + rg + '：矩形 [' + r.join(',') + '] 超出 ' + P.CUST_W + '×' + P.CUST_H);
+        }
+        if (CUST_CHARS.indexOf(r[4]) === -1) errors.push('地区帽子 ' + rg + '：非法色号 ' + r[4]);
+      });
+    });
+    Object.keys(CUST_REG_PAL).forEach(function (rg) {
+      ['s', 'h', 'c', 't'].forEach(function (ch) {
+        if (P.COLORS.indexOf(CUST_REG_PAL[rg][ch]) === -1) {
+          errors.push('顾客配色 ' + rg + '：占位符 ' + ch + ' 不是合法色号（' + CUST_REG_PAL[rg][ch] + '）');
         }
       });
-      checkMatrix('cust:' + k, P.matrix(k), P.CUST_H, P.CUST_W, LEGAL_FINAL);
+      if (CUST_REG_HAT[rg].length && CUST_REG_PAL[rg].c === 'w') {
+        errors.push('顾客配色 ' + rg + '：衣服不能用奶油白（围裙 / 银发也是白的，会糊在一起）');
+      }
     });
 
     /* 4) 食材数据：模板存在 + 色号合法 + 上色后只剩 5 色 */
@@ -4403,8 +4669,16 @@ TC.bootError = null;
     dishes.forEach(function (d) {
       if (!DISHES[d.sprite]) errors.push('菜品 ' + d.id + '：缺少像素图 ' + d.sprite);
     });
+    /* 顾客：每个职业都要有补丁，且 ×  每个地区都能合成出合法成品 */
+    var regionIds = (opts.regions || D.REGIONS).map(function (rg) { return rg.id; });
     customers.forEach(function (c) {
-      if (!CUST_SKINS[c.sprite]) errors.push('顾客 ' + c.id + '：缺少像素图 ' + c.sprite);
+      if (!CUST_PATCH[c.arch]) { errors.push('顾客 ' + c.id + '：没有对应的职业补丁 ' + c.arch); return; }
+      regionIds.forEach(function (rgId) {
+        var key = 'cust_' + c.arch + '_' + rgId;
+        if (!CUST_REG_PAL[rgId]) { errors.push('顾客 ' + c.id + '：地区 ' + rgId + ' 没有配色'); return; }
+        checkMatrix('cust:' + key, P.custMatrix(key), P.CUST_H, P.CUST_W, LEGAL_FINAL);
+      });
+      if (P.matrix(c.sprite) === null) errors.push('顾客 ' + c.id + '：sprite 不是可合成的造型键（' + c.sprite + '）');
     });
 
     return errors;
@@ -5710,7 +5984,15 @@ TC.bootError = null;
     var st = UI.save.settings || { sound: true, vibrate: true };
     setHtml('setList',
       setRowHtml('sound', '音效', '做菜、收银、彩蛋的提示音', st.sound !== false) +
-      setRowHtml('vibrate', '震动', '手机上关键操作的轻震动反馈', st.vibrate !== false));
+      setRowHtml('vibrate', '震动', '手机上关键操作的轻震动反馈', st.vibrate !== false) +
+      '<div class="up-row" data-set="tutorial" role="button" tabindex="0">' +
+        '<span class="up-ico">🎓</span>' +
+        '<span class="up-body">' +
+          '<span class="up-name">回顾新手教程</span>' +
+          '<span class="up-desc">重看一遍从点食材到上菜的 8 步引导</span>' +
+        '</span>' +
+        '<span class="up-act"><span class="up-lv">重看</span></span>' +
+      '</div>');
     return true;
   }
 
@@ -5723,8 +6005,235 @@ TC.bootError = null;
       if (key === 'sound' && s.settings.sound) sfx('tap');
       return s.settings[key];
     }
+    if (key === 'tutorial') {
+      UI.closeModal('modalSettings');
+      return UI.tutStart();
+    }
     return false;
   };
+
+  /* ========================================================================
+     新手教程（第一优先级）
+     规则全部来自 DATA.TUTORIAL（步骤表）+ Save.needsTutorial（要不要自动播）；
+     本模块只做三件事：
+       ① 起一局「教学演示局」（TC.Level.create 传 tutorial:true）
+       ② 把当前步的高亮目标量成屏幕矩形 → 画聚光块 + 气泡
+       ③ 把玩家真实做的动作翻译成「这一步完成了」
+     ======================================================================== */
+  var tut = { on: false, i: 0, run: null, auto: false, done: false };
+
+  /** 不是 id 的高亮目标 → 选择器 */
+  var TUT_SEL = {
+    customerBubble: '#custBand .cust-bubble',
+    custWait: '#custBand .cust-wait'
+  };
+  /** 这几个指向 canvas 里的逻辑区域，要靠 Scene 的布局换算 */
+  var TUT_STATION = { stove: 1, counter: 1, fridge: 1, register: 1 };
+
+  function tutStep() { return D.TUTORIAL[tut.i] || null; }
+
+  /** 当前步的高亮目标 → 屏幕矩形（CSS 像素，相对视口）；量不出来返回 null */
+  function tutTargetRect(spot) {
+    if (!spot) return null;
+    if (TUT_STATION[spot]) {
+      var cv = $('scene'), run = UI.run;
+      if (!cv || !cv.getBoundingClientRect || !run) return null;
+      var box = cv.getBoundingClientRect();
+      if (!box || !box.width) return null;
+      var lay = layoutOf(run, box);
+      var st = (lay && lay.stations) ? lay.stations[spot] : null;
+      if (!st) return null;
+      var p = TC.Scene.toScreen(lay, st.x, st.y);
+      return { x: box.left + p.x, y: box.top + p.y, w: st.w * lay.scale, h: st.h * lay.scale };
+    }
+    var node = $(spot) || (TUT_SEL[spot] ? q1(TUT_SEL[spot]) : null);
+    if (!node || !node.getBoundingClientRect) return null;
+    var r = node.getBoundingClientRect();
+    if (!r || (!r.width && !r.height)) return null;
+    return { x: r.left, y: r.top, w: r.width, h: r.height };
+  }
+
+  /** 气泡放在高亮块的下方；下面放不下就放上方，都放不下就居中 */
+  function tutPlaceBubble(r) {
+    var b = $('tutBubble');
+    if (!b || !b.style) return false;
+    var vh = (typeof window !== 'undefined' && window.innerHeight) || 640;
+    var card = b.firstElementChild;
+    var H = (card && card.getBoundingClientRect && card.getBoundingClientRect().height) || 180;
+    var top;
+    if (r && r.y + r.h + H + 30 < vh) top = r.y + r.h + 22;
+    else if (r && r.y - H - 26 > 8) top = r.y - H - 22;
+    else top = Math.round(vh * 0.34);
+    b.style.top = Math.round(U.clamp(top, 10, Math.max(10, vh - H - 12))) + 'px';
+    return true;
+  }
+
+  /** 重画遮罩：高亮位置 + 文案 + 进度点 + 按钮 */
+  UI.tutPaint = function () {
+    var step = tutStep(), host = $('tutHost');
+    if (!host || !step) return false;
+    var r = tutTargetRect(step.spot);
+    var spot = $('tutSpot');
+    if (spot && spot.style) {
+      if (r) {
+        spot.style.left = Math.round(r.x - 7) + 'px';
+        spot.style.top = Math.round(r.y - 7) + 'px';
+        spot.style.width = Math.round(r.w + 14) + 'px';
+        spot.style.height = Math.round(r.h + 14) + 'px';
+      } else {
+        /* 量不到目标（目标还没渲染 / 环境没有布局引擎）→ 聚光块收到中间，
+           不然它会因为 width:0 之外的原因挡住整屏 */
+        spot.style.left = '50%'; spot.style.top = '50%';
+        spot.style.width = '0px'; spot.style.height = '0px';
+      }
+    }
+    setText('tutStepLab', '第 ' + (tut.i + 1) + ' / ' + D.TUTORIAL.length + ' 步');
+    setText('tutText', step.text);
+    setText('tutTip', step.act ? '照着画面做一次，会自动进入下一步' : '看完点「下一步」继续');
+    var next = $('btnTutNext');
+    if (next) {
+      next.hidden = !!step.act;
+      next.textContent = (tut.i >= D.TUTORIAL.length - 1) ? '完成教程' : '下一步';
+    }
+    setHtml('tutDots', D.TUTORIAL.map(function (s, i) {
+      return '<i class="' + (i < tut.i ? 'is-done' : (i === tut.i ? 'is-on' : '')) + '"></i>';
+    }).join(''));
+    tutPlaceBubble(r);
+    return true;
+  };
+
+  UI.tutActive = function () { return tut.on; };
+  UI.tutIndex = function () { return tut.i; };
+  UI.tutRun = function () { return tut.run; };
+
+  /** 教学演示局：固定第 1 区第 1 关 + 固定随机源 —— 所有新玩家看到同一套画面 */
+  function tutMakeRun() {
+    return TC.Level.create(UI.save, D.TUTORIAL_LEVEL, {
+      tutorial: true,
+      firstSpawn: 600,
+      rand: U.seededBy('tc-tutorial')
+    });
+  }
+
+  /**
+   * 教学最后一步停在结算页：用一份「影子存档」算一份真结算，
+   * 但结果不写进玩家的存档（教学不该给玩家发钱 / 发星星）。
+   */
+  function tutShowResult() {
+    var run = tut.run || UI.run;
+    if (!run) return false;
+    var shadow = U.deepClone(UI.save);
+    var res = C.settle({ levelId: run.levelId, save: shadow, run: run, firstClear: true });
+    res.levelState = { level: UI.save.level, exp: UI.save.exp, expToNext: C.expToNext(UI.save.level) };
+    res.expInfo = { gained: 0 };
+    res.newAchievements = [];
+    res.unlockedLevelId = null;
+    res.unlockedDishIds = [];
+    res.unlockedRegionIds = [];
+    res.firstClear = false;
+    res.clearBonus = 0;
+    res.firstBonus = 0;
+    res.halved = false;
+    UI.result = res;
+    TC.Router.go('result', { force: true });
+    return true;
+  }
+
+  /** 跳到第 n 步（会先把视图切到该步所在的页面） */
+  UI.tutGo = function (n) {
+    if (!tut.on) return false;
+    tut.i = U.clamp(Math.floor(n), 0, D.TUTORIAL.length - 1);
+    var step = tutStep();
+    if (!step) return UI.tutStop();
+    if (step.view === 'result') {
+      tutShowResult();
+    } else if (step.view && TC.Router.current !== step.view) {
+      TC.Router.go(step.view, { force: true });
+    }
+    return UI.tutPaint();
+  };
+
+  UI.tutNext = function () {
+    if (!tut.on) return false;
+    sfx('tap');
+    var n = tut.i + 1;
+    if (n >= D.TUTORIAL.length) return UI.tutStop();
+    return UI.tutGo(n);
+  };
+
+  /** 玩家做了一个真实动作；正好是当前步要求的动作就自动前进 */
+  UI.tutAction = function (action) {
+    if (!tut.on) return false;
+    var step = tutStep();
+    if (!step || step.act !== action) return false;
+    return UI.tutNext();
+  };
+
+  /**
+   * 起教程
+   * @param {{auto?:boolean}} [opts] auto:true = 首次进游戏自动播放
+   */
+  UI.tutStart = function (opts) {
+    opts = opts || {};
+    bindTut();
+    var run = tutMakeRun();
+    if (!run) return false;
+    tut.on = true;
+    tut.i = 0;
+    tut.auto = !!opts.auto;
+    tut.done = false;
+    tut.run = run;
+    UI.run = run;
+    UI.result = null;
+    UI._settled = false;
+    var host = $('tutHost');
+    if (host && host.classList) host.classList.add('is-on');
+    return UI.tutPaint();
+  };
+
+  /**
+   * 结束教程
+   * @param {{done?:boolean}} [opts] done:false 表示「不算已看完」（测试环境摘掉遮罩用）
+   */
+  UI.tutStop = function (opts) {
+    opts = opts || {};
+    var ownedRun = !!(tut.run && UI.run === tut.run);
+    tut.on = false;
+    tut.run = null;
+    var host = $('tutHost');
+    if (host && host.classList) host.classList.remove('is-on');
+    UI.holdClear();
+    UI.cancelDrag();
+    if (ownedRun) {
+      TC.Scene.stop();
+      UI.run = null;
+    }
+    if (TC.Router.current === 'result') UI.result = null;
+    if (opts.done === false) return true;
+    S.setTutorialDone(UI.save, true);
+    UI.persist();
+    TC.Router.go('map', { force: true });
+    return true;
+  };
+
+  /** 首次进游戏自动播一次（只由 TC.boot 调用） */
+  UI.tutAutoStart = function () {
+    if (tut.on) return false;
+    if (!S.needsTutorial(UI.save)) return false;
+    return UI.tutStart({ auto: true });
+  };
+
+  var tutBound = false;
+  function bindTut() {
+    if (tutBound) return;
+    tutBound = true;
+    on($('btnTutNext'), 'click', function () { UI.tutNext(); });
+    on($('btnTutSkip'), 'click', function () { UI.tutStop(); });
+    /* 屏幕尺寸变了（转屏 / 键盘弹出）要重新量一次高亮块的位置 */
+    if (typeof window !== 'undefined') {
+      on(window, 'resize', function () { if (tut.on) UI.tutPaint(); });
+    }
+  }
 
   /* ========================================================================
      页面 2 · 经营（Canvas 厨房 + DOM 卡片）
@@ -5793,8 +6302,8 @@ TC.bootError = null;
     }).join('|');
   };
 
-  /** 一位顾客的卡片 */
-  function custHtml(c, run) {
+  /** 一位顾客的卡片；scale 决定立绘像素倍率（座位多时缩小，2 行 3 列也放得下） */
+  function custHtml(c, run, scale) {
     var dish = D.dish(c.dishId) || {};
     var ratio = c.patienceMax ? U.clamp(c.patienceLeft / c.patienceMax, 0, 1) : 1;
     var low = c.state === 'waiting' && ratio <= 0.3;
@@ -5803,6 +6312,8 @@ TC.bootError = null;
       (c.state === 'lost' ? ' is-lost' : '') +
       (c.state === 'served' ? ' is-leaving' : '') +
       (low ? ' is-angry' : '');
+    scale = scale || 3;
+    var W = P.CUST_W * scale, H = P.CUST_H * scale;
 
     return '<button class="' + cls + '" data-uid="' + esc(c.uid) + '" type="button" ' +
              'aria-label="' + esc(c.name + ' 想要 ' + (dish.name || '')) + '">' +
@@ -5811,23 +6322,29 @@ TC.bootError = null;
         '<canvas class="cb-ico" width="16" height="16" aria-hidden="true"></canvas>' +
         '<span class="cb-name">' + esc(dish.name || '') + '</span>' +
       '</span>' +
-      '<span class="cust-sprite"><canvas width="48" height="72" aria-hidden="true"></canvas></span>' +
+      '<span class="cust-sprite" style="width:' + W + 'px;height:' + H + 'px">' +
+        '<canvas width="' + W + '" height="' + H + '" aria-hidden="true"></canvas>' +
+      '</span>' +
       '<span class="cust-name">' + esc(c.name) + '</span>' +
       '<span class="cust-wait' + (low ? ' is-low' : '') + '"><i style="width:' + Math.round(ratio * 100) + '%"></i></span>' +
       '<span class="cust-tip" aria-hidden="true"></span>' +
     '</button>';
   }
 
+  /** 顾客带的立绘倍率：1~3 人时用 3 倍（48×72），挤到 4 人以上降到 2 倍（32×48） */
+  UI.custScale = function (n) { return n > 3 ? 2 : 3; };
+
   /** 把像素立绘与菜品图标画进顾客带（无 2D 上下文时安静跳过） */
-  function paintCustSprites(host, list) {
+  function paintCustSprites(host, list, scale) {
     if (!host || !host.querySelectorAll) return 0;
+    scale = scale || 3;
     var n = 0;
     for (var i = 0; i < list.length; i++) {
       var c = list[i];
       var card = host.querySelector('[data-uid="' + c.uid + '"]');
       if (!card) continue;
       var body = card.querySelector('.cust-sprite > canvas');
-      if (body) n += paintInto(body, P.rectsOf(c.sprite, 3)) > 0 ? 1 : 0;
+      if (body) n += paintInto(body, P.rectsOf(c.sprite, scale)) > 0 ? 1 : 0;
       var ico = card.querySelector('.cb-ico');
       var dish = D.dish(c.dishId);
       if (ico && dish) n += paintInto(ico, P.rectsOf(dish.sprite, 1)) > 0 ? 1 : 0;
@@ -5843,12 +6360,24 @@ TC.bootError = null;
     if (!run) return false;
     var list = run.customers.slice(-6);
     UI._custSig = UI.custSig(run);
+    var scale = UI.custScale(list.length);
+    if (host.classList) host.classList.toggle('is-tight', scale < 3);
     if (!list.length) {
       host.innerHTML = '<span class="cust-hint">顾客马上就到…</span>';
       return false;
     }
-    host.innerHTML = list.map(function (c) { return custHtml(c, run); }).join('');
-    paintCustSprites(host, list);
+    host.innerHTML = list.map(function (c) { return custHtml(c, run, scale); }).join('');
+    /* 只给「这一局第一次露面」的顾客加右侧滑入动画 —— 整条带子每次都会重建，
+       不加这层过滤的话每次刷新都会满屏抖一下。 */
+    var seen = UI._custSeen;
+    if (!seen || seen.run !== run.uid) seen = UI._custSeen = { run: run.uid, ids: {} };
+    for (var i = 0; i < list.length; i++) {
+      if (seen.ids[list[i].uid]) continue;
+      seen.ids[list[i].uid] = 1;
+      var card = host.querySelector('[data-uid="' + list[i].uid + '"]');
+      if (card && card.classList) card.classList.add('is-new');
+    }
+    paintCustSprites(host, list, scale);
     return true;
   };
 
@@ -6091,6 +6620,7 @@ TC.bootError = null;
     UI.syncPantry(run);
     UI.syncOrder(run);
     if (res.prepDone) UI.stageToast('✅ 备料齐了 · 点锅开火');
+    UI.tutAction('ingredient');
     return res;
   };
 
@@ -6109,6 +6639,7 @@ TC.bootError = null;
     UI.stageToast('🔥 开火！');
     UI._orderSig = null;
     UI.syncOrder(run);
+    UI.tutAction('pot');
     return res;
   };
 
@@ -6216,6 +6747,7 @@ TC.bootError = null;
     if (!run || !run.plates[plateIdx]) return false;
     UI._held = plateIdx;
     UI.toast('🍽 端起「' + run.plates[plateIdx].name + '」，点顾客就上菜', 'mint', 1600);
+    UI.tutAction('plate');
     return true;
   };
 
@@ -6348,6 +6880,7 @@ TC.bootError = null;
     UI.renderCustBand(run);
     UI.syncOrder(run);
     UI.syncPantry(run);
+    UI.tutAction('serve');
     return res;
   };
 
@@ -6372,6 +6905,7 @@ TC.bootError = null;
   /** 一局结束（TC.Scene.step 在 run.over 时调用） */
   UI.onRunOver = function (run) {
     if (!run || run !== UI.run || UI._settled) return false;
+    if (run.tutorial) return false;                // 教学局不结算、也不写档
     UI._settled = true;
     UI.result = TC.Level.finish(UI.save, run);     // 结算与写档全部在逻辑层
     UI.persist();
@@ -7032,6 +7566,8 @@ TC.bootError = null;
       TC.Router.go('map', { silent: true });
       if (TC.UI && TC.UI.onRoute) TC.UI.onRoute('map', null, {});
       TC.Router.onChange(function (n, p, o) { if (TC.UI && TC.UI.onRoute) TC.UI.onRoute(n, p, o); });
+      /* 首次进游戏自动播一次新手教程（看过的人 S.needsTutorial 会返回 false） */
+      if (TC.UI && TC.UI.tutAutoStart) TC.UI.tutAutoStart();
       TC.bootError = null;
     } catch (e) {
       TC.bootError = e;

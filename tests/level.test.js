@@ -29,7 +29,7 @@ function place(run, dishId, opts) {
     uid: opts.uid || ('m' + (run.customers.length + 1)),
     id: opts.type || 'office',
     name: '上班族',
-    sprite: 'cust_office',
+    sprite: 'cust_office_asia_street',
     dishId: dishId,
     patienceMax: opts.patience || 24000,
     patienceLeft: opts.patience || 24000,
@@ -88,7 +88,7 @@ test('create：时长、锅位、座位、订单池都来自存档与关卡配�
   eq(run.timeLeft, 90000);
   eq(run.slots, 2, '默认 2 个锅位');
   eq(run.seats, 2);
-  eq(run.spawnInterval, 7500);
+  eq(run.spawnInterval, 6800);
   eq(run.customers.length, 0);
   eq(run.pots.length, 2);
   eq(run.plates.length, 0);
@@ -118,9 +118,11 @@ test('tick 递减剩余时间与耐心，并按间隔生成顾客', () => {
   eq(run.customers.length, 1, 'firstSpawn=0 时第一帧就有人上门');
   includes(ev1.map((e) => e.type), 'spawn');
   eq(run.timeLeft, 90000 - 16);
-  eq(run.customers[0].patienceLeft, 24000, '刚上门的这一帧还没开始掉耐心');
+  const first = run.customers[0];
+  const firstBase = D.customer(first.id).patience * 2 * D.level('A1').patienceScale;
+  eq(first.patienceLeft, Math.round(firstBase), '刚上门的这一帧还没开始掉耐心（基础耐心 ×2）');
   L.tick(run, 100);
-  eq(run.customers[0].patienceLeft, 24000 - 100, '之后每帧同步递减');
+  eq(run.customers[0].patienceLeft, Math.round(firstBase) - 100, '之后每帧同步递减');
   eq(run.timeLeft, 90000 - 116);
 });
 
@@ -143,10 +145,10 @@ test('顾客类型不重复出现（同屏不会有两个同款顾客）', () =>
   let seed = 7;
   const lcg = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
   const save = blank();
-  save.upgrades.seats = 2; // 4 座，能同时站 4 位
+  save.upgrades.seats = 3; // A5 的 3 座 + 3 = 6 座，能同时站 6 位（同屏上限）
   const run = L.create(save, 'A5', { rand: lcg, firstSpawn: 0 });
   L.tick(run, 16);
-  for (let i = 0; i < 6; i++) L.tick(run, 4600);
+  for (let i = 0; i < 6; i++) L.tick(run, 4300);
   const wait = L.waiting(run);
   gt(wait.length, 2, '应该攒下好几位顾客');
   const ids = wait.map((c) => c.id);
@@ -171,7 +173,7 @@ test('耐心耗尽 → 顾客流失、连击清零、取消选中', () => {
   const c = run.customers[0];
   run.combo = 5;
   run.perfectStreak = 3;
-  const ev = L.tick(run, 24001);
+  const ev = L.tick(run, c.patienceMax + 1);
   eq(c.state, 'lost');
   eq(c.patienceLeft, 0);
   eq(run.lost, 1);
@@ -184,7 +186,10 @@ test('耐心耗尽 → 顾客流失、连击清零、取消选中', () => {
 test('不同顾客的耐心受关卡 patienceScale 影响', () => {
   const run = mk('A5');
   L.tick(run, 16);
-  eq(run.customers[0].patienceMax, Math.round(24000 * 0.8), 'A5 耐心 ×0.8');
+  const c = run.customers[0];
+  const base = D.customer(c.id).patience;
+  eq(c.patienceMax, Math.round(base * 0.8 * 2), 'A5 耐心 ×0.8 ×2');
+  gt(c.patienceMax, 0);
 });
 
 test('select 只能选中在等的顾客', () => {
@@ -702,21 +707,21 @@ test('hud() 汇总顶栏需要的全部数字', () => {
 test('finish：3 星通关会写星级、发钱发经验、解锁下一关与新菜品', () => {
   const save = blank();
   const run = mk('A1', save);
-  run.served = 6;
-  run.coins = 100;
-  run.tips = 30;
-  run.maxCombo = 6;
-  run.perfect = 6;
+  run.served = 7;
+  run.coins = 120;
+  run.tips = 40;
+  run.maxCombo = 7;
+  run.perfect = 7;
   run.lost = 0;
 
   const res = L.finish(save, run);
   eq(res.stars, 3);
   eq(res.cleared, true);
-  eq(res.totalGain, 130 + 40 + 80);
-  eq(save.coins, 350, '结算 250 + 成就「初来乍到」奖励 100');
+  eq(res.totalGain, 160 + 40 + 80);
+  eq(save.coins, 380, '结算 280 + 成就「初来乍到」奖励 100');
   eq(save.regions.asia_street.A1, 3);
-  eq(save.exp, 54, '6×3 + 3×8 + 12');
-  eq(save.level, 1, '54 经验还升不了级');
+  eq(save.exp, 57, '7×3 + 3×8 + 12');
+  eq(save.level, 1, '57 经验还升不了级');
   ok(save.stats.plays === 1);
   eq(res.unlockedLevelId, 'A2');
   ok(C.isLevelUnlocked(save, 'A2'), '第 2 关应可进入');
@@ -727,12 +732,12 @@ test('finish：3 星通关会写星级、发钱发经验、解锁下一关与新
 test('finish：星级只在更高时覆盖，重玩不降级', () => {
   const save = blank();
   const run1 = mk('A1', save);
-  Object.assign(run1, { served: 6, coins: 100, tips: 30, maxCombo: 6, lost: 0 });
+  Object.assign(run1, { served: 7, coins: 120, tips: 40, maxCombo: 7, lost: 0 });
   L.finish(save, run1);
   eq(save.regions.asia_street.A1, 3);
 
   const run2 = mk('A1', save);
-  Object.assign(run2, { served: 6, coins: 40, tips: 10, maxCombo: 6, lost: 0 });
+  Object.assign(run2, { served: 7, coins: 40, tips: 10, maxCombo: 7, lost: 0 });
   const res2 = L.finish(save, run2);
   eq(res2.stars, 1);
   eq(res2.firstBonus, 0, '不是首通了');
@@ -759,25 +764,25 @@ test('finish：会累加今日任务与统计、记录见过的顾客', () => {
   S.checkDaily(save, '2026-09-15');
   const run = mk('A1', save);
   run.encounterIds = { office: 1, kid: 1 };
-  Object.assign(run, { served: 6, coins: 100, tips: 30, maxCombo: 6, lost: 0, perfect: 5 });
+  Object.assign(run, { served: 7, coins: 120, tips: 40, maxCombo: 7, lost: 0, perfect: 5 });
 
   L.finish(save, run);
   eq(save.stats.plays, 1);
-  eq(save.stats.customers, 6);
+  eq(save.stats.customers, 7);
   eq(save.stats.perfect, 5);
-  eq(save.stats.maxCombo, 6);
-  eq(save.stats.bestCoins, 130);
+  eq(save.stats.maxCombo, 7);
+  eq(save.stats.bestCoins, 160);
   eq(save.stats.seenCustomers.office, 1);
   eq(save.stats.seenCustomers.kid, 1);
   eq(save.daily.metrics.plays, 1);
-  eq(save.daily.metrics.customers, 6);
-  eq(save.daily.metrics.maxCombo, 6);
+  eq(save.daily.metrics.customers, 7);
+  eq(save.daily.metrics.maxCombo, 7);
 });
 
 test('finish：达成条件时会一并抛出成就', () => {
   const save = blank();
   const run = mk('A1', save);
-  Object.assign(run, { served: 6, coins: 100, tips: 30, maxCombo: 6, lost: 0, perfect: 6 });
+  Object.assign(run, { served: 7, coins: 120, tips: 40, maxCombo: 7, lost: 0, perfect: 7 });
   const res = L.finish(save, run);
   const ids = res.newAchievements.map((a) => a.id);
   includes(ids, 'first_step');
@@ -828,25 +833,25 @@ test('finish 之后 run 被标记结束，不再接受操作', () => {
 /* ==========================================================================
    端到端：一局从头打到尾
    ========================================================================== */
-test('端到端：完整做满 6 单 → 3 星 → 解锁第 2 关', () => {
+test('端到端：完整做满 7 单 → 3 星 → 解锁第 2 关', () => {
   const save = blank();
   const run = mk('A1', save);
-  // 6 位顾客依次上门，全部完美上菜
-  for (let i = 0; i < 6; i++) {
+  // 7 位顾客依次上门，全部完美上菜
+  for (let i = 0; i < 7; i++) {
     const c = place(run, 'chowmein', { uid: 'e' + i });
     run.selected = c.uid;
     const r = cookAndServe(run, c.uid);
     eq(r.ok, true, '第 ' + (i + 1) + ' 单应成功');
     eq(r.perfect, true);
   }
-  eq(run.served, 6);
-  eq(run.combo, 6);
-  eq(run.coins, 6 * 18);
-  eq(run.tips, 6 * 4);
+  eq(run.served, 7);
+  eq(run.combo, 7);
+  eq(run.coins, 7 * 18);
+  eq(run.tips, 7 * 4);
   eq(run.lost, 0);
 
   const res = L.finish(save, run);
-  eq(res.stars, 3, '6 单 / 132 收入 / 0 流失 6 连击');
+  eq(res.stars, 3, '7 单 / 154 收入 / 0 流失 7 连击');
   eq(save.regions.asia_street.A1, 3);
   ok(C.isLevelUnlocked(save, 'A2'));
   gt(save.coins, 0);
@@ -858,9 +863,11 @@ test('端到端：全程不管顾客 → 全部流失 → 0 星', () => {
   const save = blank();
   const run = mk('A1', save);
   L.tick(run, 16);
-  L.tick(run, 24001);
-  L.tick(run, 1200);
-  L.tick(run, 24001);
+  L.tick(run, 6801);                       // 每次 tick 最多上门一位，多推一次凑够两位
+  eq(L.waiting(run).length, 2, '应有两位顾客在等');
+  // 耐心最长的顾客也扛不住这么久（第三优先级把等待时间翻倍，取上限 ×2 再加一毫秒）
+  const worst = Math.max.apply(null, D.CUSTOMERS.map((c) => c.patience)) * 2 + 1;
+  L.tick(run, worst);
   eq(run.lost, 2);
   eq(run.served, 0);
   const res = L.finish(save, run);
