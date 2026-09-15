@@ -6,10 +6,10 @@
 
 **零依赖、零构建、单文件**：整个游戏就是一个 `index.html`，双击即玩，也能直接丢到任意静态托管上。
 
-- 🔗 **在线试玩**：<https://travel-chefs.app.workbuddy.host/> —— 手机浏览器打开即玩，进度存在浏览器本地
+- 🔗 **在线试玩**：<https://travel-chefs.vercel.app/> —— 手机浏览器打开即玩，进度存在浏览器本地
 - 📦 **仓库地址**：<https://github.com/Miacy05/travel-chefs>
 
-> 想要属于自己的 `travel-chefs.vercel.app`？仓库已经按 Vercel 静态站的要求组织好，导入三步即可，见 [第八节 · 部署](#八部署)。
+> 仓库已与 Vercel 连接：向 `main` 分支推送后会自动重新部署，改完 `index.html` 直接 push 即可上线。
 
 ---
 
@@ -251,6 +251,7 @@ travel-chefs/
 ├── README.md           ← 本文件
 ├── LICENSE             ← MIT
 ├── .gitignore          ← 排除 backup-v1/（v1 原型存档）等
+├── .vercelignore       ← 部署时排除 tests/ tools/，线上只留 index.html
 ├── docs/               ← README 里用到的游戏截图（390×844 @2x）
 │   ├── map.png         cook.png      result.png
 │   └── codex.png       upgrade.png
@@ -269,26 +270,31 @@ travel-chefs/
 
 ### 已经在线
 
-当前版本已发布在 **<https://travel-chefs.app.workbuddy.host/>**（纯静态单文件，没有后端依赖）。
+当前版本已发布在 **<https://travel-chefs.vercel.app/>** —— 纯静态单文件，没有后端依赖，不需要登录。
 
-### 方案 A · 得到自己的 `travel-chefs.vercel.app`
+仓库与 Vercel 已建立 Git 连接，**向 `main` 分支推送即自动重新部署**，无需手动操作。
+
+### 部署方案（本项目实际采用的路径）
+
+如果要把这套东西从头再来一遍，最省事的顺序是：先把仓库推上 GitHub，再让 Vercel 连这个仓库。
 
 **第 1 步 · 推送到 GitHub**
 
 先在 GitHub 网页端新建一个**空仓库**（不要勾选 *Add a README file*）。仓库名必须是 `travel-chefs` —— 它决定 Vercel 的域名。
 
-然后在 `travel-chefs/` 目录下推送（本机若没把 git 装进 PATH，用 WorkBuddy 自带的便携版）：
+然后在 `travel-chefs/` 目录下推送。本机到 `github.com:443` 的 HTTPS 通道实测不稳定（直连超时、
+代理返回 502 / TLS 重置），因此这里走 **SSH over 443**：
 
 ```powershell
 $git = "C:\Users\20742\.workbuddy\binaries\PortableGit\versions\1.2.0\cmd\git.exe"
 
-& $git remote add origin https://github.com/<你的用户名>/travel-chefs.git
+& $git remote add origin ssh://git@ssh.github.com:443/<用户名>/travel-chefs.git
+& $git config core.sshCommand "ssh -i <私钥路径> -o StrictHostKeyChecking=accept-new"
 & $git push -u origin main
 ```
 
-> **如果 `git push` 卡住或超时**：本机到 `github.com:443` 的 HTTPS 通道不通（实测直连超时、
-> 代理返回 502 / TLS 重置），而 `api.github.com` 是通的。这种情况下改用仓库里的
-> `tools/push-to-github.js` —— 它走 GitHub REST API 直接建仓库并生成同样的提交记录：
+> **如果 SSH 也不通**：仓库里的 `tools/push-to-github.js` 是备用通道，走可达的
+> `api.github.com` REST API 建仓库并生成同样的提交记录：
 >
 > ```powershell
 > node tools/push-to-github.js
@@ -299,16 +305,25 @@ $git = "C:\Users\20742\.workbuddy\binaries\PortableGit\versions\1.2.0\cmd\git.ex
 
 **第 2 步 · Vercel 上线**
 
-1. 打开 [vercel.com](https://vercel.com) → **Continue with GitHub**
-2. **Add New Project** → 选中 `travel-chefs` → **Import**
-3. Framework Preset 选 **Other**（纯静态站，**不要**选 Next.js）
-4. Build Command / Output Directory **全部留空**
-5. **Deploy**，约 1 分钟后拿到 `travel-chefs.vercel.app`
+用命令行（本项目就是这个流程，`vercel` 会自动把仓库和项目关联起来）：
+
+```powershell
+npx vercel login          # 会给出一个设备码链接，浏览器点一下即可授权
+npx vercel deploy --prod --yes
+```
+
+首次部署会自动创建名为 `travel-chefs` 的项目，并分配 **`https://travel-chefs.vercel.app`**；
+同时把 GitHub 仓库连上，之后每次 push 都会自动重新部署。
+
+也可以纯在网页上做：打开 [vercel.com](https://vercel.com) → **Continue with GitHub** →
+**Add New Project** → 选中 `travel-chefs` → **Import** → Framework Preset 选 **Other**
+（纯静态站，**不要**选 Next.js）→ Build Command / Output Directory **全部留空** → **Deploy**。
 
 > 只要 `index.html` 在仓库根目录，Vercel 就会把它当入口页。`backup-v1/` 已被 `.gitignore`
-> 排除在仓库之外，不会干扰入口识别。
+> 排除在仓库之外；`.vercelignore` 另外把 `tests/`、`tools/` 排除在部署产物之外，
+> 避免测试代码被静态托管公开暴露。
 
-### 方案 B · 腾讯云 CloudBase（得到 `xxx.tcloudbaseapp.com`）
+### 另一种托管 · 腾讯云 CloudBase（得到 `xxx.tcloudbaseapp.com`）
 
 1. 打开 [腾讯云开发控制台](https://console.cloud.tencent.com/tcb) 并创建一个环境
 2. 左侧进入 **静态网站托管** → **上传文件**
