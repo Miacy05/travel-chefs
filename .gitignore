@@ -15,3 +15,5 @@ package-lock.json
 
 # 旧版原型备份（保留在本地，不进仓库，避免部署时混淆 index.html）
 backup-v1/
+
+.vercel
