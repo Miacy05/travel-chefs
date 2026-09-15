@@ -1,0 +1,14 @@
+# 部署到 Vercel 时不上传的内容（不影响 GitHub 仓库里的文件）
+# 线上只需要 index.html；测试、工具、原型存档不必公开暴露。
+
+.git
+.gitignore
+.vercel
+backup-v1/
+tests/
+tools/
+node_modules/
+package.json
+package-lock.json
+README.md
+LICENSE
