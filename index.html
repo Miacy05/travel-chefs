@@ -240,20 +240,27 @@ ul{margin:0;padding:0;list-style:none;}
   display:flex;flex-direction:column;align-items:center;gap:2px;
   padding:10px 0 18px;
 }
-.hero-globe{position:relative;margin-bottom:6px;}
+.hero-globe{position:relative;margin-bottom:0;}
+/* 地球仪整块由 canvas 画（球体 + 经纬线 + 云 + 轨道 + 星星 + 小飞机），
+   按钮本身只负责点击热区与按压缩放，不再自己画圆和描边。 */
 .globe{
-  position:relative;width:104px;height:104px;
+  position:relative;width:132px;height:132px;
   display:flex;align-items:center;justify-content:center;
-  border-radius:50%;
-  background:radial-gradient(circle at 34% 28%, #fff, var(--cream));
-  border:var(--bd) solid var(--brown);
-  box-shadow:0 5px 0 var(--ink-16);
+  padding:0;border:0;border-radius:50%;
+  background:none;box-shadow:none;
   transition:transform .14s var(--ease);
+}
+/* 球体背后的柔光：让地球仪从奶油底上"浮"起来（球本身画在 canvas 里） */
+.globe::before{
+  content:'';position:absolute;left:50%;top:50%;width:100px;height:100px;
+  margin:-50px 0 0 -50px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--cream), var(--ink-04));
 }
 .globe:active{transform:scale(.94) translateY(2px);}
 .globe.is-pop{animation:globePop .5s var(--ease);}
 @keyframes globePop{0%{transform:scale(1)}40%{transform:scale(1.12) rotate(-5deg)}70%{transform:scale(1.05) rotate(4deg)}100%{transform:scale(1)}}
-.globe canvas{width:88px;height:88px;border-radius:50%;}
+/* 注意：这里不能加 border-radius，否则轨道/星星/小飞机会被裁掉 */
+.globe canvas{position:relative;width:132px;height:132px;}
 .globe-taps{
   position:absolute;top:-4px;right:-6px;
   min-width:22px;height:22px;padding:0 5px;
@@ -769,6 +776,14 @@ ul{margin:0;padding:0;list-style:none;}
 .book-cell .bc-name{font-size:11px;font-weight:800;text-align:center;line-height:1.3;}
 .book-cell .bc-sub{font-size:9.5px;color:var(--ink-50);font-family:var(--font-pixel);font-weight:700;}
 .book-cell.is-locked .bc-name{color:var(--ink-30);}
+/* 特殊顾客（第六优先级）：金色边框独立标注。
+   现在数据里还没有 special 顾客，所以不会有金框；等那边做出来会自动生效。 */
+.book-cell.is-special{
+  border-color:#E0A100;
+  background:rgba(255,209,102,.24);
+  box-shadow:0 3px 0 rgba(224,161,0,.35);
+}
+.book-cell.is-special .bc-name{color:#9A6B00;}
 
 .postcard-list{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 .postcard{
@@ -786,6 +801,43 @@ ul{margin:0;padding:0;list-style:none;}
 .pc-name{font-size:11.5px;font-weight:800;}
 .pc-sub{font-size:9.5px;color:var(--ink-50);font-family:var(--font-pixel);font-weight:700;}
 .postcard.is-locked .pc-name{color:var(--ink-30);}
+
+/* -------- 图鉴的二级标签：菜谱 / 顾客 / 徽章 / 明信片 --------
+   一级标签（图鉴/成就/每日任务）控制"哪一页"，二级标签控制"图鉴里的哪一类"。
+   二级标签只在「图鉴」这一类下出现，所以用 #view-codex[data-codex-tab="book"] 控制显隐。 */
+.sub-tabs{
+  flex:0 0 auto;display:none;gap:6px;
+  padding:9px 12px 10px;
+  border-bottom:2px solid var(--ink-16);
+}
+#view-codex[data-codex-tab="book"] .sub-tabs{display:grid;grid-template-columns:repeat(4,1fr);}
+.sub-tab{
+  padding:7px 4px;border:2px solid var(--brown);border-radius:999px;
+  background:var(--ink-04);color:var(--ink-70);
+  font-family:var(--font-pixel);font-size:10.5px;font-weight:700;
+  box-shadow:0 2px 0 var(--ink-16);
+  transition:transform .12s var(--ease),background .15s,color .15s;
+}
+.sub-tab.is-active{background:var(--yellow);color:var(--brown);transform:translateY(-1px);}
+.sub-tab:active{transform:translateY(1px);}
+/* 二级面板：同一时刻只显示一个，避免"整页堆叠滚动" */
+.sub-panel{display:none;}
+.sub-panel.is-active{display:block;animation:panelIn .28s var(--ease);}
+
+/* -------- 徽章墙（普通徽章纯收藏） -------- */
+.badge-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.badge-cell{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:11px 8px;background:var(--cream);
+  border:2px solid var(--brown);border-radius:15px;text-align:center;
+}
+.badge-cell.is-got{background:rgba(255,209,102,.30);box-shadow:0 3px 0 var(--ink-16);}
+.badge-cell.is-locked,.badge-cell.is-soon{background:var(--ink-04);border-color:var(--ink-16);}
+.badge-ico{font-size:26px;line-height:1;}
+.badge-cell.is-locked .badge-ico,.badge-cell.is-soon .badge-ico{filter:grayscale(1) opacity(.40);}
+.badge-name{font-size:11px;font-weight:800;line-height:1.3;}
+.badge-cell.is-locked .badge-name,.badge-cell.is-soon .badge-name{color:var(--ink-50);}
+.badge-sub{font-size:9px;font-family:var(--font-pixel);font-weight:700;color:var(--ink-50);line-height:1.4;}
 
 .ach-list{display:flex;flex-direction:column;gap:9px;}
 .ach-row{
@@ -1006,7 +1058,7 @@ ul{margin:0;padding:0;list-style:none;}
         <div class="hero">
           <div class="hero-globe">
             <button class="globe" id="globe" aria-label="地球仪，点一点看会发生什么">
-              <canvas id="globeCanvas" width="88" height="88" aria-hidden="true"></canvas>
+              <canvas id="globeCanvas" width="128" height="128" aria-hidden="true"></canvas>
             </button>
             <span class="globe-taps" id="globeTaps">0</span>
           </div>
@@ -1068,14 +1120,26 @@ ul{margin:0;padding:0;list-style:none;}
     </section>
 
     <!-- ===== 页面 5 · 图鉴 / 成就 / 每日任务 ===== -->
-    <section class="view" id="view-codex" data-view="codex" aria-label="图鉴成就任务">
+    <section class="view" id="view-codex" data-view="codex" data-codex-tab="book" aria-label="图鉴成就任务">
       <div class="tabs is-bordered" id="codexTabs">
         <button class="tab is-active" data-tab="book">图鉴</button>
         <button class="tab" data-tab="ach">成就<span class="tab-num" id="achBadge">0</span></button>
         <button class="tab" data-tab="daily">每日任务<span class="tab-num" id="dailyBadge">0</span></button>
       </div>
+      <!-- 二级标签：只在「图鉴」下出现，一次只显示一类内容 -->
+      <div class="sub-tabs" id="bookTabs" role="tablist" aria-label="图鉴分类">
+        <button class="sub-tab is-active" data-subtab="dish" role="tab">菜谱</button>
+        <button class="sub-tab" data-subtab="cust" role="tab">顾客</button>
+        <button class="sub-tab" data-subtab="badge" role="tab">徽章</button>
+        <button class="sub-tab" data-subtab="card" role="tab">明信片</button>
+      </div>
       <div class="scroll">
-        <div class="tab-panel is-active" id="panel-book"></div>
+        <div class="tab-panel is-active" id="panel-book">
+          <div class="sub-panel is-active" id="sub-dish"></div>
+          <div class="sub-panel" id="sub-cust"></div>
+          <div class="sub-panel" id="sub-badge"></div>
+          <div class="sub-panel" id="sub-card"></div>
+        </div>
         <div class="tab-panel" id="panel-ach"></div>
         <div class="tab-panel" id="panel-daily"></div>
       </div>
@@ -1358,6 +1422,28 @@ TC.bootError = null;
     }
   ];
 
+  /* ------------------------------ 徽章 ------------------------------ */
+  /**
+   * 基础徽章：每个地区 2 枚（普通通关 + 困难通关），5 个地区共 10 枚。
+   * 普通徽章是「纯收藏」——不改任何数值，只在图鉴里展示。
+   * 困难和困难模式的关卡（第四优先级）还没开发，所以困难徽章先标记 kind='hard'，
+   * 由 TC.Calc.badgeState 归为 'soon'（灰色 + "困难模式开发中"），等困难关卡做出来
+   * 只要把判定接上即可，不需要改动这个表结构。
+   */
+  var BADGES = [];
+  REGIONS.forEach(function (rg) {
+    BADGES.push({
+      id: 'bd_' + rg.id + '_clear',
+      regionId: rg.id, kind: 'clear', icon: rg.icon,
+      name: rg.name + '·通关徽章'
+    });
+    BADGES.push({
+      id: 'bd_' + rg.id + '_hard',
+      regionId: rg.id, kind: 'hard', icon: '🔥',
+      name: rg.name + '·困难徽章'
+    });
+  });
+
   /* ------------------------------ 菜品 ------------------------------ */
   /* steps 里的 id 指向 INGREDIENTS；备料点齐即可，不要求顺序 */
   var DISHES = [
@@ -1601,6 +1687,38 @@ TC.bootError = null;
     penguin: { id: 'penguin', fridgeTaps: 5, reward: { gems: 1 } }
   };
 
+  /* ------------------------------ 新手教程 ------------------------------ */
+  /* 8 个环节。数组顺序 = 实际播放顺序，不是编号顺序：
+       先在世界地图讲第 8 步（玩家进游戏时本来就站在地图上），
+       再进教学厨房讲 1~5、7 步，最后跳到结算页讲第 6 步。
+     字段含义：
+       no   —— 需求里给的环节编号（1~8），界面上显示成「n/8」用 index，不显示它
+       view —— 该步所在的视图；教程会先切过去再高亮
+       spot —— 高亮目标。DOM 元素 id；'stove'/'counter' 是 canvas 逻辑区域
+       act  —— 需要玩家完成的游戏动作标识；为 null 表示纯讲解，显示「下一步」按钮
+       text —— 中文引导文案 */
+  var TUTORIAL = [
+    { id: 't_map', no: 8, view: 'map', spot: 'regionList', act: null,
+      text: '集齐星星就能解锁新地区' },
+    { id: 't_pantry', no: 1, view: 'cook', spot: 'pantryBand', act: 'ingredient',
+      text: '点击食材开始做菜' },
+    { id: 't_stove', no: 2, view: 'cook', spot: 'stove', act: 'pot',
+      text: '食材下锅后，等进度圈变绿就是熟了' },
+    { id: 't_plate', no: 3, view: 'cook', spot: 'counter', act: 'plate',
+      text: '把做好的菜拖到盘子里' },
+    { id: 't_serve', no: 4, view: 'cook', spot: 'customerBubble', act: 'serve',
+      text: '把盘子拖给顾客完成上菜' },
+    { id: 't_patience', no: 5, view: 'cook', spot: 'custWait', act: null,
+      text: '顾客耐心条从绿变黄变红，红了就会生气离开' },
+    { id: 't_coins', no: 7, view: 'cook', spot: 'tbCoins', act: null,
+      text: '金币用来升级店铺，小费是额外收入' },
+    { id: 't_result', no: 6, view: 'result', spot: 'resConds', act: null,
+      text: '服务足够顾客即可通关，少让顾客生气就能拿三星' }
+  ];
+
+  /* 教学演示局用哪个地区/关卡：固定用第 1 区第 1 关，保证所有新玩家看到的是同一套画面 */
+  var TUTORIAL_LEVEL = 'A1';
+
   /* ------------------------------ 导出 + 索引 ------------------------------ */
   var D = {
     CONFIG: CONFIG,
@@ -1615,7 +1733,10 @@ TC.bootError = null;
     DAILY_POOL: DAILY_POOL,
     DAILY_COUNT: DAILY_COUNT,
     TOOLS: TOOLS,
-    EASTER: EASTER
+    EASTER: EASTER,
+    BADGES: BADGES,
+    TUTORIAL: TUTORIAL,
+    TUTORIAL_LEVEL: TUTORIAL_LEVEL
   };
 
   D.byId = {
@@ -1627,7 +1748,8 @@ TC.bootError = null;
     upgrade: TC.Util.indexBy(UPGRADES, 'id'),
     achievement: TC.Util.indexBy(ACHIEVEMENTS, 'id'),
     task: TC.Util.indexBy(DAILY_POOL, 'id'),
-    tool: TC.Util.indexBy(TOOLS, 'id')
+    tool: TC.Util.indexBy(TOOLS, 'id'),
+    badge: TC.Util.indexBy(BADGES, 'id')
   };
 
   D.region = function (id) { return D.byId.region[id] || null; };
@@ -1639,6 +1761,10 @@ TC.bootError = null;
   D.achievement = function (id) { return D.byId.achievement[id] || null; };
   D.task = function (id) { return D.byId.task[id] || null; };
   D.tool = function (id) { return D.byId.tool[id] || null; };
+  D.badge = function (id) { return D.byId.badge[id] || null; };
+  D.badgesOf = function (regionId) {
+    return BADGES.filter(function (b) { return b.regionId === regionId; });
+  };
 
   D.dishesOf = function (regionId) { return DISHES.filter(function (d) { return d.regionId === regionId; }); };
   D.levelsOf = function (regionId) { return LEVELS.filter(function (l) { return l.regionId === regionId; }); };
@@ -1854,6 +1980,71 @@ TC.bootError = null;
   C.collectionCount = function (save) {
     return C.unlockedDishIds(save).length + C.seenCustomers(save).length + C.unlockedRegionIds(save).length;
   };
+
+  /* ------------------------- 徽章 ------------------------- */
+  /* 普通徽章纯收藏：不改任何数值，只看"这一区有没有全通"。
+     注意：徽章不计入 collectionCount（那是「收藏家」成就的口径：菜谱 + 顾客 + 明信片）。 */
+  /** 该地区是否已全通（每一关都至少 1 星） */
+  C.isRegionCleared = function (save, regionId) {
+    var levels = D.levelsOf(regionId);
+    if (!levels.length) return false;
+    for (var i = 0; i < levels.length; i++) {
+      if (!C.isLevelCleared(save, levels[i].id)) return false;
+    }
+    return true;
+  };
+  /** 该地区已通关的关卡数（徽章进度） */
+  C.regionClearedCount = function (save, regionId) {
+    var levels = D.levelsOf(regionId), n = 0;
+    for (var i = 0; i < levels.length; i++) if (C.isLevelCleared(save, levels[i].id)) n++;
+    return n;
+  };
+  /**
+   * 徽章状态
+   *   state：'got' 已获得 / 'locked' 未获得（带进度）/ 'soon' 功能未开放（困难徽章）
+   *   text： 徽章下方的说明 —— 未获得时就是「完成 XX 全部 N 关解锁」
+   * @returns {object|null}
+   */
+  C.badgeState = function (save, id) {
+    var b = D.badge(id);
+    if (!b) return null;
+    var rg = D.region(b.regionId);
+    var levels = D.levelsOf(b.regionId);
+    var cleared = C.regionClearedCount(save, b.regionId);
+    var out = {
+      id: b.id, regionId: b.regionId, kind: b.kind, icon: b.icon, name: b.name,
+      progress: cleared, need: levels.length, obtained: false, state: 'locked', text: ''
+    };
+
+    if (b.kind === 'hard') {
+      /* 困难关卡（第四优先级）尚未开发：不给进度，避免错误期待 */
+      out.state = 'soon';
+      out.progress = 0;
+      out.text = '困难模式开发中';
+      return out;
+    }
+    if (levels.length && cleared >= levels.length) {
+      out.obtained = true;
+      out.state = 'got';
+      out.text = rg ? rg.tagline : '已获得';
+      return out;
+    }
+    out.text = '完成 ' + (rg ? rg.name : '') + ' 全部 ' + levels.length + ' 关解锁';
+    return out;
+  };
+  /** 全部徽章状态（图鉴「徽章」标签直接用） */
+  C.badgeStates = function (save) {
+    return D.BADGES.map(function (b) { return C.badgeState(save, b.id); });
+  };
+  /** 已获得的徽章数 */
+  C.badgesObtained = function (save) {
+    var n = 0;
+    for (var i = 0; i < D.BADGES.length; i++) {
+      var st = C.badgeState(save, D.BADGES[i].id);
+      if (st && st.obtained) n++;
+    }
+    return n;
+  };
   C.collectionTotal = function () { return D.DISHES.length + D.CUSTOMERS.length + D.REGIONS.length; };
   C.eggCount = function (save) {
     var e = (save && save.easter) || {};
@@ -2066,7 +2257,11 @@ TC.bootError = null;
         metrics: { plays: 0, maxCombo: 0, customers: 0, bestCoins: 0, perfect: 0, upgrades: 0 }
       },
       easter: { globe: 0, globeFired: false, rainbow: false, penguin: false },
-      settings: { sound: true, vibrate: true }
+      settings: { sound: true, vibrate: true },
+      /** 新手教程是否已看完。false 时首次进入游戏自动播放；
+          老存档没有这个字段 → normalize 会补成 false，等于让老玩家也看一次，
+          这是有意的（他们同样需要看到新手指引）。 */
+      tutorialDone: false
     };
   };
 
@@ -2145,6 +2340,9 @@ TC.bootError = null;
     var st = raw.settings || {};
     out.settings.sound = st.sound === undefined ? true : !!st.sound;
     out.settings.vibrate = st.vibrate === undefined ? true : !!st.vibrate;
+
+    // 新手教程（老存档没有此字段 → 保持 blank 的 false，即会播一次）
+    out.tutorialDone = raw.tutorialDone === true;
 
     return out;
   };
@@ -2342,6 +2540,18 @@ TC.bootError = null;
     S.bumpDaily(save, 'maxCombo', run.maxCombo || 0, 'max');
     S.bumpDaily(save, 'bestCoins', settleData.income || 0, 'max');
     return save;
+  };
+
+  /* ------------------------- 新手教程 ------------------------- */
+  /** 标记教程是否已看完（幂等，传 false 可让教程下次再自动播放） */
+  S.setTutorialDone = function (save, done) {
+    if (!save) return false;
+    save.tutorialDone = done === true;
+    return save.tutorialDone;
+  };
+  /** 该存档是否需要自动播放教程（没看过就需要） */
+  S.needsTutorial = function (save) {
+    return !save || save.tutorialDone !== true;
   };
 
   TC.Save = S;
@@ -3642,26 +3852,243 @@ TC.bootError = null;
     cust_kid: { h: 'y', c: 'r', t: 'm' }
   };
 
-  /* ======================== 地球仪 16×16（地图页彩蛋 1 的道具） ======================== */
-  /* y = 海洋暖黄，m = 陆地薄荷绿，k = 描边 */
-  var GLOBE = [
-    '................',
-    '.....kkkkkk.....',
-    '...kkyyyyyykk...',
-    '..kkyyyyyyyykk..',
-    '..kkyymmyyyykk..',
-    '.kkymmmyyyyyykk.',
-    '.kkyymmmyyyyykk.',
-    '.kkyyyymmmyyykk.',
-    '.kkyyyyyymmyykk.',
-    '.kkyyyyyyyymmkk.',
-    '.kkyyyyyyyyyykk.',
-    '..kkyyyyyyyykk..',
-    '..kkyyyyyyyykk..',
-    '...kkyyyyyykk...',
-    '.....kkkkkk.....',
-    '................'
-  ];
+  /* ======================== 地球仪（程序化像素球） ========================
+     旧版是一张 16×16 的静态精灵：一个黄球加两块绿斑，既看不出是地球，也没法旋转。
+     现在改成「按经纬度着色」的程序化球体：给一个网格坐标和自转角就能算出色号，
+     于是球面可以整圈慢转，经纬线 / 大陆 / 云层都跟着球面一起走，不会穿帮。
+
+     沿用既有精灵的语义（保证 5 色板不变）：
+       y = 海洋（暖黄）  m = 陆地（薄荷）  w = 云层（奶油）
+       k = 描边 / 经纬线 / 山点            r = 定位大头针
+     球外的装饰层（虚线轨道、星星、小飞机）也用同一套网格坐标，便于对齐。
+
+     全部是纯函数：同样的 (gx, gy, theta) 必然得到同样的色号，方便单测。
+     ======================================================================== */
+  var GLOBE_SPEC = {
+    size: 32,               // 逻辑网格 32×32，每格 4px → 128px 画布
+    radius: 11.2,           // 球半径（格）
+    rim: 1.25,              // 球体描边厚度（格）—— 取 1.25 才能保证整圈都至少有一格，不然圆边会像齿轮
+    spin: 0.30,             // 自转角速度（弧度/秒）→ 约 21 秒转一圈，属"轻微旋转"
+    orbit: 13.2,            // 环绕轨道半径（格）—— 小飞机是 5×5，半径 13.2 + 翼展 2 刚好不越出画布
+    orbitW: 0.45,           // 轨道线半宽（格）—— 窄一点，轨道才是一格粗的细线
+    orbitDash: 26,          // 轨道切成 26 段虚线（每段约 1 格实 + 1 格空 = 点状轨道）
+    orbitDuty: 0.45,        // 每段里实线占比（其余是空隙）
+    cloudSpeed: 1.35,       // 云层比地面转得快一点，产生前后层次
+    cloudMargin: 1.8,       // 云不靠近球边这么多格 —— 否则奶油色云和背景同色，看着像球被啃掉一块
+    gridLon: Math.PI / 4,   // 经线每 45° 一条
+    gridLat: Math.PI / 6,   // 纬线每 30° 一条
+    gridW: 0.07,            // 经纬线半宽（弧度）≈ 一格
+    /** 大陆：球面上的一组圆斑，重叠出块状的不规则陆地。
+        刻意把圆心散在不同经度上（而不是都堆在正面），这样转起来才像"一整个星球"，
+        也不会出现"一转过就是一大片陆地"的观感。 */
+    continents: [
+      { lat: 0.30, lon: 0.00, r: 0.42 },
+      { lat: -0.45, lon: 0.78, r: 0.36 },
+      { lat: 0.62, lon: 1.75, r: 0.32 },
+      { lat: -0.18, lon: 2.35, r: 0.40 },
+      { lat: -0.72, lon: -2.20, r: 0.34 },
+      { lat: 0.20, lon: -1.15, r: 0.38 },
+      { lat: -0.62, lon: -0.30, r: 0.26 }
+    ],
+    /** 云层：同样是球面圆斑，浮在陆地与海洋之上。
+        刻意做得小而碎：云是奶油色、和卡片底色同色，太大就会像球被啃掉一块。 */
+    clouds: [
+      { lat: 0.30, lon: 1.30, r: 0.18 },
+      { lat: -0.55, lon: 0.10, r: 0.17 },
+      { lat: 0.62, lon: -0.70, r: 0.16 },
+      { lat: -0.15, lon: 2.40, r: 0.18 },
+      { lat: 0.05, lon: -2.10, r: 0.17 },
+      { lat: -0.80, lon: 1.05, r: 0.16 },
+      { lat: 0.90, lon: 0.45, r: 0.15 }
+    ],
+    /** 定位大头针：钉在球面的一个点上，转到背面自动消失 */
+    pin: { lat: 0.34, lon: 0.55 },
+    /** 装饰星星：极坐标，夹在「球体边缘」和「虚线轨道」之间的窄环里，
+        且都在轨道内侧，避免和小飞机打架；挨着球的那几颗会被球挡掉一角，正好像从地球后面探出来 */
+    stars: [
+      { ang: -2.30, r: 12.2, big: true },
+      { ang: -0.55, r: 12.6, big: false },
+      { ang: 0.85, r: 12.3, big: false },
+      { ang: 1.75, r: 12.7, big: true },
+      { ang: 2.60, r: 12.3, big: false },
+      { ang: 3.05, r: 12.5, big: false }
+    ],
+    planeSpeed: 0.42,       // 小飞机绕轨道飞的速度（弧度/秒）
+    /** 小飞机：纸飞机剪影，朝右 / 朝左两帧（r 是机头的红色高光）。
+        "左中立面切开"那两格是纸飞机的折口，没有它就是个普通箭头。 */
+    planeFrames: {
+      r: ['k....', 'kk...', '.kkkr', 'kk...', 'k....'],
+      l: ['....k', '...kk', 'rkkk.', '...kk', '....k']
+    }
+  };
+  /* 预计算圆斑阈值：球面判定用的是「余弦比较」，不必每帧重算三角函数 */
+  (function prepBlobs() {
+    ['continents', 'clouds'].forEach(function (key) {
+      GLOBE_SPEC[key] = GLOBE_SPEC[key].map(function (b) {
+        return { lat: b.lat, lon: b.lon, r: b.r, cos: Math.cos(b.r) };
+      });
+    });
+  })();
+
+  /** 点 (lat, lon) 是否落在任何一个圆斑内 */
+  function inBlobs(blobs, lat, lon) {
+    var sl = Math.sin(lat), cl = Math.cos(lat);
+    for (var i = 0; i < blobs.length; i++) {
+      var b = blobs[i];
+      if (sl * Math.sin(b.lat) + cl * Math.cos(b.lat) * Math.cos(lon - b.lon) > b.cos) return true;
+    }
+    return false;
+  }
+  /** 球面某点是不是陆地 */
+  P.globeLand = function (lat, lon) { return inBlobs(GLOBE_SPEC.continents, lat, lon); };
+  /** 球面某点是不是云盖 */
+  P.globeCloud = function (lat, lon) { return inBlobs(GLOBE_SPEC.clouds, lat, lon); };
+
+  /**
+   * 2D 坐标哈希：给陆地撒纹理点用。
+   * 不能用 (x*a + y*b) % n 那种线性式子 —— 那些点会连成一条条对角线，
+   * 看上去像网格而不是纹理。这里做一次非线性混合。
+   */
+  function hash2(x, y) {
+    var h = (x * 73856093) ^ (y * 19349663);
+    return (h >>> 0) % 29;
+  }
+  /** 陆地纹理：约 1/29 的格子画成棕色山点（逐帧稳定，不会闪） */
+  P.globeLandTexture = function (gx, gy) { return hash2(gx, gy) === 0; };
+
+  /** v 到 step 的整数倍是否足够近（用于判定经纬线） */
+  function nearMultiple(v, step, half) {
+    var m = v / step;
+    return Math.abs(m - Math.round(m)) * step < half;
+  }
+  /**
+   * 经纬线：踩在经线或纬线上返回 true（只画在海洋上）。
+   * 沿线的方向每 10° 断一次 → 点状虚线。断得稀一点是有意的：
+   * 海面上同时有横竖两组线，点太密整颗球会像撒了一层胡椒。
+   */
+  P.globeGrid = function (lat, lon, spec) {
+    spec = spec || GLOBE_SPEC;
+    var seg = Math.PI / 18;                                   // 10° 一段
+    if (nearMultiple(lon, spec.gridLon, spec.gridW) && Math.floor(lat / seg) % 2 === 0) return true;
+    if (nearMultiple(lat, spec.gridLat, spec.gridW) && Math.floor(lon / seg) % 2 === 0) return true;
+    return false;
+  };
+
+  /** 定位大头针在网格里的位置；转到背面时 visible=false */
+  P.globePinAt = function (theta, spec) {
+    spec = spec || GLOBE_SPEC;
+    var p = spec.pin, a = p.lon - (theta || 0);
+    var cl = Math.cos(p.lat);
+    return {
+      x: spec.size / 2 + cl * Math.sin(a) * spec.radius,
+      y: spec.size / 2 + Math.sin(p.lat) * spec.radius,
+      visible: cl * Math.cos(a) > 0.28          // 贴着边缘就不画，避免被拉成一道
+    };
+  };
+
+  /** 小飞机在轨道上的位置；face = 1 朝右 / -1 朝左 */
+  P.globePlaneAt = function (theta, spec) {
+    spec = spec || GLOBE_SPEC;
+    var a = (theta || 0) * spec.planeSpeed - Math.PI / 2;   // 从正上方起飞
+    return {
+      x: spec.size / 2 + Math.cos(a) * spec.orbit,
+      y: spec.size / 2 + Math.sin(a) * spec.orbit,
+      /* 上半圈向右飞、下半圈向左飞：不镜像的话就成了倒着飞 */
+      face: Math.sin(a) < 0 ? 1 : -1
+    };
+  };
+
+  /** 小飞机这一帧占用的格子（渲染层直接填色；朝向逻辑也可单测） */
+  P.globePlaneCells = function (theta, spec) {
+    spec = spec || GLOBE_SPEC;
+    var at = P.globePlaneAt(theta, spec);
+    var m = at.face > 0 ? spec.planeFrames.r : spec.planeFrames.l;
+    var ox = Math.round(at.x - 2), oy = Math.round(at.y - 2);
+    var out = [];
+    for (var y = 0; y < m.length; y++) {
+      for (var x = 0; x < m[y].length; x++) {
+        var ch = m[y][x];
+        if (ch === '.') continue;
+        var cx = ox + x, cy = oy + y;
+        /* 越界的格子直接丢掉：轨道半径已经留了余量，这里是兜底，
+           免得以后调参数把飞机画到画布外面去 */
+        if (cx < 0 || cy < 0 || cx >= spec.size || cy >= spec.size) continue;
+        out.push({ x: cx, y: cy, ch: ch });
+      }
+    }
+    return out;
+  };
+
+  /**
+   * 地球仪一个格子的色号
+   * @param {number} gx    网格 x（0 .. size-1）
+   * @param {number} gy    网格 y
+   * @param {number} theta 自转角（弧度）
+   * @param {object} [spec]
+   * @returns {string} '.' 透明 / 'k' 描边·经纬线 / 'y' 海洋 / 'm' 陆地 / 'w' 云 / 'r' 大头针
+   */
+  P.globeBit = function (gx, gy, theta, spec) {
+    spec = spec || GLOBE_SPEC;
+    theta = theta || 0;
+    var half = spec.size / 2;
+    var dx = gx + 0.5 - half, dy = gy + 0.5 - half;
+    var d2 = dx * dx + dy * dy;
+    var R = spec.radius;
+
+    /* ---------- 球外：虚线轨道 + 星星 ---------- */
+    if (d2 > R * R) {
+      var d0 = Math.sqrt(d2);
+      if (Math.abs(d0 - spec.orbit) < spec.orbitW) {
+        /* 把整个环切成若干段虚线：段数固定，所以转起来不会忽长忽短 */
+        var around = (Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2);   // 0..1
+        if ((around * spec.orbitDash) % 1 < spec.orbitDuty) return 'k';
+      }
+      for (var i = 0; i < spec.stars.length; i++) {
+        var st = spec.stars[i];
+        var sdx = dx - Math.cos(st.ang) * st.r, sdy = dy - Math.sin(st.ang) * st.r;
+        var lim = st.big ? 1.35 : 0.75;
+        if (sdx * sdx + sdy * sdy < lim * lim) return 'y';
+      }
+      return '.';
+    }
+
+    /* ---------- 球体描边 ---------- */
+    var dc = Math.sqrt(d2);
+    if (dc > R - spec.rim) return 'k';
+
+    /* ---------- 球面：把格子换算成经纬度 ---------- */
+    var nx = dx / R, ny = dy / R;
+    var nz2 = 1 - nx * nx - ny * ny;
+    var nz = nz2 > 0 ? Math.sqrt(nz2) : 0;
+    var baseLon = Math.atan2(nx, nz);                    // 正对观察者为 0
+    var lat = Math.asin(ny > 1 ? 1 : (ny < -1 ? -1 : ny));
+    var lon = baseLon + theta;                           // 地面随自转角一起走
+
+    /* 1) 定位大头针：挂在地面上，转到背面就不画 */
+    var pin = P.globePinAt(theta, spec);
+    if (pin.visible) {
+      var pdx = gx + 0.5 - pin.x, pdy = gy + 0.5 - pin.y;
+      if (pdx * pdx + pdy * pdy < 1.2) return 'r';
+    }
+
+    /* 2) 云层：转得比地面快一点，浮在最上面。
+       但要离球边留一点距离 —— 云是奶油色，贴着球边会和背景连成一片，看着像球缺了一块。 */
+    if (dc < R - spec.rim - spec.cloudMargin &&
+        P.globeCloud(lat, baseLon + theta * spec.cloudSpeed)) return 'w';
+
+    /* 3) 陆地：整块薄荷绿 + 稀疏棕色山点当纹理 */
+    if (P.globeLand(lat, lon)) {
+      if (P.globeLandTexture(gx, gy)) return 'k';
+      return 'm';
+    }
+
+    /* 4) 海洋：经纬线只画在海面上，陆地保持整块可读 */
+    if (P.globeGrid(lat, lon, spec)) return 'k';
+
+    return 'y';
+  };
+
+  P.GLOBE_SPEC = GLOBE_SPEC;
 
   /* ======================== 内部工具 ======================== */
   function colorize(matrix, map) {
@@ -3684,7 +4111,6 @@ TC.bootError = null;
   P.DISH_PAL = DISH_PAL;
   P.CUST_BODY = CUST_BODY;
   P.CUST_SKINS = CUST_SKINS;
-  P.GLOBE = GLOBE;
 
   P.shape = function (tpl) { return SHAPES[tpl] || null; };
 
@@ -3763,14 +4189,6 @@ TC.bootError = null;
       var m = P.ingredientMatrix(art);
       RECT_CACHE[ck] = m ? P.rectsOfMatrix(m, scale) : [];
     }
-    return RECT_CACHE[ck];
-  };
-
-  /** 地球仪的矩形列表（带缓存）—— 地图页那个可点的圆球 */
-  P.globeRects = function (scale) {
-    scale = scale || 5;
-    var ck = 'globe@' + scale;
-    if (!RECT_CACHE[ck]) RECT_CACHE[ck] = P.rectsOfMatrix(GLOBE, scale);
     return RECT_CACHE[ck];
   };
 
@@ -3864,8 +4282,8 @@ TC.bootError = null;
       }
     });
 
-    /* 1.5) 地球仪：地图页的道具，同样是 16×16 且只允许 5 色 */
-    checkMatrix('globe', GLOBE, P.DISH_SIZE, P.DISH_SIZE, LEGAL_FINAL);
+    /* 1.5) 地球仪已改为程序化绘制（P.globeBit），不再是一张矩阵，
+       它的色号合法性由 tests/pixel.test.js 直接断言，这里不再重复校验。 */
 
     /* 2) 菜品：线稿 + 按配色表上色后 */
     Object.keys(DISHES).forEach(function (k) {
@@ -4514,6 +4932,8 @@ TC.bootError = null;
     run: null,
     regionId: null,
     codexTab: 'book',
+    /** 图鉴内的二级标签：菜谱 / 顾客 / 徽章 / 明信片 */
+    bookTab: 'dish',
     topbarCenter: '',
     _action: 'none',
     _dlgCb: null,
@@ -4633,6 +5053,20 @@ TC.bootError = null;
       if (t && closest(e.target, '#codexTabs')) UI.setCodexTab(t.getAttribute('data-tab'));
     });
 
+    // 图鉴内的二级标签：菜谱 / 顾客 / 徽章 / 明信片
+    on($('bookTabs'), 'click', function (e) {
+      var t = closest(e.target, '[data-subtab]');
+      if (t) UI.setBookTab(t.getAttribute('data-subtab'));
+    });
+
+    // 页面切到后台时停掉地球仪自转，回到前台再续上（省电、也不白白占 rAF）
+    if (typeof document !== 'undefined') {
+      on(document, 'visibilitychange', function () {
+        if (document.hidden) UI.stopGlobe();
+        else if (TC.Router.current === 'map') UI.startGlobe();
+      });
+    }
+
     // 弹窗关闭（遮罩 / ✕ 都带 data-close）
     ['modalUpgrade', 'modalSettings'].forEach(function (id) {
       on($(id), 'click', function (e) {
@@ -4659,6 +5093,10 @@ TC.bootError = null;
 
     // 离开经营页就停掉 Canvas 循环（rAF 不空转）
     if (name !== 'cook') UI.leaveCook();
+
+    // 地球仪的自转动画只在停在地图页时跑，切走立刻停
+    if (name === 'map') UI.startGlobe();
+    else UI.stopGlobe();
 
     if (name === 'map') UI.renderMap();
     else if (name === 'levels') UI.renderLevels(UI.regionId);
@@ -4722,17 +5160,117 @@ TC.bootError = null;
   };
 
   /* ======================== 地球仪 + 彩蛋 1 ======================== */
-  /** 把 16×16 的地球仪精灵画到地图页的圆球上（scale 5 + 四周 4px 留白 = 88px） */
-  UI.paintGlobe = function () {
+  /* 动画状态：theta = 已转过的角度。只有停在地图页时才跑 rAF。 */
+  var globeLoop = { raf: 0, theta: 0, last: 0, running: false };
+
+  /** 取地球仪画布的 2D 上下文；jsdom 等没有 canvas 的环境返回 null */
+  function globeCtx() {
+    var cv = $('globeCanvas');
+    if (!cv) return null;
+    try { return cv.getContext('2d'); } catch (e) { return null; }
+  }
+  /** 系统开了「减少动态效果」→ 只画一帧静态的，不转 */
+  function prefersStill() {
+    try {
+      if (typeof window === 'undefined' || !window.matchMedia) return false;
+      var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      return !!(mq && mq.matches);
+    } catch (e) { return false; }
+  }
+
+  /**
+   * 把地球仪画到地图页的圆球上。
+   * 球体 / 经纬线 / 大陆 / 云层 / 虚线轨道 / 星星 / 小飞机全部由 TC.Pixel 的纯函数算出来，
+   * 这里只负责"把色号涂成方块"。
+   * @param {number} [theta] 自转角（弧度）
+   * @returns {boolean|number} 实际画的方块数（0 / false 表示没画，例如无 2D 上下文）
+   */
+  UI.paintGlobe = function (theta) {
     var cv = $('globeCanvas');
     if (!cv) return false;
     var ctx = null;
     try { ctx = cv.getContext('2d'); } catch (e) { ctx = null; }
-    if (!ctx) return false;                 // jsdom 等没有 2D 上下文的环境：静默跳过
-    ctx.imageSmoothingEnabled = false;
+    if (!ctx) return false;                  // jsdom 等没有 2D 上下文：静默跳过
+    var spec = P.GLOBE_SPEC;
+    var size = spec.size;
+    var block = (cv.width || 128) / size;    // 每格像素数 = 128 / 32 = 4
+    var th = theta || 0;
+
     if (ctx.clearRect) ctx.clearRect(0, 0, cv.width, cv.height);
-    return P.paintRects(ctx, P.globeRects(5), 4, 4) > 0;
+    ctx.imageSmoothingEnabled = false;
+
+    var n = 0, gx, gy, ch, col;
+    for (gy = 0; gy < size; gy++) {
+      for (gx = 0; gx < size; gx++) {
+        ch = P.globeBit(gx, gy, th, spec);
+        if (ch === '.') continue;
+        col = P.PALETTE[ch];
+        if (!col) continue;
+        ctx.fillStyle = col;
+        ctx.fillRect(gx * block, gy * block, block, block);
+        n += 1;
+      }
+    }
+
+    /* 小飞机是 5×5 的剪影，不参与逐格着色，单独贴上去 */
+    var cells = P.globePlaneCells(th, spec);
+    for (var i = 0; i < cells.length; i++) {
+      col = P.PALETTE[cells[i].ch];
+      if (!col) continue;
+      ctx.fillStyle = col;
+      ctx.fillRect(cells[i].x * block, cells[i].y * block, block, block);
+      n += 1;
+    }
+    return n;
   };
+
+  /** rAF 兼容包装 */
+  function raf(fn) {
+    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+      return window.requestAnimationFrame(fn);
+    }
+    return 0;
+  }
+  function unraf(id) {
+    if (id && typeof window !== 'undefined' && window.cancelAnimationFrame) {
+      window.cancelAnimationFrame(id);
+    }
+  }
+
+  /** 每帧推进自转角并重画 */
+  function globeTick(ts) {
+    if (!globeLoop.running) return false;
+    var dt = globeLoop.last ? Math.min(64, ts - globeLoop.last) : 16;   // 卡帧封顶，避免跳帧
+    globeLoop.last = ts;
+    globeLoop.theta += dt / 1000 * P.GLOBE_SPEC.spin;
+    UI.paintGlobe(globeLoop.theta);
+    if (globeLoop.running) globeLoop.raf = raf(globeTick);
+    return true;
+  }
+
+  /**
+   * 启动地球仪动画。
+   * 没有 2D 上下文（jsdom 单测）时不启循环 —— 测试环境零开销、也不会卡住进程。
+   */
+  UI.startGlobe = function () {
+    if (globeLoop.running) return false;
+    if (!globeCtx()) return false;
+    if (prefersStill()) { UI.paintGlobe(globeLoop.theta); return false; }
+    globeLoop.running = true;
+    globeLoop.last = 0;
+    globeLoop.raf = raf(globeTick);
+    return true;
+  };
+
+  UI.stopGlobe = function () {
+    globeLoop.running = false;
+    unraf(globeLoop.raf);
+    globeLoop.raf = 0;
+    return true;
+  };
+
+  /** 当前自转角（供测试断言"确实转过"） */
+  UI.globeTheta = function () { return globeLoop.theta; };
 
   /**
    * 点地球仪：计数 +1，攒满 10 次触发彩蛋 1（小飞机 + 金币雨 +50）
@@ -6045,47 +6583,119 @@ TC.bootError = null;
      页面 5 · 图鉴 / 成就 / 每日任务
      ======================================================================== */
 
-  /* -------- 图鉴：菜谱 + 顾客 + 明信片 -------- */
-  UI.renderBook = function () {
+  /* -------- 图鉴：菜谱 / 顾客 / 徽章 / 明信片（四个二级标签各渲染一块） --------
+     四个面板都渲染好，切换标签只切显示，所以不会把所有内容堆在一个滚动列表里。 */
+
+  /** 菜谱：已解锁显示菜名 + 配料，未解锁显示问号 */
+  UI.renderBookDish = function () {
     var s = UI.save;
-    var dishIds = C.unlockedDishIds(s);
-    var custIds = C.seenCustomers(s);
-    var regionIds = C.unlockedRegionIds(s);
+    var ids = C.unlockedDishIds(s);
 
-    var dishSec = '<div class="sec-title"><span>🍜 菜 谱</span><span class="st-line"></span>' +
-      '<span class="st-num">' + dishIds.length + ' / ' + D.DISHES.length + '</span></div>';
-
-    var custSec = '<div class="sec-title"><span>🧑 顾 客</span><span class="st-line"></span>' +
-      '<span class="st-num">' + custIds.length + ' / ' + D.CUSTOMERS.length + '</span></div>';
-
-    var pcSec = '<div class="sec-title"><span>✉️ 旅 行 明 信 片</span><span class="st-line"></span>' +
-      '<span class="st-num">' + regionIds.length + ' / ' + D.REGIONS.length + '</span></div>';
-
-    setHtml('panel-book',
-      dishSec +
+    setHtml('sub-dish',
+      '<div class="sec-title"><span>🍜 菜 谱</span><span class="st-line"></span>' +
+      '<span class="st-num">' + ids.length + ' / ' + D.DISHES.length + '</span></div>' +
       '<div class="book-grid">' + D.DISHES.map(function (d) {
-        var on = dishIds.indexOf(d.id) !== -1;
+        var on = ids.indexOf(d.id) !== -1;
         var steps = d.steps.map(function (id) { return (D.ingredient(id) || {}).name || id; }).join('+');
         return '<div class="book-cell' + (on ? '' : ' is-locked') + '">' +
           '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
           '<span class="bc-name">' + esc(on ? d.name : '？？？') + '</span>' +
           '<span class="bc-sub">' + esc(on ? steps : '未解锁') + '</span>' +
         '</div>';
-      }).join('') + '</div>' +
+      }).join('') + '</div>');
 
-      custSec +
+    // 小图标：无 2D 上下文（jsdom）时 paintInto 会安静跳过
+    var cells = $('sub-dish') ? $('sub-dish').querySelectorAll('.book-cell') : [];
+    D.DISHES.forEach(function (d, i) {
+      if (cells[i]) paintDishInto(cells[i].querySelector('canvas'), d.sprite);
+    });
+    return ids.length;
+  };
+
+  /**
+   * 把矩形列表压成"一种颜色的剪影" —— 未遇见的顾客用这个画，
+   * 轮廓还在（看得出人形），但看不出是谁。
+   */
+  function paintSilhouette(cv, rects) {
+    var ctx = ctxOf(cv);
+    if (!ctx) return 0;
+    if (ctx.clearRect) ctx.clearRect(0, 0, cv.width, cv.height);
+    var n = 0;
+    for (var i = 0; i < rects.length; i++) {
+      ctx.fillStyle = P.PALETTE.k;
+      ctx.fillRect(rects[i].x, rects[i].y, rects[i].w, rects[i].h);
+      n += 1;
+    }
+    return n;
+  }
+
+  /**
+   * 顾客：已遇见的出彩色，未遇见的画灰色剪影。
+   * 特殊顾客（第六优先级）走金色边框：判据是数据里的 c.special，
+   * 现在还没有特殊顾客，所以暂时不会有金框 —— 等那边做出来会自动生效。
+   */
+  UI.renderBookCust = function () {
+    var s = UI.save;
+    var ids = C.seenCustomers(s);
+
+    setHtml('sub-cust',
+      '<div class="sec-title"><span>🧑 顾 客</span><span class="st-line"></span>' +
+      '<span class="st-num">' + ids.length + ' / ' + D.CUSTOMERS.length + '</span></div>' +
       '<div class="book-grid">' + D.CUSTOMERS.map(function (c) {
-        var on = custIds.indexOf(c.id) !== -1;
-        return '<div class="book-cell' + (on ? '' : ' is-locked') + '">' +
+        var on = ids.indexOf(c.id) !== -1;
+        return '<div class="book-cell' + (on ? '' : ' is-locked') +
+                 (c.special ? ' is-special' : '') + '">' +
           '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
           '<span class="bc-name">' + esc(on ? c.name : '？？？') + '</span>' +
           '<span class="bc-sub">' + esc(on ? c.note : '未遇见') + '</span>' +
         '</div>';
-      }).join('') + '</div>' +
+      }).join('') + '</div>');
 
-      pcSec +
+    var cells = $('sub-cust') ? $('sub-cust').querySelectorAll('.book-cell') : [];
+    D.CUSTOMERS.forEach(function (c, i) {
+      if (!cells[i]) return;
+      var cx = cells[i].querySelector('canvas');
+      var rects = P.rectsOf(c.sprite, 2);
+      if (ids.indexOf(c.id) !== -1) paintInto(cx, rects);
+      else paintSilhouette(cx, rects);
+    });
+    return ids.length;
+  };
+
+  /**
+   * 徽章：普通徽章（每地区 通关 / 困难 各一枚）。
+   * 未获得显示灰色 + "完成 XX 全部 N 关解锁"；困难徽章因为困难模式还没做，
+   * 显示灰色 + "困难模式开发中"（由 TC.Calc.badgeState 判定，这里只负责显示）。
+   */
+  UI.renderBookBadge = function () {
+    var s = UI.save;
+    var rows = C.badgeStates(s);
+    var got = C.badgesObtained(s);
+
+    setHtml('sub-badge',
+      '<div class="sec-title"><span>🏅 徽 章</span><span class="st-line"></span>' +
+      '<span class="st-num">' + got + ' / ' + rows.length + '</span></div>' +
+      '<div class="badge-grid">' + rows.map(function (b) {
+        var cls = b.state === 'got' ? 'is-got' : (b.state === 'soon' ? 'is-soon' : 'is-locked');
+        return '<div class="badge-cell ' + cls + '">' +
+          '<span class="badge-ico" aria-hidden="true">' + (b.obtained ? b.icon : '🔒') + '</span>' +
+          '<span class="badge-name">' + esc(b.obtained ? b.name : '？？？') + '</span>' +
+          '<span class="badge-sub">' + esc(b.text) + '</span>' +
+        '</div>';
+      }).join('') + '</div>');
+    return got;
+  };
+
+  /** 地区明信片：纯装饰收藏，通关该地区后点亮 */
+  UI.renderBookCard = function () {
+    var s = UI.save;
+    var ids = C.unlockedRegionIds(s);
+
+    setHtml('sub-card',
+      '<div class="sec-title"><span>✉️ 旅 行 明 信 片</span><span class="st-line"></span>' +
+      '<span class="st-num">' + ids.length + ' / ' + D.REGIONS.length + '</span></div>' +
       '<div class="postcard-list">' + D.REGIONS.map(function (rg) {
-        var on = regionIds.indexOf(rg.id) !== -1;
+        var on = ids.indexOf(rg.id) !== -1;
         var stars = C.regionStars(s, rg.id);
         var wall = (P.PALETTE[rg.wall] || P.PALETTE.y);
         return '<div class="postcard' + (on ? '' : ' is-locked') + '">' +
@@ -6094,17 +6704,33 @@ TC.bootError = null;
           '<div class="pc-sub">' + esc(on ? (stars + ' ★ · ' + rg.tagline) : '未解锁') + '</div>' +
         '</div>';
       }).join('') + '</div>');
+    return ids.length;
+  };
 
-    // 小图标：无 2D 上下文（jsdom）时 paintInto 会安静跳过
-    var cells = $('panel-book') ? $('panel-book').querySelectorAll('.book-cell') : [];
-    var i = 0;
-    D.DISHES.forEach(function (d) {
-      if (cells[i]) paintDishInto(cells[i].querySelector('canvas'), d.sprite);
-      i += 1;
+  /** 切换图鉴的二级标签（菜谱 / 顾客 / 徽章 / 明信片） */
+  UI.setBookTab = function (tab) {
+    UI.bookTab = tab || 'dish';
+    var bar = $('bookTabs');
+    if (bar && bar.querySelectorAll) {
+      var btns = bar.querySelectorAll('.sub-tab');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('is-active', btns[i].getAttribute('data-subtab') === UI.bookTab);
+      }
+    }
+    ['dish', 'cust', 'badge', 'card'].forEach(function (k) {
+      var p = $('sub-' + k);
+      if (p && p.classList) p.classList.toggle('is-active', k === UI.bookTab);
     });
-    D.CUSTOMERS.forEach(function (c, k) {
-      if (cells[i + k]) paintInto(cells[i + k].querySelector('canvas'), P.rectsOf(c.sprite, 2));
-    });
+    return UI.bookTab;
+  };
+
+  /** 渲染整个「图鉴」标签：四块都渲染好，切二级标签只改显示 */
+  UI.renderBook = function () {
+    UI.renderBookDish();
+    UI.renderBookCust();
+    UI.renderBookBadge();
+    UI.renderBookCard();
+    UI.setBookTab(UI.bookTab);
     return true;
   };
 
@@ -6227,7 +6853,10 @@ TC.bootError = null;
       var p = $('panel-' + k);
       if (p && p.classList) p.classList.toggle('is-active', k === UI.codexTab);
     });
-    if (UI.topbarCenter !== null) UI.topbarCenter = '美食图鉴';
+    /* 二级标签栏（菜谱/顾客/徽章/明信片）只在「图鉴」这一类下出现，
+       CSS 用 #view-codex[data-codex-tab="book"] 控制显隐 */
+    var sec = $('view-codex');
+    if (sec && sec.setAttribute) sec.setAttribute('data-codex-tab', UI.codexTab);
     UI.updateTopbar(TC.Router.current);
     return UI.codexTab;
   };
@@ -6318,7 +6947,9 @@ TC.bootError = null;
       case 'levels': return { center: '', tag: '', action: 'back' };
       case 'cook':   return { center: '', tag: '', action: 'pause' };
       case 'result': return { center: '本局结算', tag: '', action: 'none' };
-      case 'codex':  return { center: '美食图鉴', tag: '', action: 'back' };
+      /* 图鉴页顶栏中间留空：页内已有「图鉴/成就/每日任务」标签，再写一遍是重复信息。
+         注意只清空 center —— 左边的金币/钻石和右边的返回按钮不受影响。 */
+      case 'codex':  return { center: '', tag: '', action: 'back' };
       default:       return { center: '', tag: '', action: 'none' };
     }
   };
