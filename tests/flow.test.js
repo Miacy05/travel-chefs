@@ -59,7 +59,7 @@ function toMap(save) {
  */
 function startRun(levelId) {
   toMap();
-  const started = UI.openLevel(levelId || 'A1', { loop: false });
+  const started = UI.openLevel(levelId || 'A1', { loop: false, skipGuest: true });
   if (!started) return null;
   const run = UI.run;
   run.rand = () => 0;
@@ -609,10 +609,12 @@ test('图鉴页：菜谱 / 顾客 / 明信片三段都渲染，未解锁的显�
   eq(UI.codexTab, 'book');
   ok($('panel-book').classList.contains('is-active'));
 
-  const unlockedCells = C.unlockedDishIds(save).length + C.seenCustomers(save).length;
-  eq($$('#panel-book .book-cell').length, D.DISHES.length + D.CUSTOMERS.length);
+  const totalCust = D.CUSTOMERS.length + D.SPECIAL_GUESTS.length;
+  const seenSpecial = D.SPECIAL_GUESTS.filter((g) => (save.stats.seenCustomers || {})[g.id]).length;
+  const unlockedCells = C.unlockedDishIds(save).length + C.seenCustomers(save).length + seenSpecial;
+  eq($$('#panel-book .book-cell').length, D.DISHES.length + totalCust);
   eq($$('#panel-book .book-cell.is-locked').length,
-     (D.DISHES.length + D.CUSTOMERS.length) - unlockedCells);
+     (D.DISHES.length + totalCust) - unlockedCells);
   eq($$('#panel-book .postcard').length, D.REGIONS.length);
   eq($$('#panel-book .postcard.is-locked').length,
      D.REGIONS.length - C.unlockedRegionIds(save).length);

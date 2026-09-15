@@ -23,7 +23,7 @@ const LUT_W = 160, LUT_H = 90;
 function makeRun(levelId, upgrades) {
   const save = S.blank();
   if (upgrades) U.assign(save.upgrades, upgrades);
-  return L.create(save, levelId || 'A1', { rand: U.seededBy('scene-test'), firstSpawn: 0 });
+  return L.create(save, levelId || 'A1', { rand: U.seededBy('scene-test'), firstSpawn: 0, skipGuest: true });
 }
 
 /** 假 2D 上下文：把每次绘制都记下来 */

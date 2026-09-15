@@ -23,7 +23,7 @@ const zrand = () => 0;
 const blank = () => S.blank();
 
 function mk(levelId, save, opts) {
-  return L.create(save || blank(), levelId, Object.assign({ rand: zrand, firstSpawn: 0 }, opts || {}));
+  return L.create(save || blank(), levelId, Object.assign({ rand: zrand, firstSpawn: 0, skipGuest: true }, opts || {}));
 }
 
 /** 把某地区的普通关卡全部打通（每关至少 1 星） */

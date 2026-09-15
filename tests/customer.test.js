@@ -63,7 +63,7 @@ test('顾客进店时穿的是当地衣服（本地化真的接上了）', () =>
     const save = S.blank();
     // 直接把第一关打通，保证地区可进
     save.regions[rg.id][rg.prefix + '1'] = 1;
-    const run = L.create(save, rg.prefix + '1', { rand: lcg(3), firstSpawn: 0 });
+    const run = L.create(save, rg.prefix + '1', { rand: lcg(3), firstSpawn: 0, skipGuest: true });
     L.tick(run, 16);
     const c = run.customers[0];
     ok(c, rg.name + ' 应该有顾客上门');
@@ -84,7 +84,7 @@ test('同屏最多 6 位顾客（2 行 3 列），座位上限也是 6', () => {
 test('同屏不会出现两位同款职业（真随机下连续生客也不撞）', () => {
   const save = S.blank();
   save.upgrades.seats = 3;                       // A5 基础 3 座 + 3 = 6 座
-  const run = L.create(save, 'A5', { rand: lcg(11), firstSpawn: 0 });
+  const run = L.create(save, 'A5', { rand: lcg(11), firstSpawn: 0, skipGuest: true });
   L.tick(run, 16);
   for (let i = 0; i < 6; i++) L.tick(run, 4300);
   const wait = L.waiting(run);
@@ -117,7 +117,7 @@ test('渲染顾客带：最多 6 张卡、换人时切到紧凑模式、只有�
   S.checkDaily(UI.save, TC.Util.today());
   const save = UI.save;
   save.upgrades.seats = 3;
-  const run = L.create(save, 'A5', { rand: lcg(5), firstSpawn: 0 });
+  const run = L.create(save, 'A5', { rand: lcg(5), firstSpawn: 0, skipGuest: true });
   UI.run = run;
 
   L.tick(run, 16);
@@ -145,7 +145,7 @@ test('渲染顾客带：最多 6 张卡、换人时切到紧凑模式、只有�
 
 test('上完菜的顾客挂 is-leaving（播左侧滑走动画）', () => {
   UI.save = S.blank();
-  const run = L.create(UI.save, 'A1', { rand: lcg(2), firstSpawn: 0 });
+  const run = L.create(UI.save, 'A1', { rand: lcg(2), firstSpawn: 0, skipGuest: true });
   UI.run = run;
   L.tick(run, 16);
   const c = L.waiting(run)[0];

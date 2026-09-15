@@ -19,7 +19,7 @@ const zrand = () => 0;
 const blank = () => S.blank();
 
 function mk(levelId, save, opts) {
-  return L.create(save || blank(), levelId, Object.assign({ rand: zrand, firstSpawn: 0 }, opts || {}));
+  return L.create(save || blank(), levelId, Object.assign({ rand: zrand, firstSpawn: 0, skipGuest: true }, opts || {}));
 }
 
 /** 手动安插一位指定菜品的顾客，绕开随机，专测下游玩法逻辑 */
@@ -81,7 +81,7 @@ function cookAndServe(run, uid, delayMs) {
    ========================================================================== */
 test('create：时长、锅位、座位、订单池都来自存档与关卡配置', () => {
   const save = blank();
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 0 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 0, skipGuest: true });
   eq(run.levelId, 'A1');
   eq(run.regionId, 'asia_street');
   eq(run.duration, 90000, 'A1 时长 90s');
@@ -102,7 +102,7 @@ test('create：升级过的存档会给出更多锅位与座位', () => {
   const save = blank();
   save.upgrades.stove_slots = 3;
   save.upgrades.seats = 1;
-  const run = L.create(save, 'A1', { rand: zrand });
+  const run = L.create(save, 'A1', { rand: zrand, skipGuest: true });
   eq(run.slots, 4);
   eq(run.seats, 3, 'A1 的 2 座 + 加座 1');
 });
@@ -146,7 +146,7 @@ test('顾客类型不重复出现（同屏不会有两个同款顾客）', () =>
   const lcg = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
   const save = blank();
   save.upgrades.seats = 3; // A5 的 3 座 + 3 = 6 座，能同时站 6 位（同屏上限）
-  const run = L.create(save, 'A5', { rand: lcg, firstSpawn: 0 });
+  const run = L.create(save, 'A5', { rand: lcg, firstSpawn: 0, skipGuest: true });
   L.tick(run, 16);
   for (let i = 0; i < 6; i++) L.tick(run, 4300);
   const wait = L.waiting(run);
@@ -259,7 +259,7 @@ test('重复点同一种食材 → dup', () => {
 
 test('锅位占满后无法再开新菜 → no-pot', () => {
   const save = blank();
-  const run = L.create(save, 'A3', { rand: zrand, firstSpawn: 99999 }); // 2 个锅位
+  const run = L.create(save, 'A3', { rand: zrand, firstSpawn: 99999, skipGuest: true }); // 2 个锅位
   const c1 = place(run, 'chowmein', { uid: 'u1' });
   const c2 = place(run, 'dumpling', { uid: 'u2' });
   const c3 = place(run, 'milktea', { uid: 'u3' });
@@ -332,7 +332,7 @@ test('备齐后点锅开始烹饪，时间到变 ready', () => {
 test('猛火灶升级会缩短烹饪时间', () => {
   const save = blank();
   save.upgrades.stove_speed = 5;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   place(run, 'chowmein');
   ['noodle', 'veg', 'sauce'].forEach((s) => L.tapIngredient(run, s));
   L.tapPot(run, 0);
@@ -369,7 +369,7 @@ test('出锅后装盘：锅位清空、盘子上架、带保鲜时间', () => {
 test('出餐台最多放 3 盘', () => {
   const save = blank();
   save.upgrades.stove_slots = 3;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   place(run, 'chowmein');
   run.plates = [plateOf('chowmein', 0), plateOf('chowmein', 0), plateOf('chowmein', 0)];
   readyPot(run, 0, 'chowmein');
@@ -388,7 +388,7 @@ test('盘子保鲜到期会消失', () => {
 test('保温台升级会延长保鲜时间', () => {
   const save = blank();
   save.upgrades.warmer = 5;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   place(run, 'chowmein');
   ['noodle', 'veg', 'sauce'].forEach((s) => L.tapIngredient(run, s));
   L.tapPot(run, 0);
@@ -605,7 +605,7 @@ test('不存在道具 → no-such-tool', () => {
 test('帮厨：每 6s 自动完成一个备料步骤', () => {
   const save = blank();
   save.upgrades.helper = 1;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   eq(run.helperInterval, 6000);
   place(run, 'dumpling');
   L.tapIngredient(run, 'wrapper');
@@ -621,7 +621,7 @@ test('帮厨：每 6s 自动完成一个备料步骤', () => {
 test('帮厨：备齐最后一步时会抛出 prep-done', () => {
   const save = blank();
   save.upgrades.helper = 1;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   place(run, 'dumpling');
   ['wrapper', 'filling', 'veg'].forEach((s) => L.tapIngredient(run, s));
   const ev = L.tick(run, 6000);
@@ -630,7 +630,7 @@ test('帮厨：备齐最后一步时会抛出 prep-done', () => {
 });
 
 test('没雇帮厨时不会有自动备料', () => {
-  const run = mk('A1', undefined, { firstSpawn: 99999 });
+  const run = mk('A1', undefined, { firstSpawn: 99999, skipGuest: true });
   eq(run.helperInterval, 0);
   place(run, 'dumpling');
   L.tapIngredient(run, 'wrapper');
@@ -641,7 +641,7 @@ test('没雇帮厨时不会有自动备料', () => {
 test('服务员：每 8s 自动上菜一次', () => {
   const save = blank();
   save.upgrades.waiter = 1;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   eq(run.waiterInterval, 8000);
   const c = place(run, 'chowmein');
   run.plates = [plateOf('chowmein', run.runtime)];
@@ -656,7 +656,7 @@ test('服务员：每 8s 自动上菜一次', () => {
 test('服务员：没有可配对的盘子时不动手', () => {
   const save = blank();
   save.upgrades.waiter = 1;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999 });
+  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
   place(run, 'dumpling');
   run.plates = [plateOf('chowmein', run.runtime)];
   const ev = L.tick(run, 8000);
@@ -795,7 +795,7 @@ test('finish：达成条件时会一并抛出成就', () => {
 test('finish：连续通关到 15 星会解锁下一个地区', () => {
   const save = blank();
   ['A1', 'A2', 'A3', 'A4', 'A5'].forEach((id) => {
-    const run = L.create(save, id, { rand: zrand, firstSpawn: 99999 });
+    const run = L.create(save, id, { rand: zrand, firstSpawn: 99999, skipGuest: true });
     const lv = D.level(id);
     Object.assign(run, {
       served: lv.stars.served, coins: lv.stars.coins, tips: 200,

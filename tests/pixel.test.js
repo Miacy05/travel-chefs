@@ -68,8 +68,8 @@ test('15 张菜品图互不相同', () => {
   });
 });
 
-test('8 种职业顾客都有 16×24 的像素图（共用身体模板 + 职业补丁）', () => {
-  eq(Object.keys(P.CUST_PATCH).length, 8);
+test('8 种职业 + 4 种特殊顾客都有 16×24 的像素图（共用身体模板 + 职业补丁）', () => {
+  eq(Object.keys(P.CUST_PATCH).length, 8 + D.SPECIAL_GUESTS.length);
   eq(P.CUST_BODY.length, 24);
   P.CUST_BODY.forEach((row, i) => eq(row.length, 16, '第 ' + i + ' 行宽度不是 16'));
   const sigs = new Set();
@@ -79,7 +79,14 @@ test('8 种职业顾客都有 16×24 的像素图（共用身体模板 + 职业�
     eq(m.length, 24);
     sigs.add(m.join('/'));
   });
-  eq(sigs.size, 8, '8 种职业在同一个城市应该长得都不一样');
+  eq(sigs.size, 8, '8 种普通职业在同一个城市应该长得都不一样');
+  /* 特殊顾客造型也都能合成、且与普通顾客不撞款 */
+  D.SPECIAL_GUESTS.forEach((g) => {
+    const m = P.matrix(g.sprite);
+    ok(m, g.id + ' 缺少像素图');
+    eq(m.length, 24);
+    no(sigs.has(m.join('/')), g.id + ' 不该与普通顾客撞款');
+  });
 });
 
 test('10 种食材形状都是 16×16', () => {

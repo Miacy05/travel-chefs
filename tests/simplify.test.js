@@ -23,7 +23,7 @@ const zrand = () => 0;
 const blank = () => S.blank();
 
 function mk(levelId, save, opts) {
-  return L.create(save || blank(), levelId, Object.assign({ rand: zrand, firstSpawn: 0 }, opts || {}));
+  return L.create(save || blank(), levelId, Object.assign({ rand: zrand, firstSpawn: 0, skipGuest: true }, opts || {}));
 }
 
 /** 安插一位指定菜品的顾客，返回顾客对象 */

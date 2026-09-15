@@ -412,6 +412,16 @@ ul{margin:0;padding:0;list-style:none;}
 .cust-band.is-tight .cust-bubble{padding:3px 6px;min-height:22px;}
 .cust-band.is-tight .cust-bubble .cb-name{font-size:9.5px;}
 .cust.is-sel .cust-sprite{border-color:var(--tomato);box-shadow:0 3px 0 var(--tomato);}
+/* 特殊顾客（第六优先级）：金色发光描边，一眼认出「来了稀客」 */
+.cust.is-special .cust-sprite{
+  border-color:#D9A400;
+  box-shadow:0 3px 0 #B8860B,0 0 0 3px rgba(255,209,102,.45);
+  animation:specialGlow 1.6s var(--ease) infinite;
+}
+@keyframes specialGlow{
+  0%,100%{box-shadow:0 3px 0 #B8860B,0 0 0 3px rgba(255,209,102,.45)}
+  50%{box-shadow:0 3px 0 #B8860B,0 0 0 6px rgba(255,209,102,.18)}
+}
 .cust.is-lost{opacity:.35;filter:grayscale(1);}
 .cust.is-new{animation:custIn .34s var(--ease);}
 @keyframes custIn{
@@ -1379,7 +1389,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.3.0';
+TC.VERSION = '2.3.1';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -1729,6 +1739,51 @@ TC.bootError = null;
   ];
   CUSTOMERS.forEach(function (c) { c.sprite = 'cust_' + c.arch + '_' + REGIONS[0].id; });
 
+  /* ------------------------------ 特殊顾客（第六优先级） ------------------------------ */
+  /**
+   * 4 种特殊顾客，作为「额外顾客」加入本局（不替换普通顾客）。
+   * 每种有专属触发条件、30 秒入场道具（guestBuff）、以及图鉴里的金框标记。
+   * 动物（流浪猫）非人形；造型走程序化像素，发光描边。
+   *
+   * trigger 字段说明（由 TC.Guest 判定）：
+   *   served:150   累计服务满 150 位后，下一次开局触发
+   *   served:50    累计服务满 50 位后触发（早于评论家）
+   *   daily        每个自然日首次开局触发
+   *   badge        任意徽章解锁后的下一局触发
+   *   random:0.08  每次开局 8% 概率触发（徽章越多概率越高，见 TC.Guest）
+   */
+  var SPECIAL_GUESTS = [
+    {
+      id: 'critic', arch: 'critic', name: '美食评论家', icon: '👨‍🍳',
+      desc: '口味挑剔，但满意会给巨额小费',
+      trigger: 'served:150',
+      buff: { type: 'coin', mul: 1.10, ms: 30000, label: '金币 +10%' },
+      tipMul: 2.0, patience: 26000
+    },
+    {
+      id: 'blogger', arch: 'blogger', name: '旅行博主', icon: '📸',
+      desc: '边吃边拍，吃到好吃就帮你打广告',
+      trigger: 'daily',
+      buff: { type: 'speed', mul: 0.5, ms: 30000, label: '烹饪加速 50%' },
+      tipMul: 1.5, patience: 30000
+    },
+    {
+      id: 'elder', arch: 'elder', name: '神秘老人', icon: '🧙',
+      desc: '拄着拐杖，来传授祖传秘方',
+      trigger: 'served:50',
+      buff: { type: 'warm', mul: 1, ms: 30000, label: '耐心不再减少' },
+      tipMul: 1.3, patience: 36000
+    },
+    {
+      id: 'cat', arch: 'cat', name: '流浪猫', icon: '🐈',
+      desc: '蹭饭的小家伙，会带来好运',
+      trigger: 'random:0.08',
+      buff: { type: 'tip', mul: 1.5, ms: 30000, label: '小费 ×1.5' },
+      tipMul: 0.5, patience: 40000
+    }
+  ];
+  SPECIAL_GUESTS.forEach(function (g) { g.special = true; g.sprite = 'cust_' + g.arch + '_' + REGIONS[0].id; });
+
   /* ------------------------------ 关卡模板 ------------------------------ */
   /**
    * 难度曲线五区通用；金币按地区 priceMul 缩放，其余参数一致，保证曲线可预期。
@@ -1918,6 +1973,7 @@ TC.bootError = null;
     DISHES: DISHES,
     INGREDIENTS: INGREDIENTS,
     CUSTOMERS: CUSTOMERS,
+    SPECIAL_GUESTS: SPECIAL_GUESTS,
     LEVELS: LEVELS,
     UPGRADES: UPGRADES,
     UP_TABS: UP_TABS,
@@ -1936,6 +1992,7 @@ TC.bootError = null;
     dish: TC.Util.indexBy(DISHES, 'id'),
     ingredient: TC.Util.indexBy(INGREDIENTS, 'id'),
     customer: TC.Util.indexBy(CUSTOMERS, 'id'),
+    specialGuest: TC.Util.indexBy(SPECIAL_GUESTS, 'id'),
     level: TC.Util.indexBy(LEVELS, 'id'),
     upgrade: TC.Util.indexBy(UPGRADES, 'id'),
     achievement: TC.Util.indexBy(ACHIEVEMENTS, 'id'),
@@ -1948,6 +2005,7 @@ TC.bootError = null;
   D.dish = function (id) { return D.byId.dish[id] || null; };
   D.ingredient = function (id) { return D.byId.ingredient[id] || null; };
   D.customer = function (id) { return D.byId.customer[id] || null; };
+  D.specialGuest = function (id) { return D.byId.specialGuest[id] || null; };
   D.level = function (id) { return D.byId.level[id] || null; };
   D.upgrade = function (id) { return D.byId.upgrade[id] || null; };
   D.achievement = function (id) { return D.byId.achievement[id] || null; };
@@ -2053,9 +2111,10 @@ TC.bootError = null;
   };
   /** 单笔小费＝(基础小费 + 加料台) × 顾客小费倍率 × 升级加成 × 地区装饰加成 */
   C.tip = function (dishId, customerId, regionId, save) {
-    var d = D.dish(dishId), c = D.customer(customerId);
+    var d = D.dish(dishId);
+    var c = D.customer(customerId) || D.specialGuest(customerId);
     if (!d || !c) return 0;
-    var raw = (d.tipBase + C.tipBaseAdd(save)) * c.tipMul * C.tipUpgradeMul(save) * C.decorTipMul(save, regionId);
+    var raw = (d.tipBase + C.tipBaseAdd(save)) * (c.tipMul || 1) * C.tipUpgradeMul(save) * C.decorTipMul(save, regionId);
     return Math.round(raw);
   };
   /** 一单的完整收益 */
@@ -2525,6 +2584,8 @@ TC.bootError = null;
             globeFired    —— 永久记录「曾经触发过」，成就/彩蛋列表用
             globeFiredDay —— 最后一次触发是哪一天，这就是「每日一次」的闸门 */
       easter: { globe: 0, globeDay: '', globeFired: false, globeFiredDay: '', rainbow: false, penguin: false },
+      /** 特殊顾客（第六优先级）：已遇见的特殊顾客 id + 旅行博主最后来的日子 */
+      guest: { seen: {}, lastDay: '' },
       settings: { sound: true, vibrate: true },
       /** 新手教程是否已看完。false 时首次进入游戏自动播放；
           老存档没有这个字段 → normalize 会补成 false，等于让老玩家也看一次，
@@ -2625,6 +2686,12 @@ TC.bootError = null;
 
     // 新手教程（老存档没有此字段 → 保持 blank 的 false，即会播一次）
     out.tutorialDone = raw.tutorialDone === true;
+
+    // 特殊顾客（第六优先级）
+    var g = raw.guest || {};
+    out.guest.seen = {};
+    D.SPECIAL_GUESTS.forEach(function (sg) { if (g.seen && g.seen[sg.id]) out.guest.seen[sg.id] = true; });
+    out.guest.lastDay = typeof g.lastDay === 'string' ? g.lastDay : '';
 
     return out;
   };
@@ -3032,6 +3099,8 @@ TC.bootError = null;
 
       /* 特殊顾客（第六优先级）：本局生效的临时道具 */
       guestBuff: null,
+      /* 本局命中的特殊顾客（开局时判定一次） */
+      guest: null,
 
       encounterIds: {},
       tutorial: !!opts.tutorial,
@@ -3040,6 +3109,15 @@ TC.bootError = null;
     if (run.tutorial) {
       run.seats = 1;              // 教学局只坐 1 位，跟着一个顾客走完整条流程
       run.spawnInterval = 2500;   // 上完一位后很快就来下一位，步骤 5/7 才有东西可高亮
+    }
+    /* 特殊顾客：非教学局时，开局判定一次，作为额外顾客加入 */
+    if (!run.tutorial && !opts.skipGuest) {
+      var g = TC.Guest.pick(save, run.rand);
+      if (g) {
+        run.guest = g;
+        TC.Guest.applyBuff(run, g);
+        spawnSpecialGuest(run, g);
+      }
     }
     return run;
   };
@@ -3144,6 +3222,31 @@ TC.bootError = null;
     return c;
   }
 
+  /** 特殊顾客（第六优先级）：作为额外顾客加入，带 special 标记与专属小费 */
+  function spawnSpecialGuest(run, guest) {
+    if (!guest) return null;
+    var dishId = U.pick(run.level.dishPool, run.rand);
+    var max = guest.patience || 30000;
+    var c = {
+      uid: 'g' + (run.customers.length + 1) + '_' + Math.floor(run.rand() * 100000),
+      id: guest.id,
+      name: guest.name,
+      icon: guest.icon,
+      sprite: C.custSprite(guest.arch, run.regionId),
+      dishId: dishId,
+      patienceMax: max,
+      patienceLeft: max,
+      state: 'waiting',
+      bornAt: run.runtime,
+      special: true,
+      tipMul: guest.tipMul
+    };
+    run.customers.push(c);
+    run.encounterIds[guest.id] = 1;
+    if (!run.selected) run.selected = c.uid;
+    return c;
+  }
+
   /* ------------------------- 时间推进 ------------------------- */
   /**
    * 推进 dt 毫秒
@@ -3161,6 +3264,9 @@ TC.bootError = null;
     for (var k in run.toolCd) {
       if (run.toolCd[k] > 0) run.toolCd[k] = Math.max(0, run.toolCd[k] - dtMs);
     }
+
+    /* 特殊顾客的 30 秒入场道具倒计时（第六优先级） */
+    if (run.guestBuff) TC.Guest.tickBuff(run, dtMs);
 
     /* 困难模式干扰：灶台随机故障（第四优先级）。
        正在煮的锅有一定概率「跳闸」，烹饪进度回退一截，需要玩家回来重新开火；
@@ -3182,8 +3288,9 @@ TC.bootError = null;
       }
     }
 
-    /* 顾客耐心（教学局放慢到 8%） */
+    /* 顾客耐心（教学局放慢到 8%；warm buff 时顾客耐心暂停） */
     var pmul = run.tutorial ? L.TUTORIAL_PATIENCE_MUL : 1;
+    if (run.guestBuff && run.guestBuff.type === 'warm') pmul = 0;
     for (var i = 0; i < run.customers.length; i++) {
       var c = run.customers[i];
       if (c.state !== 'waiting') continue;
@@ -3208,11 +3315,12 @@ TC.bootError = null;
       run.spawnTimer = L.waiting(run).length >= seats ? Math.min(run.spawnInterval, 1200) : run.spawnInterval;
     }
 
-    /* 灶台烹饪 */
+    /* 灶台烹饪（speed buff 生效时，烹饪进度加速走） */
+    var cookSpeed = TC.Guest.cookMul(run);
     for (var p = 0; p < run.pots.length; p++) {
       var pot = run.pots[p];
       if (!pot || pot.state !== 'cooking') continue;
-      pot.cookLeft -= dtMs;
+      pot.cookLeft -= dtMs / cookSpeed;
       if (pot.cookLeft <= 0) {
         pot.cookLeft = 0;
         pot.state = 'ready';
@@ -3444,6 +3552,15 @@ TC.bootError = null;
     var perfect = C.isPerfect(dt, plate.cookTotal);
 
     var earn = C.orderIncome(plate.dishId, c.id, run.regionId, run.save);
+
+    /* 特殊顾客 buff（第六优先级）：coin 金币 +%、tip 小费 × 都即时体现在本单 */
+    if (run.guestBuff) {
+      if (run.guestBuff.type === 'coin') {
+        earn.coins = Math.round(earn.coins * run.guestBuff.mul);
+      } else if (run.guestBuff.type === 'tip') {
+        earn.tips = Math.round(earn.tips * run.guestBuff.mul);
+      }
+    }
 
     run.plates.splice(plateIdx, 1);
     c.state = 'served';
@@ -3848,6 +3965,116 @@ TC.bootError = null;
 
   TC.Easter = E;
 })(TC);
+
+/* --------------------------------------------------------------------------
+   模块：TC.Guest —— 特殊顾客（第六优先级）
+   4 种特殊顾客作为「额外顾客」加入本局，不替换普通顾客。
+   规则全部在这里：触发判定（纯函数）+ 30 秒入场道具（guestBuff）的计时。
+   UI 只做表现（发光描边 / 顶部横幅 / 特殊气泡）。
+   -------------------------------------------------------------------------- */
+(function (TC) {
+  'use strict';
+  var D = TC.DATA, C = TC.Calc, S = TC.Save, U = TC.Util;
+  var G = {};
+
+  /** 触发条件阈值：累计服务 50 / 150 位顾客后各解锁一种 */
+  G.SERVED_ELDER = 50;
+  G.SERVED_CRITIC = 150;
+  /** 流浪猫基础随机概率（每次开局），徽章越多概率越高（每枚 +1.5%） */
+  G.CAT_BASE_CHANCE = 0.08;
+
+  /**
+   * 本局是否该出现特殊顾客，出现哪种。
+   * @param {object} save
+   * @param {function} rand 随机源（可注入，便于测试）
+   * @returns {object|null} 命中的特殊顾客数据（D.SPECIAL_GUESTS 里的对象），否则 null
+   */
+  G.pick = function (save, rand) {
+    rand = rand || Math.random;
+    if (!save) return null;
+    var guests = D.SPECIAL_GUESTS;
+    var seen = (save.guest && save.guest.seen) || {};
+    var today = U.today();
+    var served = (save.stats && save.stats.customers) || 0;
+    var badges = C.badgesObtained(save);
+
+    var candidates = [];
+
+    /* 1) 神秘老人：累计服务 50 位，一生只出现一次 */
+    if (served >= G.SERVED_ELDER && !seen.elder) {
+      candidates.push(D.specialGuest('elder'));
+    }
+    /* 2) 美食评论家：累计服务 150 位，一生只出现一次 */
+    if (served >= G.SERVED_CRITIC && !seen.critic) {
+      candidates.push(D.specialGuest('critic'));
+    }
+    /* 3) 旅行博主：每个自然日首次开局出现（老玩家回头客，新档第一局不来） */
+    var plays = (save.stats && save.stats.plays) || 0;
+    if (plays > 0 && save.guest && save.guest.lastDay !== today) {
+      candidates.push(D.specialGuest('blogger'));
+    }
+    /* 4) 流浪猫：随机，徽章越多概率越高 */
+    var catChance = G.CAT_BASE_CHANCE + badges * 0.015;
+    if (rand() < catChance) {
+      candidates.push(D.specialGuest('cat'));
+    }
+
+    if (!candidates.length) return null;
+    /* 多种同时满足时，优先「确定性触发」（老人/评论家/博主）而不是随机猫；
+       确定性触发里按服务数门槛从高到低排（评论家 150 > 老人 50），门槛越高越稀罕，先来 */
+    var deterministic = candidates.filter(function (g) { return g.trigger.indexOf('random') !== 0; });
+    deterministic.sort(function (a, b) {
+      function servedOf(g) { var m = /served:(\d+)/.exec(g.trigger); return m ? parseInt(m[1], 10) : 0; }
+      return servedOf(b) - servedOf(a);
+    });
+    var pool = deterministic.length ? deterministic : candidates;
+    return pool[0];
+  };
+
+  /**
+   * 记录「已经见过某位特殊顾客」，避免同一条件反复触发。
+   * 同时把「今日」写进 lastDay，使旅行博主每日只来一次。
+   */
+  G.markSeen = function (save, guestId) {
+    if (!save.guest) save.guest = { seen: {}, lastDay: '' };
+    save.guest.seen[guestId] = true;
+    save.guest.lastDay = U.today();
+  };
+
+  /** 把特殊顾客的 30 秒入场道具挂到 run.guestBuff 上 */
+  G.applyBuff = function (run, guest) {
+    if (!run || !guest || !guest.buff) return null;
+    run.guestBuff = {
+      type: guest.buff.type,
+      mul: guest.buff.mul,
+      label: guest.buff.label,
+      left: guest.buff.ms,
+      total: guest.buff.ms,
+      guestId: guest.id
+    };
+    return run.guestBuff;
+  };
+
+  /** buff 倒计时；归零后清空。返回本 tick 是否刚结束 */
+  G.tickBuff = function (run, dtMs) {
+    if (!run || !run.guestBuff) return false;
+    run.guestBuff.left -= dtMs;
+    if (run.guestBuff.left <= 0) {
+      run.guestBuff = null;
+      return true;
+    }
+    return false;
+  };
+
+  /** 当前 buff 对烹饪时间的作用（speed 类型才生效） */
+  G.cookMul = function (run) {
+    if (run && run.guestBuff && run.guestBuff.type === 'speed') return run.guestBuff.mul;
+    return 1;
+  };
+
+  TC.Guest = G;
+})(TC);
+
 
 /* --------------------------------------------------------------------------
    模块：TC.Ach —— 成就（进度取数 + 达成判定 + 发奖）
@@ -4379,6 +4606,29 @@ TC.bootError = null;
     courier: {
       hat: 1,
       rects: [[5, 0, 6, 1, 'k'], [4, 1, 8, 2, 'k'], [4, 3, 8, 1, 'k'], [4, 17, 8, 1, 'w']]
+    },
+    /* 美食评论家：单片眼镜 + 高领 + 蝴蝶结（第六优先级特殊顾客） */
+    critic: {
+      rects: [[5, 5, 2, 2, 'w'], [9, 5, 2, 2, 'w'], [6, 5, 1, 1, 'k'], [10, 5, 1, 1, 'k'],
+        [5, 8, 6, 1, 'k'], [7, 13, 2, 2, 'r'], [7, 15, 2, 1, 't']]
+    },
+    /* 旅行博主：墨镜 + 胸前相机带 + 帽檐 */
+    blogger: {
+      rects: [[4, 4, 8, 2, 'k'], [4, 6, 3, 1, 'k'], [9, 6, 3, 1, 'k'],
+        [3, 12, 10, 1, 't'], [6, 14, 4, 2, 'k'], [7, 14, 2, 1, 'w']]
+    },
+    /* 神秘老人：长白胡须 + 兜帽 + 拐杖 */
+    elder: {
+      rects: [[3, 1, 10, 2, 't'], [4, 3, 8, 1, 'w'], [4, 4, 1, 1, 'w'], [11, 4, 1, 1, 'w'],
+        [5, 7, 6, 3, 'w'], [4, 9, 8, 1, 'w'],
+        [12, 9, 1, 9, 'k'], [11, 17, 2, 1, 'k']]
+    },
+    /* 流浪猫：猫耳 + 胡须 + 尾巴（动物非人形，但仍用 5 色板） */
+    cat: {
+      hat: 1,
+      rects: [[3, 0, 2, 2, 't'], [11, 0, 2, 2, 't'], [4, 1, 1, 1, 'k'], [11, 1, 1, 1, 'k'],
+        [4, 8, 2, 1, 'k'], [10, 8, 2, 1, 'k'],
+        [2, 18, 3, 2, 't'], [1, 20, 2, 1, 't']]
     }
   };
 
@@ -4937,6 +5187,17 @@ TC.bootError = null;
         checkMatrix('cust:' + key, P.custMatrix(key), P.CUST_H, P.CUST_W, LEGAL_FINAL);
       });
       if (P.matrix(c.sprite) === null) errors.push('顾客 ' + c.id + '：sprite 不是可合成的造型键（' + c.sprite + '）');
+    });
+
+    /* 6) 特殊顾客（第六优先级）：同样要有职业补丁，× 每个地区合成合法成品 */
+    var guests = opts.specialGuests || D.SPECIAL_GUESTS;
+    guests.forEach(function (g) {
+      if (!CUST_PATCH[g.arch]) { errors.push('特殊顾客 ' + g.id + '：没有对应的职业补丁 ' + g.arch); return; }
+      regionIds.forEach(function (rgId) {
+        var key = 'cust_' + g.arch + '_' + rgId;
+        checkMatrix('special:' + key, P.custMatrix(key), P.CUST_H, P.CUST_W, LEGAL_FINAL);
+      });
+      if (P.matrix(g.sprite) === null) errors.push('特殊顾客 ' + g.id + '：sprite 不是可合成的造型键（' + g.sprite + '）');
     });
 
     return errors;
@@ -6191,7 +6452,7 @@ TC.bootError = null;
       UI.toast('🍳 厨房正在装修，马上开门');
       return false;
     }
-    var run = TC.Level.create(UI.save, levelId, { hard: !!opts.hard });
+    var run = TC.Level.create(UI.save, levelId, { hard: !!opts.hard, skipGuest: !!opts.skipGuest });
     if (!run) return false;
     UI.run = run;
     UI.result = null;
@@ -6628,13 +6889,14 @@ TC.bootError = null;
       (run.selected === c.uid ? ' is-sel' : '') +
       (c.state === 'lost' ? ' is-lost' : '') +
       (c.state === 'served' ? ' is-leaving' : '') +
+      (c.special ? ' is-special' : '') +
       (low ? ' is-angry' : '');
     scale = scale || 3;
     var W = P.CUST_W * scale, H = P.CUST_H * scale;
 
     return '<button class="' + cls + '" data-uid="' + esc(c.uid) + '" type="button" ' +
              'aria-label="' + esc(c.name + ' 想要 ' + (dish.name || '')) + '">' +
-      '<span class="cust-flag" aria-hidden="true">😤</span>' +
+      '<span class="cust-flag" aria-hidden="true">' + (c.special ? (c.icon || '⭐') : '😤') + '</span>' +
       '<span class="cust-bubble">' +
         '<canvas class="cb-ico" width="16" height="16" aria-hidden="true"></canvas>' +
         '<span class="cb-name">' + esc(dish.name || '') + '</span>' +
@@ -7680,26 +7942,42 @@ TC.bootError = null;
   UI.renderBookCust = function () {
     var s = UI.save;
     var ids = C.seenCustomers(s);
+    var seen = (s.stats && s.stats.seenCustomers) || {};
+    var guests = D.SPECIAL_GUESTS;
+
+    var normal = D.CUSTOMERS.map(function (c) {
+      var on = ids.indexOf(c.id) !== -1;
+      return '<div class="book-cell' + (on ? '' : ' is-locked') +
+               (c.special ? ' is-special' : '') + '" data-arch="' + c.arch + '">' +
+        '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
+        '<span class="bc-name">' + esc(on ? c.name : '？？？') + '</span>' +
+        '<span class="bc-sub">' + esc(on ? c.note : '未遇见') + '</span>' +
+      '</div>';
+    }).join('');
+
+    /* 特殊顾客：遇见过才点亮，未遇见显示灰色剪影 + 金框 */
+    var special = guests.map(function (g) {
+      var on = !!seen[g.id];
+      return '<div class="book-cell is-special' + (on ? '' : ' is-locked') + '" data-arch="' + g.arch + '">' +
+        '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
+        '<span class="bc-name">' + esc(on ? g.name : '？？？') + '</span>' +
+        '<span class="bc-sub">' + esc(on ? g.desc : '特殊顾客 · 未遇见') + '</span>' +
+      '</div>';
+    }).join('');
 
     setHtml('sub-cust',
       '<div class="sec-title"><span>🧑 顾 客</span><span class="st-line"></span>' +
-      '<span class="st-num">' + ids.length + ' / ' + D.CUSTOMERS.length + '</span></div>' +
-      '<div class="book-grid">' + D.CUSTOMERS.map(function (c) {
-        var on = ids.indexOf(c.id) !== -1;
-        return '<div class="book-cell' + (on ? '' : ' is-locked') +
-                 (c.special ? ' is-special' : '') + '">' +
-          '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
-          '<span class="bc-name">' + esc(on ? c.name : '？？？') + '</span>' +
-          '<span class="bc-sub">' + esc(on ? c.note : '未遇见') + '</span>' +
-        '</div>';
-      }).join('') + '</div>');
+      '<span class="st-num">' + ids.length + ' / ' + (D.CUSTOMERS.length + guests.length) + '</span></div>' +
+      '<div class="book-grid">' + normal + special + '</div>');
 
     var cells = $('sub-cust') ? $('sub-cust').querySelectorAll('.book-cell') : [];
-    D.CUSTOMERS.forEach(function (c, i) {
+    var all = D.CUSTOMERS.concat(guests);
+    all.forEach(function (c, i) {
       if (!cells[i]) return;
       var cx = cells[i].querySelector('canvas');
       var rects = P.rectsOf(c.sprite, 2);
-      if (ids.indexOf(c.id) !== -1) paintInto(cx, rects);
+      var on = c.special ? !!seen[c.id] : ids.indexOf(c.id) !== -1;
+      if (on) paintInto(cx, rects);
       else paintSilhouette(cx, rects);
     });
     return ids.length;

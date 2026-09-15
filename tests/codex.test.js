@@ -108,32 +108,33 @@ test('菜谱分类：15 道菜；未解锁显示问号与"未解锁"', () => {
   includes($('sub-dish').textContent, '菜 谱');
 });
 
-test('顾客分类：5 位顾客；未遇见的画成剪影并标注"未遇见"', () => {
+test('顾客分类：普通 8 种 + 特殊 4 种；未遇见的画成剪影并标注"未遇见"', () => {
   openBook();
   const cells = $$('#sub-cust .book-cell');
-  eq(cells.length, D.CUSTOMERS.length, '顾客格子数');
+  eq(cells.length, D.CUSTOMERS.length + D.SPECIAL_GUESTS.length, '顾客格子数 = 普通 + 特殊');
   const locked = $$('#sub-cust .book-cell.is-locked').length;
-  eq(locked, D.CUSTOMERS.length, '新档一位都没遇见');
+  eq(locked, D.CUSTOMERS.length + D.SPECIAL_GUESTS.length, '新档一位都没遇见');
   includes($('sub-cust').textContent, '未遇见');
-  /* 剪影判定：未遇见的格子不能带 is-special（现在没有特殊顾客） */
-  eq($$('#sub-cust .book-cell.is-special').length, 0);
+  /* 特殊顾客即使没遇见也带金框（is-special） */
+  eq($$('#sub-cust .book-cell.is-special').length, D.SPECIAL_GUESTS.length);
 });
 
-test('顾客分类：特殊顾客会拿到金色边框的类名（等第六优先级实装后自动生效）', () => {
+test('顾客分类：特殊顾客带金色边框类名，遇见过才点亮', () => {
   const s = openBook();
-  /* 手动标记一位为特殊顾客，再渲染一次 —— 模拟数据侧以后的变化 */
-  const target = D.CUSTOMERS[0];
-  const backup = target.special;
-  target.special = true;
-  s.stats.seenCustomers[target.id] = 1;
-  UI.renderBookCust();
   const cells = $$('#sub-cust .book-cell');
-  const idx = D.CUSTOMERS.map((c) => c.id).indexOf(target.id);
+  const firstGuest = D.SPECIAL_GUESTS[0];
+  // 没遇见：金框 + 灰显
+  const idx = D.CUSTOMERS.length;   // 特殊顾客排在普通顾客之后
   ok(cells[idx].classList.contains('is-special'), '特殊顾客应带 is-special（金色边框）');
-  eq($$('#sub-cust .book-cell.is-special').length, 1);
-  /* 复原，避免影响其他测试 */
-  if (backup === undefined) delete target.special; else target.special = backup;
-  delete s.stats.seenCustomers[target.id];
+  ok(cells[idx].classList.contains('is-locked'), '没遇见过应灰显');
+  // 遇见过：点亮（去掉 is-locked）
+  s.stats.seenCustomers[firstGuest.id] = 1;
+  UI.renderBookCust();
+  const cells2 = $$('#sub-cust .book-cell');
+  ok(cells2[idx].classList.contains('is-special'));
+  no(cells2[idx].classList.contains('is-locked'), '遇见过就不该灰显');
+  /* 复原 */
+  delete s.stats.seenCustomers[firstGuest.id];
   UI.renderBookCust();
 });
 
@@ -170,8 +171,8 @@ test('明信片分类：5 张，未解锁显示问号', () => {
 test('徽章卡片不叫 .book-cell，否则菜谱/顾客的计数会串', () => {
   openBook();
   eq($$('#sub-badge .book-cell').length, 0, '徽章卡片必须用独立类名');
-  eq($$('#panel-book .book-cell').length, D.DISHES.length + D.CUSTOMERS.length,
-    '图鉴总book-cell 数应仍等于 菜谱 + 顾客');
+  eq($$('#panel-book .book-cell').length, D.DISHES.length + D.CUSTOMERS.length + D.SPECIAL_GUESTS.length,
+    '图鉴总book-cell 数应仍等于 菜谱 + 普通顾客 + 特殊顾客');
 });
 
 /* ------------------------------ 顶栏标题 ------------------------------ */
