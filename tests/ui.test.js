@@ -341,13 +341,14 @@ test('角标显示成就完成数与可领任务数，为 0 时隐藏', () => {
 });
 
 /* ------------------------------ 设置弹窗 ------------------------------ */
-test('设置弹窗能开、能关，并渲染三项设置', () => {
+test('设置弹窗能开、能关，并渲染两项设置', () => {
   reset();
   UI.openSettings();
   eq($('modalSettings').hidden, false);
   includes($('setList').textContent, '音效');
   includes($('setList').textContent, '震动');
-  includes($('setList').textContent, '重置存档');
+  eq($('setList').querySelector('[data-set="reset"]'), null, '重置存档入口应已移除');
+  eq(TC.Save.clear, undefined, '底层 clear 也不该再暴露');
 
   click($('modalSettings').querySelector('.x'));
   eq($('modalSettings').hidden, true, '点 ✕ 应关闭');
@@ -368,29 +369,6 @@ test('音效 / 震动开关能切换并写档', () => {
 
   click($('setList').querySelector('[data-set="vibrate"]'));
   eq(s.settings.vibrate, false);
-});
-
-test('重置存档必须二次确认：取消无效、确定才清空', () => {
-  const s = reset({ coins: 999 });
-  s.regions.asia_street.A1 = 3;
-  s.achievements.first_step = 'x';
-  UI.openSettings();
-
-  click($('setList').querySelector('[data-set="reset"]'));
-  eq($('dialogHost').classList.contains('is-on'), true, '应弹出确认框');
-  includes($('dlgTitle').textContent, '重置存档');
-
-  click($('dlgNo'));                              // 取消
-  eq(UI.save.coins, 999, '取消后金币不变');
-  eq(UI.save.regions.asia_street.A1, 3);
-  eq($('dialogHost').classList.contains('is-on'), false);
-
-  click($('setList').querySelector('[data-set="reset"]'));
-  click($('dlgYes'));                             // 确定
-  eq(UI.save.coins, 0, '确定后清空');
-  eq(UI.save.regions.asia_street.A1, undefined);
-  eq(UI.save.achievements.first_step, undefined);
-  eq($('modalSettings').hidden, true, '重置后关闭设置弹窗');
 });
 
 /* ------------------------------ 提示 / 弹窗基础设施 ------------------------------ */

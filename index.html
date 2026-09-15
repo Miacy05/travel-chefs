@@ -1226,7 +1226,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.1.1';
+TC.VERSION = '2.1.2';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -2392,12 +2392,6 @@ TC.bootError = null;
     if (!st) return false;
     try { st.setItem(D.CONFIG.saveKey, JSON.stringify(save)); return true; }
     catch (e) { return false; }
-  };
-
-  S.clear = function (store) {
-    var st = store === undefined ? S.storage() : store;
-    if (!st) return false;
-    try { st.removeItem(D.CONFIG.saveKey); return true; } catch (e) { return false; }
   };
 
   /* ------------------------- 货币与奖励 ------------------------- */
@@ -5716,15 +5710,7 @@ TC.bootError = null;
     var st = UI.save.settings || { sound: true, vibrate: true };
     setHtml('setList',
       setRowHtml('sound', '音效', '做菜、收银、彩蛋的提示音', st.sound !== false) +
-      setRowHtml('vibrate', '震动', '手机上关键操作的轻震动反馈', st.vibrate !== false) +
-      '<div class="up-row" data-set="reset" role="button" tabindex="0">' +
-        '<span class="up-ico">🧹</span>' +
-        '<span class="up-body">' +
-          '<span class="up-name">重置存档</span>' +
-          '<span class="up-desc">清空金币、星级、成就与升级，回到最初的一口锅</span>' +
-        '</span>' +
-        '<span class="up-act"><span class="up-lv">危险</span></span>' +
-      '</div>');
+      setRowHtml('vibrate', '震动', '手机上关键操作的轻震动反馈', st.vibrate !== false));
     return true;
   }
 
@@ -5736,24 +5722,6 @@ TC.bootError = null;
       renderSettings();
       if (key === 'sound' && s.settings.sound) sfx('tap');
       return s.settings[key];
-    }
-    if (key === 'reset') {
-      UI.dialog({
-        title: '重置存档？',
-        body: '金币、星级、成就、升级、彩蛋记录都会清空，且无法恢复。确定要重新开始吗？',
-        yesText: '清空重来',
-        noText: '我再想想',
-        onYes: function () {
-          S.clear();
-          UI.save = S.load();
-          S.checkDaily(UI.save, U.today());
-          UI.persist();
-          UI.closeModal('modalSettings');
-          UI.toast('🧹 已重置，回到最初的一口锅', 'mint');
-          TC.Router.go('map', { force: true });
-        }
-      });
-      return true;
     }
     return false;
   };

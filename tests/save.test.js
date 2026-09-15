@@ -173,15 +173,6 @@ test('write / load 往返一致', () => {
   deepEq(back.decor.asia_street, ['lantern_string']);
 });
 
-test('clear 清空存档', () => {
-  const store = fakeStore();
-  const s = S.blank();
-  s.coins = 10;
-  S.write(s, store);
-  eq(S.clear(store), true);
-  eq(S.load(store).coins, 0);
-});
-
 test('storage() 在没有 localStorage 时回落到内存实现', () => {
   const st = S.storage();
   ok(st && typeof st.getItem === 'function');
