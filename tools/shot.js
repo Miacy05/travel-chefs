@@ -34,6 +34,8 @@ const SIZE = arg('size', '390x844').split('x').map(Number);
 const DPR = Number(arg('dpr', 2));
 const WAIT = Number(arg('wait', 900));
 const SEED = arg('seed', '') === '1';
+/** 指定 --url= 就直接截那个线上地址（用来验收部署后的线上效果），否则截本地 index.html */
+const REMOTE_URL = arg('url', '');
 
 /**
  * 造一份"玩过一阵子"的存档，让截图不是全 0 的空壳。
@@ -103,7 +105,7 @@ async function httpJson(url) {
 (async () => {
   const browser = findBrowser();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'tc-shot-'));
-  const srv = await serve();
+  const srv = REMOTE_URL ? { close() {} } : await serve();   // 截线上地址时不用起本地服务
 
   const child = spawn(browser, [
     '--headless=new',
@@ -156,7 +158,7 @@ async function httpJson(url) {
       width: SIZE[0], height: SIZE[1], deviceScaleFactor: DPR, mobile: true
     });
 
-    const url = 'http://127.0.0.1:' + PORT + '/index.html';
+    const url = REMOTE_URL || ('http://127.0.0.1:' + PORT + '/index.html');
     await send('Page.navigate', { url });
     await sleep(1200);                                  // 等 boot + 首帧
 
