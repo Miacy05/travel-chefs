@@ -6,8 +6,26 @@
 
 **零依赖、零构建、单文件**：整个游戏就是一个 `index.html`，双击即玩，也能直接丢到任意静态托管上。
 
-🔗 线上地址：`https://travel-chefs.vercel.app`
-📦 仓库地址：`https://github.com/你的用户名/travel-chefs`
+- 🔗 **在线试玩**：<https://travel-chefs.app.workbuddy.host/> —— 手机浏览器打开即玩，进度存在浏览器本地
+- 📦 **仓库地址**：<https://github.com/Miacy05/travel-chefs>
+
+> 想要属于自己的 `travel-chefs.vercel.app`？仓库已经按 Vercel 静态站的要求组织好，导入三步即可，见 [第八节 · 部署](#八部署)。
+
+---
+
+## 游戏截图
+
+以下全部是**真机视口（390×844 @2x）实拍**，不是设计稿：图里的顾客、锅里的火、出餐台上的菜，都是脚本通过游戏公开接口真玩出来的状态。
+
+| 世界地图 | 营业中（核心循环） | 结算 |
+| --- | --- | --- |
+| <img src="docs/map.png" width="232" alt="世界地图"> | <img src="docs/cook.png" width="232" alt="经营页"> | <img src="docs/result.png" width="232" alt="结算页"> |
+| 5 个地区 25 关，靠累计星星逐站解锁 | 顾客队列 · 食材台 · 灶台 · 三个道具 | 三条条件逐级判定，这里是 3 星通关 |
+
+| 图鉴 | 店铺升级 |
+| --- | --- |
+| <img src="docs/codex.png" width="232" alt="图鉴"> | <img src="docs/upgrade.png" width="232" alt="升级"> |
+| 菜品 / 食材 / 地区的收集进度 | 4 条升级线，全部用游戏内金币购买 |
 
 ---
 
@@ -229,9 +247,13 @@ node tests/run.js --list   # 列出所有测试文件
 
 ```
 travel-chefs/
-├── index.html          ← 整个游戏（结构 + 样式 + 全部逻辑，单文件）
+├── index.html          ← 整个游戏（结构 + 样式 + 全部逻辑，单文件，约 6200 行）
 ├── README.md           ← 本文件
-├── .gitignore
+├── LICENSE             ← MIT
+├── .gitignore          ← 排除 backup-v1/（v1 原型存档）等
+├── docs/               ← README 里用到的游戏截图（390×844 @2x）
+│   ├── map.png         cook.png      result.png
+│   └── codex.png       upgrade.png
 └── tests/
     ├── run.js          ← 测试入口
     ├── harness.js      ← 零依赖断言框架
@@ -245,21 +267,35 @@ travel-chefs/
 
 ## 八、部署
 
-### 方案 A · Vercel（得到 `xxx.vercel.app`）
+### 已经在线
+
+当前版本已发布在 **<https://travel-chefs.app.workbuddy.host/>**（纯静态单文件，没有后端依赖）。
+
+### 方案 A · 得到自己的 `travel-chefs.vercel.app`
 
 **第 1 步 · 推送到 GitHub**
 
-先在 GitHub 网页端新建一个**空仓库**，仓库名必须是 `travel-chefs`（不要勾选 Add a README file）。
+先在 GitHub 网页端新建一个**空仓库**（不要勾选 *Add a README file*）。仓库名必须是 `travel-chefs` —— 它决定 Vercel 的域名。
 
-```bash
-cd travel-chefs
-git add .
-git commit -m "feat: Travel Chefs 像素经营游戏"
-git remote add origin https://github.com/你的用户名/travel-chefs.git
-git push -u origin main
+然后在 `travel-chefs/` 目录下推送（本机若没把 git 装进 PATH，用 WorkBuddy 自带的便携版）：
+
+```powershell
+$git = "C:\Users\20742\.workbuddy\binaries\PortableGit\versions\1.2.0\cmd\git.exe"
+
+& $git remote add origin https://github.com/<你的用户名>/travel-chefs.git
+& $git push -u origin main
 ```
 
-> 仓库名 = 网址前缀。仓库名必须是 `travel-chefs`，Vercel 才会生成 `travel-chefs.vercel.app`。
+> **如果 `git push` 卡住或超时**：本机到 `github.com:443` 的 HTTPS 通道不通（实测直连超时、
+> 代理返回 502 / TLS 重置），而 `api.github.com` 是通的。这种情况下改用仓库里的
+> `tools/push-to-github.js` —— 它走 GitHub REST API 直接建仓库并生成同样的提交记录：
+>
+> ```powershell
+> node tools/push-to-github.js
+> ```
+>
+> 首次运行会提示粘贴一个 GitHub Token（生成地址 <https://github.com/settings/tokens>，
+> 勾选 `repo` 权限即可），跑完直接输出仓库地址。Token 只用于这一次推送，建议用完后撤销。
 
 **第 2 步 · Vercel 上线**
 
@@ -267,7 +303,10 @@ git push -u origin main
 2. **Add New Project** → 选中 `travel-chefs` → **Import**
 3. Framework Preset 选 **Other**（纯静态站，**不要**选 Next.js）
 4. Build Command / Output Directory **全部留空**
-5. **Deploy**，约 1 分钟后拿到线上地址
+5. **Deploy**，约 1 分钟后拿到 `travel-chefs.vercel.app`
+
+> 只要 `index.html` 在仓库根目录，Vercel 就会把它当入口页。`backup-v1/` 已被 `.gitignore`
+> 排除在仓库之外，不会干扰入口识别。
 
 ### 方案 B · 腾讯云 CloudBase（得到 `xxx.tcloudbaseapp.com`）
 
@@ -286,8 +325,9 @@ git push -u origin main
 
 | 情况 | 处理 |
 | --- | --- |
-| `git : 无法将"git"项识别为 cmdlet` | 还没装 [Git for Windows](https://git-scm.com/download/win) |
+| `git : 无法将"git"项识别为 cmdlet` | 本机没把 git 装进 PATH。WorkBuddy 自带便携版，直接用全路径调用：`& "C:\Users\20742\.workbuddy\binaries\PortableGit\versions\1.2.0\cmd\git.exe" ...`；或自行安装 [Git for Windows](https://git-scm.com/download/win) |
 | `failed to push` | 检查 `git remote` 里的用户名是否写错 |
+| `git push` 超时 / `TLS connection was reset` | 本机到 `github.com:443` 不通。改用 `node tools/push-to-github.js`（走可达的 `api.github.com`），或换网络 / 换代理节点后重试 |
 | 提示分支名不是 `main` | 执行 `git branch -M main` 再 push |
 | 部署后打开是 404 | 确认 `index.html` 在仓库根目录，Root Directory 留空 |
 | 进度没保存 | 数据存在浏览器 `localStorage`，换设备或清缓存会重置（作业要求不碰数据库） |
@@ -310,3 +350,9 @@ python -m http.server 5173
 - 进度存在浏览器本地，**不做多端同步**（按课程要求不引入数据库）。
 - 音效为程序合成，风格偏 8-bit，未接入真实音频素材。
 - 目前可玩内容为 5 个地区 25 关；新增地区只需往 `TC.DATA.REGIONS` 里加一条数据，关卡会自动展开。
+
+---
+
+## 十一、许可证
+
+[MIT](LICENSE)
