@@ -283,6 +283,16 @@ ul{margin:0;padding:0;list-style:none;}
 }
 .hero-stats b{color:var(--tomato);}
 .hero-stats i{width:2px;height:12px;background:var(--ink-16);border-radius:2px;}
+.map-progress{
+  margin-top:12px;padding:9px 14px;width:100%;
+  background:var(--cream);border:2px solid var(--brown);border-radius:14px;
+  box-shadow:0 3px 0 var(--ink-16);
+}
+.map-progress .mp-top{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;font-weight:700;}
+.map-progress .mp-top b{font-family:var(--font-pixel);font-size:11px;color:var(--mint);}
+.map-progress .mp-track{height:9px;margin-top:7px;border-radius:99px;background:var(--ink-16);overflow:hidden;}
+.map-progress .mp-track i{display:block;height:100%;border-radius:99px;background:var(--mint);transition:width .5s var(--ease);}
+.map-replay{margin-top:10px;width:100%;font-size:12.5px;}
 
 .region-list{display:flex;flex-direction:column;gap:11px;}
 .region-card{
@@ -467,7 +477,8 @@ ul{margin:0;padding:0;list-style:none;}
   position:relative;width:100%;height:7px;
   background:var(--ink-08);border:2px solid var(--brown);border-radius:999px;overflow:hidden;
 }
-.cust-wait > i{display:block;height:100%;width:100%;background:var(--mint);transition:width .18s linear;}
+.cust-wait > i{display:block;height:100%;width:100%;background:var(--mint);transition:width .18s linear,background .18s linear;}
+.cust-wait.is-mid > i{background:var(--yellow);}
 .cust-wait.is-low > i{background:var(--tomato);}
 .cust-wait.is-low{animation:shake .5s var(--ease) infinite;}
 .cust-flag{
@@ -567,6 +578,12 @@ ul{margin:0;padding:0;list-style:none;}
   flex:1 1 auto;text-align:center;font-size:11px;color:var(--ink-30);
   letter-spacing:.06em;padding:0 6px;
 }
+/* 下一步提示（第九优先级）：当前该操作的区域闪一下金色边框 */
+.cust-band.is-next, .pantry-band.is-next{
+  box-shadow:inset 0 0 0 3px var(--yellow);
+  animation:hintPulse 1s var(--ease) infinite;
+}
+@keyframes hintPulse{0%,100%{box-shadow:inset 0 0 0 3px var(--yellow)}50%{box-shadow:inset 0 0 0 3px rgba(255,209,102,.25)}}
 
 .cook-foot{
   flex:0 0 auto;
@@ -725,6 +742,16 @@ ul{margin:0;padding:0;list-style:none;}
 .res-cond .rcn-val{font-family:var(--font-pixel);font-size:11.5px;font-weight:700;color:var(--ink-50);}
 .res-cond.is-ok .rcn-val{color:var(--mint);}
 .res-cond.is-fail .rcn-val{color:var(--tomato);}
+.res-satisfy{
+  margin-top:14px;padding:12px 14px;
+  border:var(--bd) solid var(--brown);border-radius:16px;
+  background:var(--cream);box-shadow:var(--shadow-card);
+}
+.res-satisfy .rsy-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;}
+.res-satisfy .rsy-top b{font-family:var(--font-pixel);font-size:14px;color:var(--mint);}
+.res-satisfy .rsy-track{height:10px;margin-top:8px;border-radius:99px;background:var(--ink-16);overflow:hidden;}
+.res-satisfy .rsy-track i{display:block;height:100%;border-radius:99px;background:var(--mint);transition:width .6s var(--ease);}
+.res-satisfy .rsy-note{font-size:10px;color:var(--ink-50);margin-top:6px;}
 .res-money{
   display:flex;gap:10px;margin-top:14px;
 }
@@ -841,6 +868,19 @@ ul{margin:0;padding:0;list-style:none;}
 .up-dots i{width:12px;height:5px;border-radius:2px;background:var(--ink-16);}
 .up-dots i.on{background:var(--mint);}
 .up-act{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.up-vol{flex:0 0 auto;display:flex;align-items:center;gap:8px;}
+.up-vol input[type=range]{
+  -webkit-appearance:none;appearance:none;width:110px;height:6px;border-radius:99px;
+  background:var(--ink-16);outline:none;
+}
+.up-vol input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--tomato);border:2px solid var(--brown);cursor:pointer;
+}
+.up-vol input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;background:var(--tomato);border:2px solid var(--brown);cursor:pointer;
+}
+.up-vol b{font-family:var(--font-pixel);font-size:11px;color:var(--mint);min-width:34px;text-align:right;}
 
 /* ==========================================================================
    页面 5 · 图鉴 / 成就 / 每日任务
@@ -1171,6 +1211,55 @@ ul{margin:0;padding:0;list-style:none;}
 .boot-bar > i{display:block;height:100%;width:36%;background:var(--tomato);animation:bootSlide 1.1s ease-in-out infinite;}
 @keyframes bootSlide{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
 
+/* 成就全屏动画（第九优先级） */
+#achBanner{
+  position:fixed;inset:0;z-index:120;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  background:rgba(61,43,31,.72);
+  opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s;
+}
+#achBanner.is-on{opacity:1;visibility:visible;}
+.ach-banner-box{
+  position:relative;width:100%;max-width:320px;
+  padding:34px 22px 28px;text-align:center;
+  background:var(--cream);border:3px solid var(--brown);border-radius:22px;
+  box-shadow:0 10px 0 rgba(0,0,0,.25);
+  overflow:hidden;
+  animation:achPop .5s var(--ease);
+}
+@keyframes achPop{0%{transform:scale(.6) rotate(-6deg);opacity:0}60%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+.ach-banner-rays{
+  position:absolute;inset:0;pointer-events:none;
+  background:conic-gradient(from 0deg,
+    rgba(255,209,102,.28) 0deg, transparent 20deg,
+    rgba(255,209,102,.28) 40deg, transparent 60deg,
+    rgba(255,209,102,.28) 80deg, transparent 100deg,
+    rgba(255,209,102,.28) 120deg, transparent 140deg,
+    rgba(255,209,102,.28) 160deg, transparent 180deg,
+    rgba(255,209,102,.28) 200deg, transparent 220deg,
+    rgba(255,209,102,.28) 240deg, transparent 260deg,
+    rgba(255,209,102,.28) 280deg, transparent 300deg,
+    rgba(255,209,102,.28) 320deg, transparent 340deg);
+  animation:achSpin 3s linear infinite;
+}
+@keyframes achSpin{to{transform:rotate(360deg)}}
+.ach-banner-ico{position:relative;font-size:56px;line-height:1;animation:achBob 1s var(--ease) infinite;}
+@keyframes achBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.ach-banner-label{
+  position:relative;margin-top:12px;
+  font-family:var(--font-pixel);font-size:12px;letter-spacing:.12em;color:var(--tomato);
+}
+.ach-banner-name{position:relative;margin-top:6px;font-size:20px;font-weight:900;color:var(--brown);}
+.ach-banner-desc{position:relative;margin-top:6px;font-size:12px;color:var(--ink-70);}
+.ach-banner-reward{
+  position:relative;margin-top:14px;display:inline-block;
+  padding:6px 14px;border:2px solid var(--brown);border-radius:999px;
+  background:var(--yellow);font-family:var(--font-pixel);font-size:13px;color:var(--brown);
+}
+#achBanner .ach-banner-tap{
+  position:relative;margin-top:18px;font-size:11px;color:var(--ink-50);letter-spacing:.06em;
+}
+
 /* 无障碍 / 降级 */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
@@ -1216,6 +1305,8 @@ ul{margin:0;padding:0;list-style:none;}
             <span><b id="mapStars">0</b> ★</span><i></i>
             <span>Lv.<b id="mapLevel">1</b></span>
           </div>
+          <div class="map-progress" id="mapProgress" hidden></div>
+          <button class="btn btn-ghost map-replay" id="btnReplay" type="button" hidden>↻ 重玩上一关</button>
         </div>
         <div class="region-list" id="regionList"></div>
         <p class="map-foot" id="mapFoot">· 点 点 地 球 仪 试 试 ·</p>
@@ -1253,6 +1344,7 @@ ul{margin:0;padding:0;list-style:none;}
         <h2 class="res-title" id="resTitle"></h2>
         <p class="res-sub" id="resSub"></p>
         <div class="res-conds" id="resConds"></div>
+        <div class="res-satisfy" id="resSatisfy"></div>
         <div class="res-money" id="resMoney"></div>
         <div class="res-exp" id="resExp"></div>
         <div class="res-unlock" id="resUnlock"></div>
@@ -1381,6 +1473,18 @@ ul{margin:0;padding:0;list-style:none;}
   <div class="boot-sub">LOADING</div>
 </div>
 
+<!-- ================= 成就全屏动画（第九优先级） ================= -->
+<div id="achBanner" hidden>
+  <div class="ach-banner-box">
+    <div class="ach-banner-rays"></div>
+    <div class="ach-banner-ico" id="achBannerIco">🏆</div>
+    <div class="ach-banner-label">成就达成</div>
+    <div class="ach-banner-name" id="achBannerName"></div>
+    <div class="ach-banner-desc" id="achBannerDesc"></div>
+    <div class="ach-banner-reward" id="achBannerReward"></div>
+  </div>
+</div>
+
 <script>
 /* ==========================================================================
    Travel Chefs / 旅行大厨  —— 全部逻辑内联（单文件交付）
@@ -1390,7 +1494,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.3.2';
+TC.VERSION = '2.4.0';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -1474,6 +1578,15 @@ TC.bootError = null;
     return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
   };
 
+  /** 给定 YYYY-MM-DD，往前/往后偏移 offset 天，返回同格式字符串（本地时区） */
+  U.dayOffset = function (dateStr, offset) {
+    var parts = String(dateStr || '').split('-');
+    if (parts.length !== 3) return '';
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    d.setDate(d.getDate() + (offset || 0));
+    return U.today(d);
+  };
+
   U.deepClone = function (o) { return JSON.parse(JSON.stringify(o)); };
 
   /** 浅合并（后面的来源覆盖前面的），支持 2 个以上来源 */
@@ -1543,7 +1656,14 @@ TC.bootError = null;
       extraDish: 1,
       breakChance: 0.00012,
       breakCooldownMs: 6000
-    }
+    },
+    /** 每日登录奖励（第九优先级）：连签奖励递增
+        loginCoinBase —— 第 1 天基础金币
+        loginCoinStep —— 每天 +N
+        loginCoinCap  —— 封顶 */
+    loginCoinBase: 20,
+    loginCoinStep: 5,
+    loginCoinCap: 50
   };
 
   /* ------------------------------ 地区 ------------------------------ */
@@ -2481,6 +2601,11 @@ TC.bootError = null;
 
     var exp = C.expFor(levelId, run, stars);
 
+    /* 满意度（第九优先级）：成功上菜 ÷ 总上门顾客，没人光顾记 0 */
+    var served = run.served || 0, lost = run.lost || 0;
+    var seen = served + lost;
+    var satisfaction = seen > 0 ? Math.round((served / seen) * 100) : 0;
+
     return {
       levelId: levelId,
       levelName: l.name,
@@ -2498,11 +2623,12 @@ TC.bootError = null;
       halved: halved,
       totalGain: orderCoins + (run.tips || 0) + clearBonus + firstBonus,
       exp: exp,
-      served: run.served || 0,
-      lost: run.lost || 0,
+      served: served,
+      lost: lost,
       timeouts: run.timeouts || 0,
       maxCombo: run.maxCombo || 0,
       perfect: run.perfect || 0,
+      satisfaction: satisfaction,
       unlockLevelId: cleared ? l.unlockOnClear : null
     };
   };
@@ -2574,6 +2700,8 @@ TC.bootError = null;
       regions: regions,
       decor: decor,
       upgrades: upgrades,
+      /** 最近玩过的一关（第九优先级：地图页「一键重玩上一关」用） */
+      lastLevelId: '',
       /** 困难模式星级：save.hard[regionId][levelId]，独立于普通 regions */
       hard: {},
       stats: {
@@ -2586,7 +2714,12 @@ TC.bootError = null;
         date: '',
         tasks: [],
         claimed: [],
-        metrics: { plays: 0, maxCombo: 0, customers: 0, bestCoins: 0, perfect: 0, upgrades: 0 }
+        metrics: { plays: 0, maxCombo: 0, customers: 0, bestCoins: 0, perfect: 0, upgrades: 0 },
+        /** 每日登录奖励（第九优先级）：
+              loginDay    —— 上次领取登录奖励的日期（YYYY-MM-DD），空串表示从没领过
+              loginStreak —— 连续登录天数（每天 +1，断签归 1） */
+        loginDay: '',
+        loginStreak: 0
       },
       /** 彩蛋 1 是「每天一次」：
             globe         —— 今日已点次数（跨天由 TC.Easter.globeRollover 清零）
@@ -2596,7 +2729,7 @@ TC.bootError = null;
       easter: { globe: 0, globeDay: '', globeFired: false, globeFiredDay: '', rainbow: false, penguin: false },
       /** 特殊顾客（第六优先级）：已遇见的特殊顾客 id + 旅行博主最后来的日子 */
       guest: { seen: {}, lastDay: '' },
-      settings: { sound: true, vibrate: true },
+      settings: { sound: true, vibrate: true, volume: 100 },
       /** 新手教程是否已看完。false 时首次进入游戏自动播放；
           老存档没有这个字段 → normalize 会补成 false，等于让老玩家也看一次，
           这是有意的（他们同样需要看到新手指引）。 */
@@ -2617,6 +2750,10 @@ TC.bootError = null;
       if (typeof raw[k] === 'number' && isFinite(raw[k])) out[k] = Math.max(0, Math.floor(raw[k]));
     });
     out.level = Math.max(1, out.level);
+    /* 最近玩过的一关（第九优先级）：只认真实存在的关卡 id */
+    if (typeof raw.lastLevelId === 'string' && D.level(raw.lastLevelId)) {
+      out.lastLevelId = raw.lastLevelId;
+    }
 
     // 地区星级
     D.REGIONS.forEach(function (rg) {
@@ -2687,6 +2824,9 @@ TC.bootError = null;
       var v = (day.metrics || {})[k];
       out.daily.metrics[k] = (typeof v === 'number' && isFinite(v) && v >= 0) ? Math.floor(v) : 0;
     });
+    /* 每日登录奖励（第九优先级）：老档没有这两个字段 → 补空 */
+    out.daily.loginDay = typeof day.loginDay === 'string' ? day.loginDay : '';
+    out.daily.loginStreak = (typeof day.loginStreak === 'number' && day.loginStreak > 0) ? Math.floor(day.loginStreak) : 0;
 
     // 彩蛋
     var e = raw.easter || {};
@@ -2701,6 +2841,8 @@ TC.bootError = null;
     var st = raw.settings || {};
     out.settings.sound = st.sound === undefined ? true : !!st.sound;
     out.settings.vibrate = st.vibrate === undefined ? true : !!st.vibrate;
+    /* 音量（第九优先级）：0~100，缺省 100 */
+    out.settings.volume = (typeof st.volume === 'number' && isFinite(st.volume)) ? U.clamp(st.volume, 0, 100) : 100;
 
     // 新手教程（老存档没有此字段 → 保持 blank 的 false，即会播一次）
     out.tutorialDone = raw.tutorialDone === true;
@@ -2863,6 +3005,31 @@ TC.bootError = null;
   };
   S.isTaskClaimed = function (save, taskId) {
     return (save.daily.claimed || []).indexOf(taskId) !== -1;
+  };
+
+  /* ------------------------- 每日登录奖励（第九优先级） ------------------------- */
+  /**
+   * 尝试领取今日登录奖励；同一天只能领一次。
+   * 奖励随连续登录天数递增：第 1 天 20 金币，之后每天 +5，上限 50 金币。
+   * @returns {{ok:boolean, already:boolean, reward?:object, streak:number}}
+   */
+  S.tryLoginReward = function (save, today) {
+    var date = today || U.today();
+    if (!save.daily) save.daily = S.blank().daily;
+    if (save.daily.loginDay === date) return { ok: false, already: true, streak: save.daily.loginStreak || 0 };
+
+    /* 连签判定：昨天领过 → 续签 +1，否则断签从 1 重新开始 */
+    var yesterday = U.dayOffset(date, -1);
+    var streak = (save.daily.loginDay === yesterday && save.daily.loginStreak > 0)
+      ? save.daily.loginStreak + 1 : 1;
+
+    save.daily.loginDay = date;
+    save.daily.loginStreak = streak;
+
+    var coins = Math.min(D.CONFIG.loginCoinBase + (streak - 1) * D.CONFIG.loginCoinStep, D.CONFIG.loginCoinCap);
+    var reward = { coins: coins };
+    S.award(save, reward);
+    return { ok: true, already: false, reward: reward, streak: streak };
   };
   /** 领奖；未达成或已领过返回 {ok:false} */
   S.claimTask = function (save, taskId) {
@@ -3205,6 +3372,57 @@ TC.bootError = null;
         art: (D.ingredient(s.id) || {}).art || null
       };
     });
+  };
+
+  /**
+   * 下一步该做什么（第九优先级：下一步提示小箭头）。
+   * 依据当前订单的推进阶段，返回一个建议动作与目标位置，供 UI/Scene 画引导箭头。
+   * 判定顺序（越低越该先做）：
+   *   ① 没有在等的顾客            → wait   （等客人）
+   *   ② 有锅已经熟了还没盛         → plate  （把菜盛到盘子，最优先，别让它糊）
+   *   ③ 有锅在煮                  → cooking（等，箭头指向灶台）
+   *   ④ 当前订单的菜还没备齐料     → ingredient（点食材台缺的那样）
+   *   ⑤ 备齐料、锅还没开火         → fire    （点灶台点火）
+   *   ⑥ 有盘子可送                → serve   （把盘子拖给顾客）
+   * @returns {{action:string, potIdx:number|null, ingredientId:string|null}}
+   */
+  L.nextAction = function (run) {
+    if (!run || run.over) return { action: 'wait', potIdx: null, ingredientId: null };
+    var o = L.currentOrder(run);
+    if (!o) return { action: 'wait', potIdx: null, ingredientId: null };
+
+    /* ② 有盘子可送（最优先：盘子里的菜就是给顾客的，别放凉） */
+    for (var i = 0; i < run.plates.length; i++) {
+      if (run.plates[i]) return { action: 'serve', potIdx: null, ingredientId: null };
+    }
+
+    /* ③ 有锅熟了还没盛 */
+    for (var q = 0; q < run.pots.length; q++) {
+      if (run.pots[q] && run.pots[q].state === 'ready') {
+        return { action: 'plate', potIdx: q, ingredientId: null };
+      }
+    }
+
+    /* ④ 有锅在煮 */
+    for (var p = 0; p < run.pots.length; p++) {
+      if (run.pots[p] && run.pots[p].state === 'cooking') {
+        return { action: 'cooking', potIdx: p, ingredientId: null };
+      }
+    }
+
+    /* ⑤ 还缺配料（只对「当前订单的菜」判定；锅已在煮/熟的菜不算缺） */
+    var missing = null;
+    for (var s = 0; s < o.steps.length; s++) {
+      if (!o.steps[s].done) { missing = o.steps[s].id; break; }
+    }
+    if (missing) return { action: 'ingredient', potIdx: run.pots.indexOf(o.pot), ingredientId: missing };
+
+    /* ⑥ 备齐料但没开火：找到这口 prep 锅 */
+    if (o.pot && o.pot.state === 'prep' && o.pot.done.length >= o.pot.steps.length) {
+      return { action: 'fire', potIdx: run.pots.indexOf(o.pot), ingredientId: null };
+    }
+
+    return { action: 'wait', potIdx: null, ingredientId: null };
   };
 
   /* ------------------------- 事件发射 ------------------------- */
@@ -5398,11 +5616,43 @@ TC.bootError = null;
     fill(ctx, x, y, w, h, color);
     if (old !== undefined) ctx.globalAlpha = old;
   }
-  function outline(ctx, r, color) {
-    fill(ctx, r.x, r.y, r.w, 1, color);
-    fill(ctx, r.x, r.y + r.h - 1, r.w, 1, color);
-    fill(ctx, r.x, r.y, 1, r.h, color);
-    fill(ctx, r.x + r.w - 1, r.y, 1, r.h, color);
+  /**
+   * 脉动小箭头（第九优先级：下一步提示）。
+   * 在目标矩形上方画一个上下跳动的「↓」箭头，颜色由 phase 决定亮暗。
+   */
+  function hintArrow(ctx, cx, yTop, color, frame) {
+    var bounce = (frame % 8 < 4) ? 0 : 1;     // 每 8 帧跳一下
+    var y = yTop - 1 + bounce;
+    fill(ctx, cx - 1, y, 3, 1, color);        // 箭头竖杆
+    fill(ctx, cx - 2, y + 1, 2, 1, color);
+    fill(ctx, cx + 1, y + 1, 2, 1, color);
+    fill(ctx, cx, y + 1, 1, 1, color);
+  }
+
+
+
+  /**
+   * 熟度进度圈（第九优先级）：围绕一个矩形区域顺时针点亮一圈像素，prog∈[0,1]。
+   * 颜色由调用方按熟度三档传入：生=红、半熟=黄、熟=绿。
+   * 用像素块铺一圈边框，比 arc 更贴合本作的像素风。
+   */
+  function ringProgress(ctx, r, prog, color) {
+    var x = r.x, y = r.y, w = r.w, h = r.h;
+    var perim = 2 * w + 2 * (h - 2);              // 一圈的像素块总数（四角不重复）
+    var lit = Math.max(0, Math.min(perim, Math.round(perim * (prog == null ? 0 : prog))));
+    var i, cur = 0;
+    function mark() {
+      if (cur < lit) fill(ctx, x, y, 1, 1, color);
+      cur++;
+    }
+    var k;
+    for (k = 0; k < w; k++) { mark(); x++; }                 // 上边 →
+    x--; y++;
+    for (k = 0; k < h - 2; k++) { mark(); y++; }             // 右边 ↓
+    y--; x--;
+    for (k = 0; k < w - 1; k++) { mark(); x--; }             // 下边 ←
+    x++; y--;
+    for (k = 0; k < h - 2; k++) { mark(); y--; }             // 左边 ↑
   }
 
   /**
@@ -5517,10 +5767,11 @@ TC.bootError = null;
           alphaFill(ctx, pr.x + 2, pr.y + 2, pr.w - 4, pr.h - 6, PAL.y, 0.18);
         } else if (pot.state === 'cooking') {
           var prog = pot.cookTotal ? U.clamp(1 - pot.cookLeft / pot.cookTotal, 0, 1) : 1;
-          fill(ctx, pr.x + 2, pr.y + 3, pr.w - 4, 6, PAL.k);            // 环形进度用横条表示
-          fill(ctx, pr.x + 3, pr.y + 4, Math.round((pr.w - 6) * prog), 4, PAL.r);
+          /* 熟度三档（第九优先级）：<0.5 生=红、0.5~0.8 半熟=黄、≥0.8 熟=绿 */
+          var doneness = prog < 0.5 ? PAL.r : (prog < 0.8 ? PAL.y : PAL.m);
+          ringProgress(ctx, pr, prog, doneness);              // 进度圈
           var flame = 2 + (frame % 2);
-          fill(ctx, pr.x + 4, pr.y + 13, 2, flame, PAL.r);              // 火苗
+          fill(ctx, pr.x + 4, pr.y + 13, 2, flame, PAL.r);    // 火苗
           fill(ctx, pr.x + 10, pr.y + 13, 2, 2 + ((frame + 1) % 2), PAL.r);
           alphaFill(ctx, pr.x, pr.y, pr.w, pr.h, PAL.r, 0.18);
         } else if (pot.state === 'ready') {
@@ -5568,7 +5819,27 @@ TC.bootError = null;
       n += 1;
     }
 
-    /* --- 提示：订单里的菜在哪个锅/盘子（薄荷色小箭头） --- */
+    /* --- 下一步提示小箭头（第九优先级）：指向当前最该操作的位置 --- */
+    var na = L.nextAction(run);
+    if (na && na.action !== 'wait') {
+      var arrowColor = PAL.m;
+      if (na.action === 'ingredient') arrowColor = PAL.y;   // 点食材：黄箭头
+      else if (na.action === 'fire' || na.action === 'cooking' || na.action === 'plate') arrowColor = PAL.m;
+      else if (na.action === 'serve') arrowColor = PAL.r;   // 送菜：红箭头
+      /* 指向锅位：fire / cooking / plate 都落在某口锅上方 */
+      if (na.potIdx != null && na.potIdx >= 0 && lay.pots[na.potIdx]) {
+        var ap = lay.pots[na.potIdx];
+        hintArrow(ctx, ap.x + ap.w / 2, ap.y - 2, arrowColor, frame);
+      } else if (na.action === 'plate') {
+        /* 盛盘：指向出餐台第一个空盘位 */
+        var plateTarget = null;
+        for (var pi = 0; pi < lay.plates.length; pi++) {
+          if (!run.plates[pi]) { plateTarget = lay.plates[pi]; break; }
+        }
+        if (plateTarget) hintArrow(ctx, plateTarget.x + plateTarget.w / 2, plateTarget.y - 2, arrowColor, frame);
+      }
+    }
+    /* 保留：订单里的菜在哪个锅（与上面可能重叠，但提示更具体时不冲突） */
     var order = L.currentOrder(run);
     if (order && order.pot) {
       var oi = run.pots.indexOf(order.pot);
@@ -5723,7 +5994,8 @@ TC.bootError = null;
     door:    { type: 'sine',     gain: 0.045, notes: [[440, 0, 0.07], [554, 0.07, 0.08]] },
     open:    { type: 'sine',     gain: 0.050, notes: [[523, 0, 0.06], [784, 0.06, 0.09]] },
     tool:    { type: 'triangle', gain: 0.070, notes: [[659, 0, 0.05], [880, 0.05, 0.05], [1109, 0.10, 0.09]] },
-    easter:  { type: 'triangle', gain: 0.080, notes: [[523, 0, 0.09], [659, 0.09, 0.09], [784, 0.18, 0.09], [1047, 0.27, 0.22]] }
+    easter:  { type: 'triangle', gain: 0.080, notes: [[523, 0, 0.09], [659, 0.09, 0.09], [784, 0.18, 0.09], [1047, 0.27, 0.22]] },
+    alert:   { type: 'square',   gain: 0.060, notes: [[988, 0, 0.07], [988, 0.09, 0.07]] }
   };
 
   /** 同一音效的最小间隔（ms）：连点时不至于糊成一片噪音 */
@@ -5762,6 +6034,14 @@ TC.bootError = null;
     return save.settings.sound !== false;
   };
 
+  /** 音量倍率（0~1）：读存档 settings.volume（0~100），缺省 1 */
+  A.volume = function (save) {
+    if (!save || !save.settings) return 1;
+    var v = save.settings.volume;
+    if (typeof v !== 'number' || !isFinite(v)) return 1;
+    return Math.max(0, Math.min(100, v)) / 100;
+  };
+
   /** 音频上下文是否已真正建立（供自检） */
   A.ready = function () { return !!ctx; };
 
@@ -5795,6 +6075,7 @@ TC.bootError = null;
     A.resume();
 
     try {
+      var vol = A.volume(save);
       var t0 = c.currentTime || 0;
       for (var i = 0; i < r.notes.length; i++) {
         var n = r.notes[i];
@@ -5805,7 +6086,7 @@ TC.bootError = null;
         osc.type = r.type;
         osc.frequency.value = n[0];
         gn.gain.setValueAtTime(0.0001, bs);
-        gn.gain.exponentialRampToValueAtTime(r.gain, bs + ATTACK);
+        gn.gain.exponentialRampToValueAtTime(r.gain * vol, bs + ATTACK);
         gn.gain.exponentialRampToValueAtTime(0.0001, be);
         osc.connect(gn);
         gn.connect(c.destination);
@@ -5836,7 +6117,7 @@ TC.bootError = null;
    -------------------------------------------------------------------------- */
 (function (TC) {
   'use strict';
-  var D = TC.DATA, U = TC.Util, C = TC.Calc, S = TC.Save, P = TC.Pixel;
+  var D = TC.DATA, U = TC.Util, C = TC.Calc, S = TC.Save, P = TC.Pixel, L = TC.Level;
 
   var UI = {
     ready: false,
@@ -5960,6 +6241,9 @@ TC.bootError = null;
     });
 
     on($('btnStart'), 'click', function () { UI.openNextLevel(); });
+    on($('btnReplay'), 'click', function () {
+      if (UI.save.lastLevelId) UI.openLevel(UI.save.lastLevelId);
+    });
     on($('tbAction'), 'click', function () { UI.runTopbarAction(); });
 
     on($('codexTabs'), 'click', function (e) {
@@ -5991,6 +6275,9 @@ TC.bootError = null;
       var row = closest(e.target, '[data-set]');
       if (row) UI.onSetting(row.getAttribute('data-set'));
     });
+    on($('setList'), 'input', function (e) {
+      if (e.target && e.target.id === 'volSlider') UI.onVolume(e.target.value);
+    });
 
     // 二次确认框
     on($('dialogHost'), 'click', function (e) {
@@ -5998,6 +6285,9 @@ TC.bootError = null;
     });
     on($('dlgYes'), 'click', function () { UI.closeDialog(true); });
     on($('dlgNo'), 'click', function () { UI.closeDialog(false); });
+
+    // 成就全屏动画：点一下立即关闭（第九优先级）
+    on($('achBanner'), 'click', function () { UI.closeAchBanner(); });
   }
 
   /* ======================== 路由回调 ======================== */
@@ -6332,10 +6622,48 @@ TC.bootError = null;
     setText('mapStars', C.totalStars(s));
     setText('mapLevel', s.level);
     UI.syncGlobeHud();          // 角标 / 底部文案，同时完成跨天归零
+    UI.renderRegionProgress(s);  // 地区解锁进度条（第九优先级）
+
+    /* 一键重玩上一关（第九优先级）：玩过至少一关才显示 */
+    var replayBtn = $('btnReplay');
+    if (replayBtn) {
+      var last = s.lastLevelId && D.level(s.lastLevelId);
+      replayBtn.hidden = !last;
+      if (last) {
+        replayBtn.textContent = '↻ 重玩 ' + last.name;
+        replayBtn.setAttribute('aria-label', '重玩上一关：' + last.name);
+      }
+    }
 
     setHtml('regionList', D.REGIONS.map(regionCardHtml).join(''));
     UI.topbarCenter = 'Travel Chefs';
     UI.refreshBadges();
+    return true;
+  };
+
+  /** 地区解锁进度条（第九优先级）：显示总星数到下一个未解锁地区的门槛 */
+  UI.renderRegionProgress = function (s) {
+    var host = $('mapProgress');
+    if (!host) return false;
+    var totalStars = C.totalStars(s);
+    /* 找下一个还没解锁的地区 */
+    var next = null;
+    for (var i = 0; i < D.REGIONS.length; i++) {
+      if (!C.isRegionUnlocked(s, D.REGIONS[i].id)) { next = D.REGIONS[i]; break; }
+    }
+    if (!next) {
+      /* 全解锁：显示 5/5 地区全开 */
+      host.hidden = false;
+      host.innerHTML = '<div class="mp-top"><span>🌍 地区解锁</span><b>5 / 5 全开</b></div>' +
+        '<div class="mp-track"><i style="width:100%"></i></div>';
+      return true;
+    }
+    var goal = next.unlockStars;
+    var pct = Math.round(U.clamp(totalStars / goal, 0, 1) * 100);
+    host.hidden = false;
+    host.innerHTML = '<div class="mp-top"><span>🌍 解锁 ' + esc(next.name) + '</span>' +
+      '<b>' + totalStars + ' / ' + goal + ' ★</b></div>' +
+      '<div class="mp-track"><i style="width:' + pct + '%"></i></div>';
     return true;
   };
 
@@ -6491,6 +6819,9 @@ TC.bootError = null;
     UI.result = null;
     UI._settled = false;
     UI._hard = !!opts.hard;   // 记录本局是挑战模式（结算文案用）
+    /* 记录最近玩的一关（第九优先级：一键重玩上一关），困难局也记成普通关方便回跳 */
+    UI.save.lastLevelId = levelId;
+    UI.persist();
     // force:true —— 从结算页「再来一次」时允许重进同一视图并重新开循环
     TC.Router.go('cook', { force: true, loop: opts.loop });
     return true;
@@ -6592,10 +6923,22 @@ TC.bootError = null;
   }
 
   function renderSettings() {
-    var st = UI.save.settings || { sound: true, vibrate: true };
+    var st = UI.save.settings || { sound: true, vibrate: true, volume: 100 };
+    var vol = (typeof st.volume === 'number' && isFinite(st.volume)) ? Math.round(st.volume) : 100;
     setHtml('setList',
       setRowHtml('sound', '音效', '做菜、收银、彩蛋的提示音', st.sound !== false) +
       setRowHtml('vibrate', '震动', '手机上关键操作的轻震动反馈', st.vibrate !== false) +
+      '<div class="up-row">' +
+        '<span class="up-ico">🔉</span>' +
+        '<span class="up-body">' +
+          '<span class="up-name">音量</span>' +
+          '<span class="up-desc">拖一拖调节所有音效的响度</span>' +
+        '</span>' +
+        '<span class="up-vol">' +
+          '<input type="range" min="0" max="100" step="5" value="' + vol + '" id="volSlider" aria-label="音量">' +
+          '<b id="volVal">' + vol + '%</b>' +
+        '</span>' +
+      '</div>' +
       '<div class="up-row" data-set="tutorial" role="button" tabindex="0">' +
         '<span class="up-ico">🎓</span>' +
         '<span class="up-body">' +
@@ -6616,11 +6959,28 @@ TC.bootError = null;
       if (key === 'sound' && s.settings.sound) sfx('tap');
       return s.settings[key];
     }
+    if (key === 'volume') {
+      var v = U.clamp(Math.round(Number(key) || 0), 0, 100);
+      s.settings.volume = v;
+      UI.persist();
+      return v;
+    }
     if (key === 'tutorial') {
       UI.closeModal('modalSettings');
       return UI.tutStart();
     }
     return false;
+  };
+
+  /** 音量滑块：input 实时拖拽调整音量（第九优先级） */
+  UI.onVolume = function (raw) {
+    var v = U.clamp(Math.round(Number(raw) || 0), 0, 100);
+    UI.save.settings.volume = v;
+    UI.persist();
+    var val = $('volVal');
+    if (val) val.textContent = v + '%';
+    if (v > 0) sfx('tap');
+    return v;
   };
 
   /* ========================================================================
@@ -6834,6 +7194,17 @@ TC.bootError = null;
     return UI.tutStart({ auto: true });
   };
 
+  /** 每日登录奖励（第九优先级）：每天第一次触发弹提示，当天再进不重复 */
+  UI.tryLoginReward = function () {
+    var res = S.tryLoginReward(UI.save, U.today());
+    if (!res.ok || res.already) return false;
+    UI.persist();
+    sfx('coin');
+    UI.toast('🎁 连续登录第 ' + res.streak + ' 天 · 金币 +' + res.reward.coins, 'gold', 2600);
+    UI.updateTopbar(TC.Router.current);
+    return true;
+  };
+
   var tutBound = false;
   function bindTut() {
     if (tutBound) return;
@@ -6918,6 +7289,7 @@ TC.bootError = null;
     var dish = D.dish(c.dishId) || {};
     var ratio = c.patienceMax ? U.clamp(c.patienceLeft / c.patienceMax, 0, 1) : 1;
     var low = c.state === 'waiting' && ratio <= 0.3;
+    var mid = c.state === 'waiting' && ratio <= 0.6 && !low;
     var cls = 'cust' +
       (run.selected === c.uid ? ' is-sel' : '') +
       (c.state === 'lost' ? ' is-lost' : '') +
@@ -6938,7 +7310,7 @@ TC.bootError = null;
         '<canvas width="' + W + '" height="' + H + '" aria-hidden="true"></canvas>' +
       '</span>' +
       '<span class="cust-name">' + esc(c.name) + '</span>' +
-      '<span class="cust-wait' + (low ? ' is-low' : '') + '"><i style="width:' + Math.round(ratio * 100) + '%"></i></span>' +
+      '<span class="cust-wait' + (low ? ' is-low' : (mid ? ' is-mid' : '')) + '"><i style="width:' + Math.round(ratio * 100) + '%"></i></span>' +
       '<span class="cust-tip" aria-hidden="true"></span>' +
     '</button>';
   }
@@ -6999,6 +7371,9 @@ TC.bootError = null;
     if (!host || !host.querySelectorAll) return 0;
     var nodes = host.querySelectorAll('[data-uid]');
     var n = 0;
+    /* 变红警示音只对「刚跨过 30% 门槛」的顾客响一次，用 uid 去重 */
+    if (!UI._alerted || UI._alerted.run !== run.uid) UI._alerted = { run: run.uid, ids: {} };
+    var alerted = UI._alerted.ids;
     for (var i = 0; i < nodes.length; i++) {
       var uid = nodes[i].getAttribute('data-uid');
       var c = null;
@@ -7008,7 +7383,16 @@ TC.bootError = null;
       if (!c) continue;
       var ratio = c.patienceMax ? U.clamp(c.patienceLeft / c.patienceMax, 0, 1) : 1;
       var bar = nodes[i].querySelector('.cust-wait');
-      if (bar && bar.classList) bar.classList.toggle('is-low', c.state === 'waiting' && ratio <= 0.3);
+      var isLow = c.state === 'waiting' && ratio <= 0.3;
+      var isMid = c.state === 'waiting' && ratio <= 0.6 && !isLow;
+      if (bar && bar.classList) {
+        bar.classList.toggle('is-low', isLow);
+        bar.classList.toggle('is-mid', isMid);
+      }
+      if (isLow && !alerted[c.uid]) {
+        alerted[c.uid] = 1;
+        sfx('alert');
+      }
       var fill = bar && bar.firstElementChild ? bar.firstElementChild : null;
       if (fill && fill.style) fill.style.width = Math.round(ratio * 100) + '%';
       n += 1;
@@ -7251,7 +7635,20 @@ TC.bootError = null;
     UI.syncOrder(run);
     UI.syncPantry(run);
     UI.syncTools(run);
+    UI.syncNextHint(run);
     return true;
+  };
+
+  /** 下一步提示（第九优先级）：在食材台/顾客带边缘亮金色提示，指出当前该操作的区域 */
+  UI.syncNextHint = function (run) {
+    var na = run ? L.nextAction(run) : null;
+    var cust = $('custBand');
+    var pantry = $('pantryBand');
+    var isIng = na && na.action === 'ingredient';
+    var isServe = na && na.action === 'serve';
+    if (cust && cust.classList) cust.classList.toggle('is-next', !!isServe);
+    if (pantry && pantry.classList) pantry.classList.toggle('is-next', !!isIng);
+    return !!na;
   };
 
   /* ------------------------- 小表现件 ------------------------- */
@@ -7751,6 +8148,51 @@ TC.bootError = null;
       '<span>' + esc(text) + '</span></div>';
   }
 
+  /* 成就全屏动画（第九优先级）：依次展示本局新解锁的成就 */
+  var _achQueue = [];
+  UI.showAchBanner = function (achievements) {
+    if (!achievements || !achievements.length) return false;
+    _achQueue = _achQueue.concat(achievements);
+    if (_achQueue.length > achievements.length) return true;  // 已有动画在播，排队即可
+    UI._nextAchBanner();
+    return true;
+  };
+  UI._nextAchBanner = function () {
+    var host = $('achBanner');
+    if (!host || !_achQueue.length) return false;
+    var a = _achQueue.shift();
+    setText('achBannerIco', a.icon || '🏆');
+    setText('achBannerName', a.name || '');
+    setText('achBannerDesc', a.desc || '');
+    var rw = a.reward ? (a.reward.gems ? '💎 ' + a.reward.gems : '🪙 ' + (a.reward.coins || 0)) : '';
+    setText('achBannerReward', rw);
+    host.hidden = false;
+    if (host.classList) {
+      host.classList.remove('is-on');
+      void host.offsetWidth;
+      host.classList.add('is-on');
+    }
+    sfx('easter');
+    /* 2.6 秒后自动关闭；若队列里还有下一条就继续播 */
+    clearTimeout(UI._achTimer);
+    UI._achTimer = setTimeout(function () {
+      if (host.classList) host.classList.remove('is-on');
+      if (_achQueue.length) setTimeout(UI._nextAchBanner, 200);
+      else setTimeout(function () { host.hidden = true; }, 300);
+    }, 2600);
+    return true;
+  };
+  UI.closeAchBanner = function () {
+    var host = $('achBanner');
+    clearTimeout(UI._achTimer);
+    _achQueue = [];
+    if (host) {
+      if (host.classList) host.classList.remove('is-on');
+      host.hidden = true;
+    }
+    return true;
+  };
+
   var resultBound = false;
   function bindResult() {
     if (resultBound) return;
@@ -7778,6 +8220,14 @@ TC.bootError = null;
       ' 位 · 流失 ' + res.lost + ' 位 · 最高 ' + res.maxCombo + ' 连击');
 
     setHtml('resConds', res.conditions.map(condHtml).join(''));
+
+    /* 满意度（第九优先级）：成功上菜 ÷ 总上门顾客，百分比 */
+    var sat = res.satisfaction != null ? res.satisfaction : 0;
+    var satNote = sat >= 90 ? '宾客尽欢，好评如潮' : (sat >= 60 ? '大部分人吃得满意' : (sat > 0 ? '有顾客失望离开，再接再厉' : '还没开张就收摊了'));
+    setHtml('resSatisfy',
+      '<div class="rsy-top"><span>😊 顾客满意度</span><b>' + sat + '%</b></div>' +
+      '<div class="rsy-track"><i style="width:' + sat + '%"></i></div>' +
+      '<div class="rsy-note">' + esc(satNote) + '</div>');
 
     setHtml('resMoney',
       '<div class="money-box is-coin">' +
@@ -7817,6 +8267,8 @@ TC.bootError = null;
       unlock += unlockHtml(a.icon || '🏆', '成就达成：' + a.name);
     });
     setHtml('resUnlock', unlock);
+    /* 成就全屏动画（第九优先级）：有新成就就依次弹横幅 */
+    if (res.newAchievements && res.newAchievements.length) UI.showAchBanner(res.newAchievements);
 
     UI.topbarCenter = '';
     UI.updateTopbar('result');
@@ -8331,6 +8783,8 @@ TC.bootError = null;
       TC.Router.onChange(function (n, p, o) { if (TC.UI && TC.UI.onRoute) TC.UI.onRoute(n, p, o); });
       /* 首次进游戏自动播一次新手教程（看过的人 S.needsTutorial 会返回 false） */
       if (TC.UI && TC.UI.tutAutoStart) TC.UI.tutAutoStart();
+      /* 每日登录奖励（第九优先级）：每天首次进入发放，连续登录递增 */
+      if (TC.UI && TC.UI.tryLoginReward) TC.UI.tryLoginReward();
       TC.bootError = null;
     } catch (e) {
       TC.bootError = e;

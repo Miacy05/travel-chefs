@@ -91,8 +91,8 @@ test('TC.Audio 挂在命名空间上，并给出完整的音效清单', () => {
   eq(typeof A.kinds, 'function');
   eq(typeof A.enabled, 'function');
   const kinds = A.kinds();
-  eq(kinds.length, 14, '配方数量变了要同步更新这条断言');
-  ['tap', 'deny', 'add', 'fire', 'coin', 'perfect', 'lost', 'easter'].forEach((k) => {
+  eq(kinds.length, 15, '配方数量变了要同步更新这条断言');
+  ['tap', 'deny', 'add', 'fire', 'coin', 'perfect', 'lost', 'easter', 'alert'].forEach((k) => {
     includes(kinds, k, '缺少音效 ' + k);
   });
 });
@@ -143,7 +143,7 @@ test('没有 AudioContext 时：play 返回 false 且不抛错', () => {
 
 test('无声环境下 kinds / enabled 仍然可用（不依赖音频能力）', () => {
   withoutAudio(() => {
-    eq(A.kinds().length, 14);
+    eq(A.kinds().length, 15);
     eq(A.enabled(save(true)), true);
     eq(A.enabled(save(false)), false);
   });
