@@ -1226,7 +1226,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.1.0';
+TC.VERSION = '2.1.1';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -2256,7 +2256,12 @@ TC.bootError = null;
         claimed: [],
         metrics: { plays: 0, maxCombo: 0, customers: 0, bestCoins: 0, perfect: 0, upgrades: 0 }
       },
-      easter: { globe: 0, globeFired: false, rainbow: false, penguin: false },
+      /** 彩蛋 1 是「每天一次」：
+            globe         —— 今日已点次数（跨天由 TC.Easter.globeRollover 清零）
+            globeDay      —— 上面的计数属于哪一天（YYYY-MM-DD）
+            globeFired    —— 永久记录「曾经触发过」，成就/彩蛋列表用
+            globeFiredDay —— 最后一次触发是哪一天，这就是「每日一次」的闸门 */
+      easter: { globe: 0, globeDay: '', globeFired: false, globeFiredDay: '', rainbow: false, penguin: false },
       settings: { sound: true, vibrate: true },
       /** 新手教程是否已看完。false 时首次进入游戏自动播放；
           老存档没有这个字段 → normalize 会补成 false，等于让老玩家也看一次，
@@ -2332,7 +2337,9 @@ TC.bootError = null;
     // 彩蛋
     var e = raw.easter || {};
     out.easter.globe = (typeof e.globe === 'number' && e.globe >= 0) ? Math.floor(e.globe) : 0;
+    out.easter.globeDay = typeof e.globeDay === 'string' ? e.globeDay : '';
     out.easter.globeFired = !!e.globeFired;
+    out.easter.globeFiredDay = typeof e.globeFiredDay === 'string' ? e.globeFiredDay : '';
     out.easter.rainbow = !!e.rainbow;
     out.easter.penguin = !!e.penguin;
 
@@ -3280,6 +3287,7 @@ TC.bootError = null;
 /* --------------------------------------------------------------------------
    模块：TC.Easter —— 三个彩蛋的计数与触发规则（唯一判定处）
    彩蛋 1 地图地球仪 ×10 → 小飞机 + 金币雨 +50
+          ★ 每个自然日最多触发 1 次；跨天计数自动重置，今天已触发则锁住
    彩蛋 2 单局连续 5 次 Perfect → 彩虹糖
    彩蛋 3 经营页冰箱 ×5 → 企鹅厨师 +1 钻石
    -------------------------------------------------------------------------- */
@@ -3293,28 +3301,102 @@ TC.bootError = null;
   E.RAINBOW_STREAK = D.EASTER.rainbow.perfectStreak;
 
   /* ------------------------- 彩蛋 1：地球仪 ------------------------- */
+  /** easter 字段的规范形状（与 TC.Save.blank().easter 一致，由单测守着不许漂移） */
+  E.blankEaster = function () {
+    return { globe: 0, globeDay: '', globeFired: false, globeFiredDay: '', rainbow: false, penguin: false };
+  };
+  /** 手工构造 / 老版本的存档可能缺字段，用之前先自愈一次 */
+  E.ensure = function (save) {
+    if (!save) return E.blankEaster();
+    if (!save.easter) save.easter = E.blankEaster();
+    var e = save.easter;
+    if (typeof e.globe !== 'number' || !isFinite(e.globe) || e.globe < 0) e.globe = 0;
+    e.globe = Math.floor(e.globe);
+    if (typeof e.globeDay !== 'string') e.globeDay = '';
+    if (typeof e.globeFiredDay !== 'string') e.globeFiredDay = '';
+    e.globeFired = !!e.globeFired;
+    return e;
+  };
+
+  /** 取日期串；today 可注入，便于单测跨天 */
+  function dayOf(today) { return today || U.today(); }
+
   /**
-   * 点一次地球仪；攒满 E.GLOBE_TAPS 次触发，计数清零可重复刷
-   * @returns {{ok,taps,need,fired,reward?}}
+   * 跨天结算：日期一变就把「今日点击计数」清零，于是每天都能重新攒 10 次。
+   * 注意有副作用（和 S.checkDaily 同一套路）：渲染/取状态前调一次即可。
+   * @returns {boolean} 本次是否真的发生了跨天重置
    */
-  E.tapGlobe = function (save) {
-    if (!save.easter) save.easter = { globe: 0, globeFired: false, rainbow: false, penguin: false };
-    save.easter.globe = (save.easter.globe || 0) + 1;
-    if (save.easter.globe >= E.GLOBE_TAPS) {
-      save.easter.globe = 0;
-      save.easter.globeFired = true;
-      TC.Save.award(save, D.EASTER.globe.reward);
-      return { ok: true, fired: true, taps: 0, need: E.GLOBE_TAPS, reward: D.EASTER.globe.reward };
-    }
+  E.globeRollover = function (save, today) {
+    var e = E.ensure(save), d = dayOf(today);
+    if (e.globeDay === d) return false;
+    e.globeDay = d;
+    e.globe = 0;
+    return true;
+  };
+
+  /**
+   * 地球仪「今日」状态。HUD 与 tapGlobe 共用同一份判定，避免两处规则各写一遍。
+   * @returns {{taps,need,locked,firedToday,everFired}}
+   */
+  E.globeState = function (save, today) {
+    var e = E.ensure(save), d = dayOf(today);
+    E.globeRollover(save, d);
+    var firedToday = e.globeFiredDay === d;
     return {
-      ok: false, fired: false,
-      taps: save.easter.globe,
-      need: E.GLOBE_TAPS - save.easter.globe
+      taps: firedToday ? 0 : e.globe,          // 今日已飞过 → 角标回到 0
+      need: firedToday ? 0 : Math.max(0, E.GLOBE_TAPS - e.globe),
+      locked: firedToday,                      // 锁住：今天不再计数、不再发奖
+      firedToday: firedToday,
+      everFired: !!e.globeFired
     };
   };
 
-  /** 距离下一次触发还差几次（HUD 角标用） */
-  E.globeTapCount = function (save) { return (save && save.easter && save.easter.globe) || 0; };
+  /**
+   * 点一次地球仪。
+   * 规则：攒满 E.GLOBE_TAPS 次触发；★每个自然日最多触发 1 次★，
+   *      跨天后计数从 0 重新开始；今日已触发则返回 locked —— 不计数也不发奖。
+   * @param {string} [today] 注入日期（不传取本机今天）
+   * @returns {{ok,fired,locked,taps,need,everFired,reward?}}
+   */
+  E.tapGlobe = function (save, today) {
+    var e = E.ensure(save);
+    var st = E.globeState(save, today);
+
+    if (st.locked) {
+      return { ok: false, fired: false, locked: true, taps: 0, need: 0, everFired: st.everFired };
+    }
+
+    e.globe += 1;
+    if (e.globe >= E.GLOBE_TAPS) {
+      e.globe = 0;
+      e.globeFired = true;                    // 永久：彩蛋猎人 / 彩蛋列表用
+      e.globeFiredDay = dayOf(today);         // 每日闸门：今天这份已经用掉了
+      TC.Save.award(save, D.EASTER.globe.reward);
+      return {
+        ok: true, fired: true, locked: true,
+        taps: 0, need: E.GLOBE_TAPS,
+        reward: D.EASTER.globe.reward, everFired: true
+      };
+    }
+    return {
+      ok: false, fired: false, locked: false,
+      taps: e.globe,
+      need: E.GLOBE_TAPS - e.globe,
+      everFired: st.everFired
+    };
+  };
+
+  /** 今日已点击次数（HUD 角标用）；今日已触发则恒为 0 */
+  E.globeTapCount = function (save, today) {
+    if (!save || !save.easter) return 0;
+    return E.globeState(save, today).taps;
+  };
+
+  /** 今天是否已经飞过（UI 用来决定点下去是「恭喜」还是「明天再来」） */
+  E.globeFiredToday = function (save, today) {
+    if (!save || !save.easter) return false;
+    return E.globeState(save, today).locked;
+  };
 
   /* ------------------------- 彩蛋 2：彩虹糖 ------------------------- */
   /**
@@ -3345,8 +3427,7 @@ TC.bootError = null;
     if (mod === 0) {
       run.penguinUsed = true;
       if (run.save) {
-        if (!run.save.easter) run.save.easter = { globe: 0, globeFired: false, rainbow: false, penguin: false };
-        run.save.easter.penguin = true;
+        E.ensure(run.save).penguin = true;
         TC.Save.award(run.save, D.EASTER.penguin.reward);
       }
       return { ok: true, penguin: true, taps: run.fridgeTaps, need: E.PENGUIN_TAPS, reward: D.EASTER.penguin.reward };
@@ -3360,7 +3441,7 @@ TC.bootError = null;
   E.list = function (save) {
     var e = (save && save.easter) || {};
     return [
-      { id: 'globe', name: '环球小飞机', icon: '✈️', desc: '在世界地图点地球仪 ' + E.GLOBE_TAPS + ' 次', done: !!e.globeFired },
+      { id: 'globe', name: '环球小飞机', icon: '✈️', desc: '在世界地图点地球仪 ' + E.GLOBE_TAPS + ' 次（每天一次）', done: !!e.globeFired },
       { id: 'rainbow', name: '彩虹糖雨', icon: '🌈', desc: '单局连续 ' + E.RAINBOW_STREAK + ' 次 Perfect 上菜', done: !!e.rainbow },
       { id: 'penguin', name: '企鹅厨师', icon: '🐧', desc: '在厨房点冰箱 ' + E.PENGUIN_TAPS + ' 次', done: !!e.penguin }
     ];
@@ -5273,17 +5354,28 @@ TC.bootError = null;
   UI.globeTheta = function () { return globeLoop.theta; };
 
   /**
-   * 点地球仪：计数 +1，攒满 10 次触发彩蛋 1（小飞机 + 金币雨 +50）
-   * 规则完全来自 TC.Easter.tapGlobe，这里只做表现与刷新
+   * 把地球仪那套地图 HUD 刷成当前存档的样子（角标数字 + 底部文案）。
+   * 角标 / 是否锁住都取自 TC.Easter.globeState 这一份状态，不再各算一遍；
+   * 顺带完成跨天重置 —— 所以进地图页就会自动「新的一天归零」。
+   */
+  UI.syncGlobeHud = function () {
+    var st = TC.Easter.globeState(UI.save, U.today());
+    setText('globeTaps', st.taps);
+    if (UI.els.globeTaps) UI.els.globeTaps.classList.toggle('is-on', st.taps > 0);
+    setText('mapFoot', st.everFired ? '· 全 世 界 都 是 你 的 厨 房 ·' : '· 点 点 地 球 仪 试 试 ·');
+    return st;
+  };
+
+  /**
+   * 点地球仪。规则全在 TC.Easter.tapGlobe（★每天最多触发 1 次★），
+   * 这里只负责表现与刷新。三种结果：触发 / 今天已经飞过 / 继续攒次数。
    */
   UI.tapGlobe = function () {
     var s = UI.save;
-    var res = TC.Easter.tapGlobe(s);
+    var res = TC.Easter.tapGlobe(s, U.today());
     UI.persist();
 
-    var taps = TC.Easter.globeTapCount(s);
-    setText('globeTaps', taps);
-    if (UI.els.globeTaps) UI.els.globeTaps.classList.toggle('is-on', taps > 0);
+    UI.syncGlobeHud();
 
     var globe = $('globe');
     if (globe && globe.classList) {
@@ -5298,9 +5390,12 @@ TC.bootError = null;
       UI.toast('✈️ 环球小飞机！金币 +' + ((res.reward && res.reward.coins) || 0), 'gold');
       sfx('easter');
       vibrate(30);
-      setText('mapFoot', '· 全 世 界 都 是 你 的 厨 房 ·');
       UI.updateTopbar();
       UI.refreshBadges();
+    } else if (res.locked) {
+      // 今天那一份已经用掉了：给个明确交代，别让玩家以为点了没反应
+      UI.toast('✈️ 小飞机今天已经飞过啦，明天再来', null, 1800);
+      sfx('deny');
     } else {
       sfx('tap');
     }
@@ -5403,9 +5498,7 @@ TC.bootError = null;
     setText('mapCleared', C.clearedCount(s));
     setText('mapStars', C.totalStars(s));
     setText('mapLevel', s.level);
-    setText('globeTaps', TC.Easter.globeTapCount(s));
-    if (UI.els.globeTaps) UI.els.globeTaps.classList.toggle('is-on', TC.Easter.globeTapCount(s) > 0);
-    setText('mapFoot', s.easter && s.easter.globeFired ? '· 全 世 界 都 是 你 的 厨 房 ·' : '· 点 点 地 球 仪 试 试 ·');
+    UI.syncGlobeHud();          // 角标 / 底部文案，同时完成跨天归零
 
     setHtml('regionList', D.REGIONS.map(regionCardHtml).join(''));
     UI.topbarCenter = 'Travel Chefs';

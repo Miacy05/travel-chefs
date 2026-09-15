@@ -102,6 +102,23 @@ test('normalize 过滤非法成就与任务 id', () => {
   deepEq(s.daily.claimed, ['d_plays']);
 });
 
+test('normalize 补齐彩蛋 1 的每日字段（老存档没有 globeDay / globeFiredDay）', () => {
+  // 老存档里的 easter 只有 globe / globeFired 两个字段
+  const s = S.normalize({ easter: { globe: 4, globeFired: true, rainbow: true } });
+  eq(s.easter.globe, 4, '已有计数保留');
+  eq(s.easter.globeDay, '', '缺的日期补空串 → 下次打开按跨天处理，当天还能再飞一次');
+  eq(s.easter.globeFiredDay, '', '缺的闸门日期同样补空串');
+  eq(s.easter.globeFired, true, '永久触发记录保留（成就用）');
+  eq(s.easter.rainbow, true);
+  eq(s.easter.penguin, false);
+
+  // 非法值兜底
+  const bad = S.normalize({ easter: { globe: -5, globeDay: 123, globeFiredDay: null } });
+  eq(bad.easter.globe, 0, '负计数归零');
+  eq(bad.easter.globeDay, '', '非字符串日期丢弃');
+  eq(bad.easter.globeFiredDay, '', '非字符串闸门日期丢弃');
+});
+
 /* ------------------------------ 迁移与损坏兜底 ------------------------------ */
 test('migrate 把 v1 存档搬到 v2 且不丢货币', () => {
   const s = S.migrate({ version: 1, coins: 640, gems: 2, exp: 30, level: 4 });

@@ -161,12 +161,24 @@ test('地球仪点 9 次不触发，第 10 次给 50 金币并计数清零', () 
   ne($('mapFoot').textContent.indexOf('厨 房'), -1, '触发后底部文案应变化');
 });
 
-test('彩蛋 1 可以重复刷：再来 10 次再给 50', () => {
+test('彩蛋 1 每天只给一次：同一天再点 10 次不加金币，并弹提示', () => {
   const s = reset();
   for (let i = 0; i < 10; i++) UI.tapGlobe();
   eq(s.coins, 50);
-  for (let i = 0; i < 10; i++) UI.tapGlobe();
-  eq(s.coins, 100, '第二个 10 次再给 50');
+
+  const host = $('toastHost');
+  const before = host.querySelectorAll('.toast').length;
+  for (let i = 0; i < 10; i++) {
+    const res = UI.tapGlobe();
+    eq(res.locked, true, '今天已触发过，应处于锁定态');
+    eq(res.fired, false, '同一天不该再触发');
+  }
+  eq(s.coins, 50, '同一天内拿不到第二份（原来能无限刷）');
+  eq($('globeTaps').textContent, '0', '锁住后角标保持 0');
+
+  const all = host.querySelectorAll('.toast');
+  gt(all.length - before, 0, '点下去应该给个提示，而不是毫无反应');
+  includes(all[all.length - 1].textContent, '明天', '提示要告诉玩家明天再来');
 });
 
 test('地球仪点击写进存档（刷新不丢）', () => {
@@ -175,6 +187,7 @@ test('地球仪点击写进存档（刷新不丢）', () => {
   UI.tapGlobe();
   const reloaded = TC.Save.load();
   eq(reloaded.easter.globe, 2, '点击计数应已落盘');
+  eq(reloaded.easter.globeDay, TC.Util.today(), '计数所属的日期也应落盘');
 });
 
 /* ------------------------------ 地区跳转 ------------------------------ */

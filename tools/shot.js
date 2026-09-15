@@ -7,7 +7,11 @@
      node tools/shot.js --page=map    --out=docs/map.png
      node tools/shot.js --page=codex  --out=docs/codex.png
      node tools/shot.js --page=custom --out=x.png --js="TC.Router.go('map')"
+     node tools/shot.js --url=https://travel-chefs.vercel.app/ --eval="TC.VERSION"
    参数：--size=390x844（默认） --dpr=2（默认） --wait=900（毫秒）
+         --seed=1 造一份"玩过一阵子"的存档；--url= 直接打线上地址
+         --eval=<js> 只在真实浏览器里跑这段 JS，把返回值打到终端就退出（不截图）
+                     —— 当前环境看不了图，靠它回读页面真实状态
    注：脚本自己起一个只服务本项目目录的本地 http 服务 —— file:// 下 localStorage 受限。
    ========================================================================== */
 'use strict';
@@ -36,6 +40,8 @@ const WAIT = Number(arg('wait', 900));
 const SEED = arg('seed', '') === '1';
 /** 指定 --url= 就直接截那个线上地址（用来验收部署后的线上效果），否则截本地 index.html */
 const REMOTE_URL = arg('url', '');
+/** --eval=<js>：只跑一段 JS 并把结果打回终端，不截图（无头浏览器里的「回读状态」） */
+const EVAL = arg('eval', '');
 
 /**
  * 造一份"玩过一阵子"的存档，让截图不是全 0 的空壳。
@@ -165,6 +171,20 @@ async function httpJson(url) {
     if (SEED) {
       await send('Runtime.evaluate', { expression: SEED_JS, returnByValue: true });
       await sleep(120);
+    }
+
+    /* --eval 模式：在真实浏览器里跑一段 JS，把返回值打到终端就收工（不截图） */
+    if (EVAL) {
+      const r = await send('Runtime.evaluate', {
+        expression: EVAL, returnByValue: true, awaitPromise: true
+      });
+      const det = r.result && r.result.exceptionDetails;
+      if (det) throw new Error('--eval 报错：' + JSON.stringify(det));
+      const val = r.result && r.result.result ? r.result.result.value : undefined;
+      console.log(typeof val === 'string' ? val : JSON.stringify(val, null, 2));
+      await send('Browser.close');
+      ws.close();
+      return;
     }
 
     const recipe = PAGES[PAGE] || PAGES.custom;
