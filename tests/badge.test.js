@@ -132,6 +132,7 @@ test('困难徽章：普通全通只是解锁资格，困难关卡全通才发',
   st = C.badgeState(s, hardId);
   eq(st.obtained, true, '困难全通应发困难徽章');
   eq(st.state, 'got');
+  includes(st.effect, '流浪猫', '困难徽章应带实际效果说明（解锁流浪猫）');
 });
 
 test('困难星级独立于普通星级，互不覆盖', () => {

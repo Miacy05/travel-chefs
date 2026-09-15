@@ -178,6 +178,20 @@ test('storage() 在没有 localStorage 时回落到内存实现', () => {
   ok(st && typeof st.getItem === 'function');
 });
 
+test('normalize 迁移累计遇见次数 seenCounts（图鉴「已遇见 X 次」）', () => {
+  const s = S.normalize({
+    stats: {
+      seenCustomers: { office: 1 },
+      seenCounts: { office: 5, kid: 2.9, ghost: 0, bad: 'x' }
+    }
+  });
+  eq(s.stats.seenCustomers.office, 1, '旧字段照常保留');
+  eq(s.stats.seenCounts.office, 5, '合法次数保留');
+  eq(s.stats.seenCounts.kid, 2, '小数次数取整');
+  eq(s.stats.seenCounts.ghost, undefined, '0 次视为无效');
+  eq(s.stats.seenCounts.bad, undefined, '非数字丢弃');
+});
+
 /* ------------------------------ 货币 ------------------------------ */
 test('addCoins 累加并同步累计收益，负数不越界', () => {
   const s = S.blank();
