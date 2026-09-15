@@ -526,6 +526,29 @@ ul{margin:0;padding:0;list-style:none;}
 .pantry-btn.is-done .pb-name{color:var(--mint);}
 .pantry-btn.is-target{animation:pantryPulse 1.1s var(--ease) infinite;}
 @keyframes pantryPulse{0%,100%{box-shadow:0 3px 0 var(--ink-16)}50%{box-shadow:0 3px 0 var(--ink-16),0 0 0 4px rgba(255,209,102,.55)}}
+/* 食材旁的小字：这个配料能用来做本关的哪几道菜 */
+.pantry-btn .pb-dishes{
+  display:flex;gap:2px;max-width:100%;overflow:hidden;
+}
+.pantry-btn .pb-dishes .pb-dish{
+  font-size:8.5px;font-style:normal;font-weight:700;
+  padding:0 3px;border-radius:6px;
+  background:var(--ink-08);color:var(--ink-50);
+  max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pantry-btn .pb-dishes .pb-dish.is-now{background:var(--yellow);color:var(--brown);}
+/* 一键下锅：把「做菜」压成一击 */
+.pantry-all{
+  flex:0 0 auto;align-self:stretch;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  min-width:74px;padding:6px 9px;
+  background:var(--yellow);
+  border:2px solid var(--brown);border-radius:13px;
+  box-shadow:0 3px 0 var(--brown);
+  font-size:10px;font-weight:800;color:var(--brown);
+}
+.pantry-all:active{transform:translateY(3px);box-shadow:0 0 0 var(--brown);}
+.pantry-all .pa-left{font-size:9px;opacity:.75;}
 .pantry-hint{
   flex:1 1 auto;text-align:center;font-size:11px;color:var(--ink-30);
   letter-spacing:.06em;padding:0 6px;
@@ -562,18 +585,51 @@ ul{margin:0;padding:0;list-style:none;}
   flex:0 0 auto;font-family:var(--font-pixel);font-size:12px;font-weight:700;
   color:var(--tomato);text-align:right;
 }
-.tools{flex:0 0 auto;display:flex;gap:6px;}
+/* 道具：平时收在一个开关后面（第二优先级：不常用功能折叠成二级菜单） */
+.tools{flex:0 0 auto;position:relative;display:flex;gap:6px;align-items:center;}
+.tool-toggle{
+  position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  min-width:50px;height:48px;padding:0 7px;
+  background:var(--cream);
+  border:2px solid var(--brown);border-radius:14px;
+  font-size:16px;line-height:1;color:var(--brown);
+  box-shadow:0 3px 0 var(--brown);
+  transition:transform .12s var(--ease),box-shadow .12s var(--ease);
+}
+.tool-toggle:active{transform:translateY(3px);box-shadow:0 0 0 var(--brown);}
+.tool-toggle .tt-label{font-size:9.5px;font-weight:800;}
+.tool-toggle .tt-badge{
+  position:absolute;top:-6px;right:-6px;
+  min-width:17px;height:17px;padding:0 4px;
+  display:none;align-items:center;justify-content:center;
+  background:var(--mint);color:var(--brown);
+  border:2px solid var(--brown);border-radius:999px;
+  font-size:9.5px;font-weight:800;
+}
+.tool-toggle.is-on .tt-badge{display:flex;}
+.tool-sheet{
+  display:none;gap:6px;
+  position:absolute;right:0;bottom:calc(100% + 7px);
+  padding:7px;border-radius:16px;
+  background:var(--cream);border:2px solid var(--brown);
+  box-shadow:0 4px 0 var(--ink-16);
+  z-index:6;
+}
+.tools.is-open .tool-sheet{display:flex;}
 .tool-btn{
   position:relative;
-  width:48px;height:48px;
-  display:flex;align-items:center;justify-content:center;
+  width:52px;height:52px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   background:var(--yellow);
   border:2px solid var(--brown);border-radius:14px;
-  font-size:20px;line-height:1;
+  font-size:18px;line-height:1;
   box-shadow:0 3px 0 var(--brown);
   transition:transform .12s var(--ease),box-shadow .12s var(--ease);
 }
 .tool-btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--brown);}
+/* 按钮都带文字说明，光看图标猜不出「♨️」是干嘛的 */
+.tool-btn .tt-name{font-size:9px;font-weight:800;color:var(--brown);}
 .tool-btn .tt-cd{
   position:absolute;inset:-2px;
   display:flex;align-items:center;justify-content:center;
@@ -582,6 +638,15 @@ ul{margin:0;padding:0;list-style:none;}
   opacity:0;transition:opacity .2s;
 }
 .tool-btn.is-cd .tt-cd{opacity:1;}
+/* 灶台解锁提示（第二优先级：多灶台逐步点亮） */
+.stove-hint{
+  position:absolute;left:50%;bottom:6px;transform:translateX(-50%);
+  padding:3px 9px;border-radius:999px;
+  background:rgba(255,252,242,.92);
+  border:2px solid var(--brown);
+  font-size:10px;font-weight:700;color:var(--brown);
+  white-space:nowrap;pointer-events:none;
+}
 
 /* 暂停 / 结算弹层 */
 .overlay{
@@ -1157,6 +1222,7 @@ ul{margin:0;padding:0;list-style:none;}
         <canvas id="scene" aria-label="像素厨房场景"></canvas>
         <div class="fly-layer" id="flyLayer"></div>
         <div class="stage-toast" id="stageToast"></div>
+        <div class="stove-hint" id="stoveHint" hidden></div>
       </div>
       <div class="pantry-band" id="pantryBand"></div>
       <div class="cook-foot">
@@ -1309,7 +1375,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.2.0';
+TC.VERSION = '2.2.1';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -3109,8 +3175,9 @@ TC.bootError = null;
     var potIdx = pot ? run.pots.indexOf(pot) : -1;
 
     if (!pot) {
-      // 先看有没有空闲锅位
-      for (var i = 0; i < run.pots.length; i++) {
+      // 先看有没有空闲锅位（只认已经点亮的灶）
+      var active = L.activeSlots(run);
+      for (var i = 0; i < active; i++) {
         if (!run.pots[i]) { potIdx = i; break; }
       }
       if (potIdx === -1) return { ok: false, reason: 'no-pot' };
@@ -3138,10 +3205,63 @@ TC.bootError = null;
     };
   };
 
-  /* ------------------------- 步骤 3：点击锅开始烹饪 ------------------------- */
+  /**
+   * 一键下锅（第二优先级：把「做菜 → 装盘 → 上菜」压到三步）
+   * 把当前订单还没下的食材一次点完 —— 规则与 tapIngredient 完全一致，
+   * 只是批处理；本关只有一道菜可选时，玩家点一下就能直接去开火。
+   * @returns {{ok,tapped:string[],reason?,prepDone,order}}
+   */
+  L.prepAll = function (run) {
+    var tapped = [];
+    var guard = 0;
+    while (guard++ < 12) {
+      var o = L.currentOrder(run);
+      if (!o) return { ok: tapped.length > 0, reason: 'no-order', tapped: tapped, prepDone: false, order: null };
+      var next = null;
+      for (var i = 0; i < o.steps.length; i++) {
+        if (!o.steps[i].done) { next = o.steps[i].id; break; }
+      }
+      if (!next) break;
+      var r = L.tapIngredient(run, next);
+      if (!r.ok) return { ok: tapped.length > 0, reason: r.reason, tapped: tapped, prepDone: false, order: o };
+      tapped.push(next);
+    }
+    var final = L.currentOrder(run);
+    var pot = final ? final.pot : null;
+    return {
+      ok: tapped.length > 0,
+      tapped: tapped,
+      prepDone: !!(pot && pot.done.length >= pot.steps.length),
+      order: final
+    };
+  };
+
+  /* ------------------------- 步骤 3：点锅开火 ------------------------- */
+  /**
+   * 本局当前点亮了几个灶（第二优先级：多灶台默认只激活一个，随服务量逐步点亮）。
+   * 每服务 STOVE_UNLOCK_EVERY 位顾客多点亮一个，最多到 run.slots（升级买来的锅位数）。
+   * 这样一局开始时只有一口锅要管，新手不会手忙脚乱；越打越顺手时灶才一个个亮起来。
+   */
+  L.STOVE_UNLOCK_EVERY = 5;
+  L.activeSlots = function (run) {
+    if (!run || !run.slots) return 0;
+    if (run.tutorial) return 1;                       // 教学局永远只用一口锅
+    var n = 1 + Math.floor((run.served || 0) / L.STOVE_UNLOCK_EVERY);
+    return Math.min(run.slots, Math.max(1, n));
+  };
+  /** 距离下一个灶点亮还差几单（0 表示已经全亮） */
+  L.nextStoveIn = function (run) {
+    var active = L.activeSlots(run);
+    if (active >= run.slots) return 0;
+    return L.STOVE_UNLOCK_EVERY - ((run.served || 0) % L.STOVE_UNLOCK_EVERY);
+  };
+
   L.tapPot = function (run, potIdx) {
     var pot = run.pots[potIdx];
     if (!pot) return { ok: false, reason: 'empty' };
+    if (potIdx >= L.activeSlots(run)) {
+      return { ok: false, reason: 'locked', need: L.nextStoveIn(run), potIdx: potIdx };
+    }
     if (pot.state === 'cooking') return { ok: false, reason: 'cooking' };
     if (pot.state === 'ready') return { ok: false, reason: 'ready' };
     if (pot.done.length < pot.steps.length) {
@@ -4940,10 +5060,21 @@ TC.bootError = null;
     fill(ctx, st.x + 2, st.y + 8, st.w - 4, st.h - 10, PAL.k);
 
     /* --- 锅位 --- */
+    /* 没点亮的灶画成暗的 + 一把小锁，一眼看出「还有几口锅没开」（第二优先级） */
+    var activeSlots = L.activeSlots ? L.activeSlots(run) : lay.pots.length;
     for (var i = 0; i < lay.pots.length; i++) {
       var pr = lay.pots[i], pot = run.pots[i];
+      var locked = i >= activeSlots;
       fill(ctx, pr.x, pr.y, pr.w, pr.h, PAL.k);                         // 锅体
-      fill(ctx, pr.x + 1, pr.y + 1, pr.w - 2, pr.h - 2, PAL.w);
+      fill(ctx, pr.x + 1, pr.y + 1, pr.w - 2, pr.h - 2, locked ? PAL.k : PAL.w);
+      if (locked) {
+        fill(ctx, pr.x + 5, pr.y + 9, 6, 5, PAL.y);                     // 锁扣
+        fill(ctx, pr.x + 6, pr.y + 6, 1, 3, PAL.y);
+        fill(ctx, pr.x + 9, pr.y + 6, 1, 3, PAL.y);
+        fill(ctx, pr.x + 6, pr.y + 5, 4, 1, PAL.y);
+        n += 1;
+        continue;
+      }
       if (pot) {
         var stepN = pot.steps.length;
         var doneN = pot.done.length;
@@ -6451,13 +6582,27 @@ TC.bootError = null;
     return true;
   };
 
+  /** 这个配料在本关能用来做哪几道菜（食材旁的小字说明，第二优先级要求） */
+  UI.ingredientDishes = function (run, ingId) {
+    var pool = (run && run.level && run.level.dishPool) || [];
+    return pool.filter(function (id) {
+      var d = D.dish(id);
+      return d && d.steps.indexOf(ingId) !== -1;
+    });
+  };
+
   UI.syncPantry = function (run) {
     var host = $('pantryBand');
     if (!host) return false;
     var items = TC.Level.pantry(run);
-    var sig = items.map(function (i) { return i.id + (i.done ? '1' : '0'); }).join(',');
+    var order = TC.Level.currentOrder(run);
+    var curDishId = order ? order.dish.id : '';
+    var sig = items.map(function (i) { return i.id + (i.done ? '1' : '0'); }).join(',') +
+      '|' + curDishId + '|' + items.length;
     if (sig === UI._pantrySig) return true;
     UI._pantrySig = sig;
+
+    var left = items.filter(function (i) { return !i.done; }).length;
 
     if (!items.length) {
       host.innerHTML = '<span class="pantry-hint">先接一位顾客，食材台就会摆出这道菜的配料</span>';
@@ -6468,14 +6613,31 @@ TC.bootError = null;
     for (var i = 0; i < items.length; i++) {
       if (!items[i].done) { firstUndone = i; break; }
     }
-    host.innerHTML = items.map(function (it, idx) {
+    var html = items.map(function (it, idx) {
       var cls = 'pantry-btn' + (it.done ? ' is-done' : (idx === firstUndone ? ' is-target' : ''));
+      var dishes = UI.ingredientDishes(run, it.id);
+      var who = dishes.map(function (id) {
+        var d = D.dish(id);
+        return '<i class="pb-dish' + (id === curDishId ? ' is-now' : '') + '">' + esc(d.name) + '</i>';
+      }).join('');
       return '<button class="' + cls + '" data-ing="' + esc(it.id) + '" type="button" ' +
-               'aria-label="' + esc(it.name) + (it.done ? '（已下锅）' : '') + '">' +
+               'aria-label="' + esc(it.name + (it.done ? '（已下锅）' : '') +
+                 (dishes.length ? '，可做：' + dishes.map(function (id) { return D.dish(id).name; }).join('、') : '')) + '">' +
         '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
         '<span class="pb-name">' + esc(it.name) + '</span>' +
+        (who ? '<span class="pb-dishes">' + who + '</span>' : '') +
       '</button>';
     }).join('');
+
+    /* 一键下锅：只剩两样以上才出现（只剩一样时点它自己更快） */
+    if (left > 1) {
+      html += '<button class="pantry-all" data-act="prep-all" type="button" ' +
+                'aria-label="一键下锅：把剩下的 ' + left + ' 样配料一次下完">' +
+                '<span aria-hidden="true">📥</span><span class="pa-name">一键下锅</span>' +
+                '<span class="pa-left">剩 ' + left + ' 样</span>' +
+              '</button>';
+    }
+    host.innerHTML = html;
 
     var btns = host.querySelectorAll('.pantry-btn');
     for (var k = 0; k < items.length && k < btns.length; k++) {
@@ -6485,25 +6647,51 @@ TC.bootError = null;
     return true;
   };
 
+  /**
+   * 道具栏（第二优先级：不常用功能折叠成二级菜单 + 按钮补上文字说明）
+   * 三个道具全是长冷却，平时收在一个「🧰 道具」开关后面；开关上带待用数量角标，
+   * 有道具可用时一眼能看见，点开才展开 —— 常驻按钮从 3 个降到 1 个。
+   */
   UI.syncTools = function (run) {
     var host = $('toolBar');
     if (!host) return false;
     var list = D.TOOLS;
     var sig = list.map(function (t) {
       return t.id + ':' + Math.ceil(TC.Level.toolCdLeft(run, t.id) / 1000);
-    }).join(',');
+    }).join(',') + '|' + (UI._toolOpen ? '1' : '0');
     if (sig === UI._toolSig) return true;
     UI._toolSig = sig;
 
+    var ready = list.filter(function (t) { return TC.Level.toolCdLeft(run, t.id) <= 0; }).length;
+
     if (!UI._toolBuilt) {
       UI._toolBuilt = true;
-      host.innerHTML = list.map(function (t) {
-        return '<button class="tool-btn" data-tool="' + esc(t.id) + '" type="button" ' +
-                 'title="' + esc(t.desc) + '" aria-label="' + esc(t.name + '：' + t.desc) + '">' +
-          '<span aria-hidden="true">' + t.icon + '</span><span class="tt-cd" aria-hidden="true"></span>' +
-        '</button>';
-      }).join('');
+      host.innerHTML =
+        '<button class="tool-toggle" data-act="tool-toggle" type="button" ' +
+          'aria-expanded="false" aria-controls="toolSheet">' +
+          '<span aria-hidden="true">🧰</span><span class="tt-label">道具</span>' +
+          '<span class="tt-badge" aria-hidden="true"></span>' +
+        '</button>' +
+        '<div class="tool-sheet" id="toolSheet">' +
+          list.map(function (t) {
+            return '<button class="tool-btn" data-tool="' + esc(t.id) + '" type="button" ' +
+                     'title="' + esc(t.desc) + '" aria-label="' + esc(t.name + '：' + t.desc) + '">' +
+              '<span class="tt-ico" aria-hidden="true">' + t.icon + '</span>' +
+              '<span class="tt-name">' + esc(t.name) + '</span>' +
+              '<span class="tt-cd" aria-hidden="true"></span>' +
+            '</button>';
+          }).join('') +
+        '</div>';
     }
+
+    var toggle = host.querySelector('.tool-toggle');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', UI._toolOpen ? 'true' : 'false');
+      if (toggle.classList) toggle.classList.toggle('is-on', ready > 0);
+      var badge = toggle.querySelector('.tt-badge');
+      if (badge) badge.textContent = ready > 0 ? String(ready) : '';
+    }
+    if (host.classList) host.classList.toggle('is-open', !!UI._toolOpen);
 
     var btns = host.querySelectorAll('[data-tool]');
     for (var i = 0; i < btns.length; i++) {
@@ -6513,6 +6701,32 @@ TC.bootError = null;
       if (cd) cd.textContent = left > 0 ? String(Math.ceil(left / 1000)) : '';
       if (btns[i].classList) btns[i].classList.toggle('is-cd', left > 0);
     }
+    return true;
+  };
+
+  /** 展开 / 收起道具二级菜单 */
+  UI.toggleTools = function (on) {
+    UI._toolOpen = (on == null) ? !UI._toolOpen : !!on;
+    UI._toolSig = null;
+    UI.syncTools(UI.run);
+    sfx('tap');
+    return UI._toolOpen;
+  };
+
+  /** 灶台解锁提示（挂在订单卡上方的小字） */
+  UI.syncStoveHint = function (run) {
+    var el = $('stoveHint');
+    if (!el || !run) return false;
+    var active = TC.Level.activeSlots(run);
+    var total = run.slots;
+    if (active >= total) {
+      el.textContent = '';
+      el.hidden = true;
+      return false;
+    }
+    var need = TC.Level.nextStoveIn(run);
+    el.hidden = false;
+    el.textContent = '🔥 已点亮 ' + active + '/' + total + ' 口锅 · 再上 ' + need + ' 道菜解锁下一口';
     return true;
   };
 
@@ -6624,12 +6838,42 @@ TC.bootError = null;
     return res;
   };
 
+  /**
+   * 一键下锅（第二优先级）：把当前订单剩下的配料一次点完。
+   * 有了它，「做菜 → 装盘 → 上菜」就是三次点击，不用连着戳五下配料。
+   */
+  UI.prepAll = function () {
+    var run = UI.run;
+    if (!run || run.over) return false;
+    var res = TC.Level.prepAll(run);
+    UI._pantrySig = null;
+    UI._orderSig = null;
+
+    if (!res.ok && !res.tapped.length) {
+      if (res.reason === 'no-order') UI.toast('还没有顾客点单');
+      else if (res.reason === 'no-pot') UI.toast('灶台占满了，先出一锅菜');
+      sfx('deny');
+      return false;
+    }
+    sfx('add');
+    UI.syncPantry(run);
+    UI.syncOrder(run);
+    UI.stageToast('📥 ' + res.tapped.length + ' 样配料一次下锅');
+    if (res.prepDone) UI.stageToast('✅ 备料齐了 · 点锅开火');
+    UI.tutAction('ingredient');
+    return res;
+  };
+
   UI.tapPot = function (potIdx) {
     var run = UI.run;
     if (!run || run.over) return false;
     var res = TC.Level.tapPot(run, potIdx);
     if (!res.ok) {
       if (res.reason === 'not-prepared') UI.toast('还差 ' + res.missing + ' 样配料');
+      else if (res.reason === 'locked') {
+        UI.toast('这个灶还没点着 · 再上 ' + res.need + ' 道菜就自动开', 'gold');
+        UI.stageToast('🔒 再上 ' + res.need + ' 道菜 · 解锁第 ' + (res.potIdx + 1) + ' 口锅');
+      }
       else if (res.reason === 'cooking') UI.toast('这锅正在煮，等等就好');
       else if (res.reason === 'ready') UI.toast('已经出锅了，盛到盘子里吧');
       sfx('deny');
@@ -6639,6 +6883,7 @@ TC.bootError = null;
     UI.stageToast('🔥 开火！');
     UI._orderSig = null;
     UI.syncOrder(run);
+    UI.syncStoveHint(run);
     UI.tutAction('pot');
     return res;
   };
@@ -6880,6 +7125,16 @@ TC.bootError = null;
     UI.renderCustBand(run);
     UI.syncOrder(run);
     UI.syncPantry(run);
+    /* 服务量涨了 → 可能点亮了新灶 */
+    var before = UI._stoveShown == null ? -1 : UI._stoveShown;
+    var active = TC.Level.activeSlots(run);
+    if (before >= 0 && active > before) {
+      UI.stageToast('🔥 第 ' + active + ' 口锅点着了');
+      sfx('ready');
+    }
+    UI._stoveShown = active;
+    UI.syncStoveHint(run);
+    UI.syncTools(run);
     UI.tutAction('serve');
     return res;
   };
@@ -6934,10 +7189,14 @@ TC.bootError = null;
       if (card) UI.pickCustomer(card.getAttribute('data-uid'));
     });
     on($('pantryBand'), 'click', function (e) {
+      var all = closest(e.target, '[data-act="prep-all"]');
+      if (all) { UI.prepAll(); return; }
       var b = closest(e.target, '[data-ing]');
       if (b) UI.tapIngredient(b.getAttribute('data-ing'));
     });
     on($('toolBar'), 'click', function (e) {
+      var tg = closest(e.target, '[data-act="tool-toggle"]');
+      if (tg) { UI.toggleTools(); return; }
       var b = closest(e.target, '[data-tool]');
       if (b) UI.useTool(b.getAttribute('data-tool'));
     });
@@ -6959,15 +7218,18 @@ TC.bootError = null;
     UI._orderSig = null;
     UI._pantrySig = null;
     UI._toolSig = null;
+    UI._toolOpen = false;              // 道具二级菜单每局收起，减少常驻按钮
     UI._tbTime = null;
     UI._combo = -1;
     UI._toolBuilt = false;
+    UI._stoveShown = TC.Level.activeSlots(run);
     UI.cancelDrag();
 
     UI.renderCustBand(run);
     UI.syncOrder(run);
     UI.syncPantry(run);
     UI.syncTools(run);
+    UI.syncStoveHint(run);
     UI.syncCookTopbar(run);
 
     TC.Scene.stop();                                // 先停掉可能还在跑的上一局循环
