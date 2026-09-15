@@ -142,8 +142,8 @@ test('徽章分类：10 枚徽章；未获得显示问号 + 解锁条件', () =>
   const cells = $$('#sub-badge .badge-cell');
   eq(cells.length, D.BADGES.length, '徽章格子数');
   eq($$('#sub-badge .badge-cell.is-got').length, C.badgesObtained(s));
-  eq($$('#sub-badge .badge-cell.is-soon').length, 5, '困难徽章 5 枚应标为未开放');
-  includes($('sub-badge').textContent, '困难模式开发中');
+  eq($$('#sub-badge .badge-cell.is-locked').length, D.BADGES.length - C.badgesObtained(s), '未获得的都灰显');
+  includes($('sub-badge').textContent, '先通关', '困难徽章应提示先通关普通');
   includes($('sub-badge').textContent, '全部 5 关解锁');
   includes($('sub-badge').textContent, '徽 章');
 });

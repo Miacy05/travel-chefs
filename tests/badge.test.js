@@ -6,7 +6,7 @@
 'use strict';
 const H = require('./harness');
 const { loadGame } = require('./helpers');
-const { test, ok, no, eq, ne, section } = H;
+const { test, ok, no, eq, ne, section, includes } = H;
 
 section('徽章');
 
@@ -108,21 +108,40 @@ test('0 星不算通关：全 0 星地区不给徽章', () => {
   eq(C.regionClearedCount(s, rg.id), 0);
 });
 
-test('困难徽章保持"未开放"状态（困难模式还没做）', () => {
+test('困难徽章：普通全通只是解锁资格，困难关卡全通才发', () => {
   const s = save();
-  /* 先把所有地区全部打通，困难徽章也不该因此变成已获得 */
-  D.REGIONS.forEach((rg) => clearRegion(s, rg.id));
-  const hard = D.BADGES.filter((b) => b.kind === 'hard');
-  eq(hard.length, 5);
-  hard.forEach((b) => {
-    const st = C.badgeState(s, b.id);
-    eq(st.obtained, false, b.id + ' 困难模式没做就不该发');
-    eq(st.state, 'soon');
-    eq(st.text, '困难模式开发中');
-    eq(st.progress, 0, '未开放的不显示进度，避免错误期待');
-  });
-  /* 普通徽章则应当全到手 = 5 枚 */
-  eq(C.badgesObtained(s), 5);
+  const rg = D.REGIONS[0];
+  const hardId = 'bd_' + rg.id + '_hard';
+
+  /* 没打普通关卡：困难徽章未解锁，提示先通关普通 */
+  let st = C.badgeState(s, hardId);
+  eq(st.obtained, false);
+  eq(st.state, 'locked');
+  includes(st.text, '普通关卡');
+
+  /* 普通全通：解锁困难模式资格，但困难徽章仍未获得 */
+  clearRegion(s, rg.id);
+  st = C.badgeState(s, hardId);
+  eq(C.hardUnlocked(s, rg.id), true, '普通全通应解锁困难模式');
+  eq(st.obtained, false);
+  eq(st.state, 'locked');
+  includes(st.text, '困难关卡');
+
+  /* 困难关卡全通：发困难徽章 */
+  rg.levels.forEach((lid) => { S.setHardStars(s, lid, 2); });
+  st = C.badgeState(s, hardId);
+  eq(st.obtained, true, '困难全通应发困难徽章');
+  eq(st.state, 'got');
+});
+
+test('困难星级独立于普通星级，互不覆盖', () => {
+  const s = save();
+  const rg = D.REGIONS[0];
+  const lid = rg.levels[0];
+  S.setHardStars(s, lid, 3);
+  eq(C.hardStars(s, lid), 3, '困难星级应写入');
+  eq(C.levelStars(s, lid), 0, '普通星级不受影响');
+  eq(s.regions[rg.id][lid] || 0, 0);
 });
 
 test('徽章不计入"图鉴解锁项"（那是收藏家成就的口径，不能偷偷变容易）', () => {

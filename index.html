@@ -376,6 +376,10 @@ ul{margin:0;padding:0;list-style:none;}
 .lr-name{font-size:14.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lr-sub{font-size:10.5px;color:var(--ink-70);margin-top:3px;font-family:var(--font-pixel);font-weight:700;}
 .lr-go{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--ink-50);font-family:var(--font-pixel);}
+/* 挑战模式入口行（第四优先级）：普通全通后出现，用火焰橙底突出 */
+.level-row.is-hard{background:linear-gradient(90deg,rgba(239,71,111,.12),var(--cream));border-color:var(--tomato);}
+.level-row.is-hard .lr-badge{background:var(--tomato);color:var(--cream);}
+.level-row.is-hard .lr-go{color:var(--tomato);}
 
 /* ==========================================================================
    页面 2 · 经营页
@@ -1375,7 +1379,7 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 window.TC = window.TC || {};
 var TC = window.TC;
-TC.VERSION = '2.2.1';
+TC.VERSION = '2.3.0';
 TC.bootError = null;
 
 /* --------------------------------------------------------------------------
@@ -1515,7 +1519,20 @@ TC.bootError = null;
     /** 装饰购买价（每地区 3 件） */
     decorPrice: 260,
     /** 每件装饰为该地区小费提供的永久加成 */
-    decorTipBonus: 0.08
+    decorTipBonus: 0.08,
+    /** 困难模式（第四优先级）：普通关卡全通后开放的挑战版。
+        这里存「相对普通关卡」的修正，落到 run.hard 上：
+          patienceMul  —— 顾客耐心倍率（越小越难，0.6 即耐心只有普通关的 60%）
+          spawnMul     —— 上客间隔倍率（越小越密，0.7 即顾客来得更勤）
+          extraDish    —— 可选菜品 +N 道（更难同时备对菜）
+          breakChance  —— 每 tick 灶台随机故障概率（0.00012 ≈ 平均每 ~8 秒坏一次） */
+    hard: {
+      patienceMul: 0.6,
+      spawnMul: 0.7,
+      extraDish: 1,
+      breakChance: 0.00012,
+      breakCooldownMs: 6000
+    }
   };
 
   /* ------------------------------ 地区 ------------------------------ */
@@ -2182,6 +2199,47 @@ TC.bootError = null;
     for (var i = 0; i < levels.length; i++) if (C.isLevelCleared(save, levels[i].id)) n++;
     return n;
   };
+
+  /* ------------------------- 困难模式（第四优先级） ------------------------- */
+  /**
+   * 该地区「挑战模式」是否已解锁：普通 5 关全部通关（每关至少 1 星）。
+   * 解锁后即可进入该地区的困难关卡，通关送困难徽章。
+   */
+  C.hardUnlocked = function (save, regionId) {
+    return C.isRegionCleared(save, regionId);
+  };
+
+  /** 困难星级：save.hard[regionId][levelId]，独立于普通星级 */
+  C.hardStars = function (save, levelId) {
+    if (!save || !save.hard) return 0;
+    var l = D.level(levelId);
+    if (!l) return 0;
+    var m = save.hard[l.regionId] || {};
+    return (typeof m[levelId] === 'number' && m[levelId] > 0) ? Math.min(3, m[levelId]) : 0;
+  };
+
+  /** 该地区困难关卡已通关数（困难徽章进度） */
+  C.hardClearedCount = function (save, regionId) {
+    var levels = D.levelsOf(regionId), n = 0;
+    for (var i = 0; i < levels.length; i++) if (C.hardStars(save, levels[i].id) > 0) n++;
+    return n;
+  };
+
+  /**
+   * 困难关卡的实际数值（相对普通关卡，由 D.CONFIG.hard 修正）。
+   * 返回 null 表示普通关卡。落在 run.hard 上，供 C.patience / L.create / L.tick 消费。
+   */
+  C.hardModifiers = function () {
+    var h = D.CONFIG.hard;
+    return {
+      patienceMul: h.patienceMul,
+      spawnMul: h.spawnMul,
+      extraDish: h.extraDish,
+      breakChance: h.breakChance,
+      breakCooldownMs: h.breakCooldownMs
+    };
+  };
+
   /**
    * 徽章状态
    *   state：'got' 已获得 / 'locked' 未获得（带进度）/ 'soon' 功能未开放（困难徽章）
@@ -2200,10 +2258,20 @@ TC.bootError = null;
     };
 
     if (b.kind === 'hard') {
-      /* 困难关卡（第四优先级）尚未开发：不给进度，避免错误期待 */
-      out.state = 'soon';
-      out.progress = 0;
-      out.text = '困难模式开发中';
+      /* 困难徽章（第四优先级）：通关该地区所有困难关卡才获得 */
+      var hardCleared = C.hardClearedCount(save, b.regionId);
+      out.progress = hardCleared;
+      if (levels.length && hardCleared >= levels.length) {
+        out.obtained = true;
+        out.state = 'got';
+        out.text = '困难模式全通';
+        return out;
+      }
+      if (C.hardUnlocked(save, b.regionId)) {
+        out.text = '通关 ' + (rg ? rg.name : '') + ' 全部困难关卡解锁（' + hardCleared + '/' + levels.length + '）';
+      } else {
+        out.text = '先通关 ' + (rg ? rg.name : '') + ' 普通关卡，再挑战困难模式';
+      }
       return out;
     }
     if (levels.length && cleared >= levels.length) {
@@ -2437,6 +2505,8 @@ TC.bootError = null;
       regions: regions,
       decor: decor,
       upgrades: upgrades,
+      /** 困难模式星级：save.hard[regionId][levelId]，独立于普通 regions */
+      hard: {},
       stats: {
         customers: 0, perfect: 0, maxCombo: 0, coinsTotal: 0,
         plays: 0, perfectRuns: 0, quickRuns: 0, bestCoins: 0,
@@ -2484,6 +2554,18 @@ TC.bootError = null;
         var v = m[lid];
         if (typeof v === 'number' && isFinite(v)) {
           out.regions[rg.id][lid] = U.clamp(Math.floor(v), 0, 3);
+        }
+      });
+    });
+
+    // 困难模式星级（第四优先级，独立存储）
+    D.REGIONS.forEach(function (rg) {
+      var m = (raw.hard && raw.hard[rg.id]) || {};
+      out.hard[rg.id] = {};
+      rg.levels.forEach(function (lid) {
+        var v = m[lid];
+        if (typeof v === 'number' && isFinite(v) && v > 0) {
+          out.hard[rg.id][lid] = U.clamp(Math.floor(v), 0, 3);
         }
       });
     });
@@ -2628,6 +2710,18 @@ TC.bootError = null;
     var cur = save.regions[l.regionId][levelId] || 0;
     var next = Math.max(cur, U.clamp(stars | 0, 0, 3));
     save.regions[l.regionId][levelId] = next;
+    return next;
+  };
+
+  /** 困难模式星级（第四优先级）：同样只升不降，存 save.hard 独立于普通星级 */
+  S.setHardStars = function (save, levelId, stars) {
+    var l = D.level(levelId);
+    if (!l) return 0;
+    if (!save.hard) save.hard = {};
+    if (!save.hard[l.regionId]) save.hard[l.regionId] = {};
+    var cur = save.hard[l.regionId][levelId] || 0;
+    var next = Math.max(cur, U.clamp(stars | 0, 0, 3));
+    save.hard[l.regionId][levelId] = next;
     return next;
   };
 
@@ -2876,10 +2970,25 @@ TC.bootError = null;
     var pots = [];
     for (var i = 0; i < slots; i++) pots.push(null);
     runSeq += 1;
+    var hard = !!opts.hard;
+    var mods = hard ? C.hardModifiers() : null;
+    /* 困难模式上客更密、可选菜更多：修正 spawnInterval 与 level.dishPool 副本 */
+    var spawnInterval = C.spawnInterval(levelId, save);
+    if (hard) spawnInterval = Math.max(2000, Math.round(spawnInterval * mods.spawnMul));
+    var level = lv;
+    if (hard && mods.extraDish > 0) {
+      /* 把本地区其他菜（当前池之外）加进来，扩大选菜范围 */
+      var regionDishes = (D.region(lv.regionId) || {}).dishes || [];
+      var extra = regionDishes.filter(function (id) { return lv.dishPool.indexOf(id) === -1; })
+        .slice(0, mods.extraDish);
+      if (extra.length) {
+        level = U.assign({}, lv, { dishPool: lv.dishPool.concat(extra) });
+      }
+    }
     var run = {
       uid: 'run' + runSeq,
       levelId: levelId,
-      level: lv,
+      level: level,
       regionId: lv.regionId,
       region: D.region(lv.regionId),
       save: save,
@@ -2889,7 +2998,7 @@ TC.bootError = null;
       duration: lv.duration * 1000,
       timeLeft: lv.duration * 1000,
       spawnTimer: opts.firstSpawn == null ? 1500 : opts.firstSpawn,
-      spawnInterval: C.spawnInterval(levelId, save),
+      spawnInterval: spawnInterval,
       seats: C.seats(levelId, save),
       slots: slots,
 
@@ -2916,9 +3025,10 @@ TC.bootError = null;
       helperInterval: C.upVal(save, 'helper') * 1000,
       waiterInterval: C.upVal(save, 'waiter') * 1000,
 
-      /* 困难模式（第四优先级）的干扰与加成，普通关卡保持空对象 */
-      hard: null,
+      /* 困难模式（第四优先级）的干扰与加成，普通关卡为 null */
+      hard: hard ? mods : null,
       breakers: [],
+      breakCd: 0,
 
       /* 特殊顾客（第六优先级）：本局生效的临时道具 */
       guestBuff: null,
@@ -3050,6 +3160,26 @@ TC.bootError = null;
     /* 道具冷却 */
     for (var k in run.toolCd) {
       if (run.toolCd[k] > 0) run.toolCd[k] = Math.max(0, run.toolCd[k] - dtMs);
+    }
+
+    /* 困难模式干扰：灶台随机故障（第四优先级）。
+       正在煮的锅有一定概率「跳闸」，烹饪进度回退一截，需要玩家回来重新开火；
+       有冷却保护，避免连续坏同一口锅把玩家逼疯。 */
+    if (run.hard) {
+      if (run.breakCd > 0) run.breakCd = Math.max(0, run.breakCd - dtMs);
+      if (run.breakCd <= 0) {
+        for (var b = 0; b < run.pots.length; b++) {
+          var bp = run.pots[b];
+          if (!bp || bp.state !== 'cooking') continue;
+          if (run.rand() < run.hard.breakChance * dtMs) {
+            bp.cookLeft = Math.min(bp.cookTotal, bp.cookLeft + bp.cookTotal * 0.25); // 回退 25% 进度
+            run.breakCd = run.hard.breakCooldownMs;
+            run.breakers.push({ potIdx: b, at: run.runtime });
+            emit(events, 'breaker', { potIdx: b, pot: bp });
+            break;
+          }
+        }
+      }
     }
 
     /* 顾客耐心（教学局放慢到 8%） */
@@ -3427,7 +3557,10 @@ TC.bootError = null;
    * @returns {object} settle + { expInfo, newAchievements, unlockedLevelId, unlockedDishIds, unlockedRegionIds, levelState }
    */
   L.finish = function (save, run) {
-    var firstClear = C.levelStars(save, run.levelId) === 0;
+    var isHard = !!run.hard;
+    var firstClear = isHard
+      ? C.hardStars(save, run.levelId) === 0
+      : C.levelStars(save, run.levelId) === 0;
     var beforeRegions = C.unlockedRegionIds(save);
     var beforeDishes = C.unlockedDishIds(save);
 
@@ -3435,11 +3568,16 @@ TC.bootError = null;
 
     if (settle.totalGain) S.addCoins(save, settle.totalGain);
     var expInfo = S.addExp(save, settle.exp);
-    if (settle.cleared) S.setLevelStars(save, run.levelId, settle.stars);
+    /* 困难关卡写独立的困难星级，不覆盖普通星级、也不推进普通进度 */
+    if (settle.cleared) {
+      if (isHard) S.setHardStars(save, run.levelId, settle.stars);
+      else S.setLevelStars(save, run.levelId, settle.stars);
+    }
     S.recordRun(save, run, settle, { customerIds: Object.keys(run.encounterIds) });
 
     var unlockedLevelId = null;
-    if (settle.unlockLevelId && C.isLevelUnlocked(save, settle.unlockLevelId)) {
+    /* 困难关卡不解锁下一关（那是普通进度的事），普通关卡照旧 */
+    if (!isHard && settle.unlockLevelId && C.isLevelUnlocked(save, settle.unlockLevelId)) {
       unlockedLevelId = settle.unlockLevelId;
     }
 
@@ -5512,6 +5650,8 @@ TC.bootError = null;
     });
 
     on($('levelList'), 'click', function (e) {
+      var hard = closest(e.target, '[data-hard]');
+      if (hard) { UI.openHard(hard.getAttribute('data-hard')); return; }
       var row = closest(e.target, '[data-level]');
       if (row) UI.openLevel(row.getAttribute('data-level'));
     });
@@ -5984,10 +6124,28 @@ TC.bootError = null;
         '<span class="rc-meta">' + stars + ' / ' + (levels.length * 3) + ' ★</span>' +
       '</span>');
 
-    setHtml('levelList', levels.map(levelRowHtml).join(''));
+    setHtml('levelList', levels.map(levelRowHtml).join('') + hardEntryHtml(rg.id));
     UI.topbarCenter = rg.name;
     return true;
   };
+
+  /** 地区普通全通后，关卡列表底部追加「挑战模式」入口（第四优先级） */
+  function hardEntryHtml(regionId) {
+    var s = UI.save;
+    if (!C.hardUnlocked(s, regionId)) return '';
+    var cleared = C.hardClearedCount(s, regionId);
+    var total = D.levelsOf(regionId).length;
+    return '<button class="level-row is-hard" data-hard="' + regionId + '">' +
+      '<span class="lr-badge">🔥</span>' +
+      '<span class="lr-body">' +
+        '<span class="lr-name">挑战模式</span>' +
+        '<span class="lr-sub">顾客更急 · 上菜更密 · 灶台会坏 · 通关 ' + cleared + '/' + total + '</span>' +
+      '</span>' +
+      '<span class="rc-side">' +
+        '<span class="lr-go">挑战 ›</span>' +
+      '</span>' +
+    '</button>';
+  }
 
   /** 一关一行 */
   function levelRowHtml(lv) {
@@ -6033,11 +6191,12 @@ TC.bootError = null;
       UI.toast('🍳 厨房正在装修，马上开门');
       return false;
     }
-    var run = TC.Level.create(UI.save, levelId);
+    var run = TC.Level.create(UI.save, levelId, { hard: !!opts.hard });
     if (!run) return false;
     UI.run = run;
     UI.result = null;
     UI._settled = false;
+    UI._hard = !!opts.hard;   // 记录本局是挑战模式（结算文案用）
     // force:true —— 从结算页「再来一次」时允许重进同一视图并重新开循环
     TC.Router.go('cook', { force: true, loop: opts.loop });
     return true;
@@ -6049,6 +6208,33 @@ TC.bootError = null;
     if (!lv) return false;
     UI.regionId = lv.regionId;
     return UI.openLevel(lv.id);
+  };
+
+  /**
+   * 进入挑战模式（第四优先级）：普通全通后开放。
+   * 复用普通关卡 ID，但以 hard:true 建局——难度来自更短耐心、更密上客、更多可选菜、
+   * 以及灶台随机故障；结算写独立的困难星级，解锁困难徽章。
+   */
+  UI.openHard = function (regionId) {
+    var rg = D.region(regionId);
+    if (!rg) return false;
+    if (!C.hardUnlocked(UI.save, regionId)) {
+      UI.toast('🔒 先通关 ' + rg.name + ' 的普通关卡');
+      sfx('deny');
+      return false;
+    }
+    if (!UI.canPlay()) {
+      UI.toast('🍳 厨房正在装修，马上开门');
+      return false;
+    }
+    /* 挑战模式从该地区第 1 关打起，依次往下 */
+    var levels = D.levelsOf(regionId);
+    var target = null;
+    for (var i = 0; i < levels.length; i++) {
+      if (C.hardStars(UI.save, levels[i].id) === 0) { target = levels[i].id; break; }
+    }
+    if (!target) target = levels[0].id;   // 全通了就重打第 1 关
+    return UI.openLevel(target, { hard: true });
   };
 
   /* ======================== 暂停 / 放弃 ======================== */
@@ -7293,7 +7479,7 @@ TC.bootError = null;
     }).join(''));
 
     setText('resTitle', res.stars === 3 ? '完 美 收 官' : (res.stars > 0 ? '营 业 结 束' : '再 接 再 厉'));
-    setText('resSub', res.regionName + ' · ' + res.levelName + ' · 服务 ' + res.served +
+    setText('resSub', (UI._hard ? '🔥 挑战模式 · ' : '') + res.regionName + ' · ' + res.levelName + ' · 服务 ' + res.served +
       ' 位 · 流失 ' + res.lost + ' 位 · 最高 ' + res.maxCombo + ' 连击');
 
     setHtml('resConds', res.conditions.map(condHtml).join(''));
@@ -7533,7 +7719,7 @@ TC.bootError = null;
       '<div class="sec-title"><span>🏅 徽 章</span><span class="st-line"></span>' +
       '<span class="st-num">' + got + ' / ' + rows.length + '</span></div>' +
       '<div class="badge-grid">' + rows.map(function (b) {
-        var cls = b.state === 'got' ? 'is-got' : (b.state === 'soon' ? 'is-soon' : 'is-locked');
+        var cls = b.state === 'got' ? 'is-got' : 'is-locked';
         return '<div class="badge-cell ' + cls + '">' +
           '<span class="badge-ico" aria-hidden="true">' + (b.obtained ? b.icon : '🔒') + '</span>' +
           '<span class="badge-name">' + esc(b.obtained ? b.name : '？？？') + '</span>' +
