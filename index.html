@@ -1256,17 +1256,23 @@ ul{margin:0;padding:0;list-style:none;}
    ========================================================================== */
 #tutHost{position:fixed;inset:0;z-index:90;display:none;pointer-events:none;}
 #tutHost.is-on{display:block;}
-/* 用超大 box-shadow 的扩散把高亮块以外全部压暗，不用再叠一层 mask */
+/* 压暗改用 4 块独立暗板拼出来（JS 摆位），不再用 box-shadow 铺 9999px。
+   原因：box-shadow 那招会连灶台（.stage-wrap）一起压暗，教程走到「把盘子拖给顾客」
+   这一步时，锅和进度圈看上去就像凭空消失了。现在暗板会绕开灶台那一条横带。 */
+.tut-dim{
+  position:absolute;background:rgba(61,43,31,.62);
+  transition:left .3s var(--ease),top .3s var(--ease),width .3s var(--ease),height .3s var(--ease);
+}
 .tut-spot{
   position:absolute;left:0;top:0;width:0;height:0;
   border:3px solid var(--yellow);border-radius:16px;
-  box-shadow:0 0 0 9999px rgba(61,43,31,.62), 0 0 0 7px rgba(255,209,102,.26);
+  box-shadow:0 0 0 7px rgba(255,209,102,.26);
   animation:tutPulse 1.5s var(--ease) infinite;
   transition:left .3s var(--ease),top .3s var(--ease),width .3s var(--ease),height .3s var(--ease);
 }
 @keyframes tutPulse{
-  0%,100%{border-color:var(--yellow);box-shadow:0 0 0 9999px rgba(61,43,31,.62),0 0 0 7px rgba(255,209,102,.26)}
-  50%{border-color:var(--cream);box-shadow:0 0 0 9999px rgba(61,43,31,.62),0 0 0 10px rgba(255,209,102,.16)}
+  0%,100%{border-color:var(--yellow);box-shadow:0 0 0 7px rgba(255,209,102,.26)}
+  50%{border-color:var(--cream);box-shadow:0 0 0 10px rgba(255,209,102,.16)}
 }
 .tut-bubble{
   position:absolute;left:50%;top:0;width:min(80vw,306px);
@@ -1590,6 +1596,10 @@ ul{margin:0;padding:0;list-style:none;}
 
 <!-- ================= 新手教程遮罩 ================= -->
 <div id="tutHost">
+  <div class="tut-dim" id="tutDimTop"></div>
+  <div class="tut-dim" id="tutDimBottom"></div>
+  <div class="tut-dim" id="tutDimLeft"></div>
+  <div class="tut-dim" id="tutDimRight"></div>
   <div class="tut-spot" id="tutSpot"></div>
   <div class="tut-bubble" id="tutBubble">
     <div class="tut-card">
@@ -7346,6 +7356,60 @@ TC.bootError = null;
     return true;
   }
 
+  /** 灶台（Canvas 舞台）的屏幕矩形；不在经营页 / 量不到就返回 null */
+  function tutStageRect() {
+    var cv = $('scene');
+    if (!cv || !cv.getBoundingClientRect) return null;
+    var wrap = cv.parentNode;
+    if (!wrap || !wrap.getBoundingClientRect) return null;
+    var box = wrap.getBoundingClientRect();
+    if (!box || !box.width || !box.height) return null;
+    return { x: box.left, y: box.top, w: box.width, h: box.height };
+  }
+
+  /**
+   * 摆放 4 块压暗板。
+   * 经营页里把「高亮块 ∪ 灶台」当成一条横带留亮 —— 灶台永远不压暗，
+   * 这样一边烹饪一边拖菜时锅 / 进度圈始终看得见（本次修复的核心）。
+   * 其他页面就围着高亮块挖一个矩形洞。
+   */
+  function tutPlaceDim(r) {
+    var T = $('tutDimTop'), B = $('tutDimBottom'), L = $('tutDimLeft'), R = $('tutDimRight');
+    if (!T || !B || !L || !R) return false;
+    var vw = (typeof window !== 'undefined' && window.innerWidth) || 390;
+    var vh = (typeof window !== 'undefined' && window.innerHeight) || 844;
+    function put(el, l, t, w, h) {
+      if (!el || !el.style) return;
+      if (l == null) { el.style.display = 'none'; return; }
+      el.style.display = 'block';
+      el.style.left = Math.round(l) + 'px';
+      el.style.top = Math.round(t) + 'px';
+      el.style.width = Math.max(0, Math.round(w)) + 'px';
+      el.style.height = Math.max(0, Math.round(h)) + 'px';
+    }
+    var st = tutStageRect();
+    if (!r && !st) {                       // 什么都量不到 → 干脆不压暗，免得挡住整屏
+      put(T, null); put(B, null); put(L, null); put(R, null);
+      return false;
+    }
+    if (st) {
+      var top = r ? Math.min(r.y, st.y) : st.y;
+      var bot = r ? Math.max(r.y + r.h, st.y + st.h) : (st.y + st.h);
+      top = Math.max(0, Math.min(vh, top));
+      bot = Math.max(top, Math.min(vh, bot));
+      put(T, 0, 0, vw, top);
+      put(B, 0, bot, vw, vh - bot);
+      put(L, null); put(R, null);
+      return true;
+    }
+    var x = r.x, y = r.y, w = r.w, h = r.h;
+    put(T, 0, 0, vw, y);
+    put(B, 0, y + h, vw, vh - (y + h));
+    put(L, 0, y, x, h);
+    put(R, x + w, y, vw - (x + w), h);
+    return true;
+  }
+
   /** 重画遮罩：高亮位置 + 文案 + 进度点 + 按钮 */
   UI.tutPaint = function () {
     var step = tutStep(), host = $('tutHost');
@@ -7354,17 +7418,18 @@ TC.bootError = null;
     var spot = $('tutSpot');
     if (spot && spot.style) {
       if (r) {
+        spot.style.display = 'block';
         spot.style.left = Math.round(r.x - 7) + 'px';
         spot.style.top = Math.round(r.y - 7) + 'px';
         spot.style.width = Math.round(r.w + 14) + 'px';
         spot.style.height = Math.round(r.h + 14) + 'px';
       } else {
-        /* 量不到目标（目标还没渲染 / 环境没有布局引擎）→ 聚光块收到中间，
-           不然它会因为 width:0 之外的原因挡住整屏 */
-        spot.style.left = '50%'; spot.style.top = '50%';
-        spot.style.width = '0px'; spot.style.height = '0px';
+        /* 量不到目标（目标还没渲染 / 环境没有布局引擎）→ 不画高亮框，
+           也不压暗：压暗板由 tutPlaceDim 负责，灶台那条横带永远留亮 */
+        spot.style.display = 'none';
       }
     }
+    tutPlaceDim(r);
     setText('tutStepLab', '第 ' + (tut.i + 1) + ' / ' + D.TUTORIAL.length + ' 步');
     setText('tutText', step.text);
     setText('tutTip', step.act ? '照着画面做一次，会自动进入下一步' : '看完点「下一步」继续');
