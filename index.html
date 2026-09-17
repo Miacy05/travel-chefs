@@ -967,7 +967,9 @@ ul{margin:0;padding:0;list-style:none;}
 .postcard.is-open:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink-16);}
 .pc-scene{
   position:relative;overflow:hidden;
-  height:56px;border-radius:10px;border:2px solid var(--brown);
+  /* 素材是 3:2 的横构图：这里跟着用 3:2，object-fit:cover 才不会把画面上下裁掉一半。
+     卡宽由两列网格决定（约 149px），高度按比值算出约 99px，整张明信片都能露出来。 */
+  aspect-ratio:3/2;border-radius:10px;border:2px solid var(--brown);
   display:flex;align-items:center;justify-content:center;font-size:24px;
 }
 /* 素材图盖在色块+emoji 上面；图缺失被 onerror 移除后就露出兜底层 */
