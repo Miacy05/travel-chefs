@@ -166,7 +166,21 @@ async function httpJson(url) {
 
     const url = REMOTE_URL || ('http://127.0.0.1:' + PORT + '/index.html');
     await send('Page.navigate', { url });
-    await sleep(1200);                                  // 等 boot + 首帧
+
+    /* 等页面就绪：本地秒开，线上要先跨洋下载 index.html + 素材，
+       固定 sleep 不够稳。这里轮询 typeof TC，最多等 20 秒。 */
+    let ready = false;
+    for (let i = 0; i < 80; i++) {
+      try {
+        const probe = await send('Runtime.evaluate', {
+          expression: 'typeof TC !== "undefined" && !!(TC.UI && TC.UI.save)', returnByValue: true
+        });
+        if (probe.result && probe.result.result && probe.result.result.value === true) { ready = true; break; }
+      } catch (e) { /* 页面还在跳转，下一轮再试 */ }
+      await sleep(250);
+    }
+    if (!ready) throw new Error('页面迟迟没就绪（20s）：' + url + ' —— 可能是本机到该地址网络不通');
+    await sleep(300);                                   // 就绪后再给一帧的时间
 
     if (SEED) {
       await send('Runtime.evaluate', { expression: SEED_JS, returnByValue: true });
