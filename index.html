@@ -929,6 +929,9 @@ ul{margin:0;padding:0;list-style:none;}
 .sec-title:first-child{margin-top:2px;}
 .sec-title .st-line{flex:1 1 auto;height:2px;background:var(--ink-16);border-radius:2px;}
 .sec-title .st-num{font-family:var(--font-pixel);font-size:10.5px;color:var(--ink-50);}
+/* 图鉴内的分组小标题（顾客页：街坊熟客 / 神秘来客） */
+.sec-title.bk-sub{margin-top:14px;font-size:12px;}
+.sec-title.bk-sub .st-num{font-size:9.5px;}
 
 .book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px;}
 .book-cell{
@@ -960,14 +963,31 @@ ul{margin:0;padding:0;list-style:none;}
   padding:10px;display:flex;flex-direction:column;gap:5px;
 }
 .postcard.is-locked{background:var(--ink-04);}
+.postcard.is-open{cursor:pointer;}
+.postcard.is-open:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink-16);}
 .pc-scene{
+  position:relative;overflow:hidden;
   height:56px;border-radius:10px;border:2px solid var(--brown);
   display:flex;align-items:center;justify-content:center;font-size:24px;
+}
+/* 素材图盖在色块+emoji 上面；图缺失被 onerror 移除后就露出兜底层 */
+.pc-scene .pc-img,.pcd-scene .pcd-img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity .25s var(--ease);
 }
 .postcard.is-locked .pc-scene{filter:grayscale(1) opacity(.4);}
 .pc-name{font-size:11.5px;font-weight:800;}
 .pc-sub{font-size:9.5px;color:var(--ink-50);font-family:var(--font-pixel);font-weight:700;}
 .postcard.is-locked .pc-name{color:var(--ink-30);}
+
+/* 明信片大图弹窗 */
+.postcard-box{max-width:340px;}
+.pcd-scene{
+  position:relative;overflow:hidden;
+  height:190px;border-radius:14px;border:2px solid var(--brown);
+  display:flex;align-items:center;justify-content:center;font-size:46px;
+}
+.pcd-tag{font-size:12px;color:var(--ink-70);text-align:center;line-height:1.7;margin:12px 2px 2px;}
 
 /* -------- 图鉴的二级标签：菜谱 / 顾客 / 徽章 / 明信片 --------
    一级标签（图鉴/成就/每日任务）控制"哪一页"，二级标签控制"图鉴里的哪一类"。
@@ -1481,6 +1501,20 @@ ul{margin:0;padding:0;list-style:none;}
       <button class="x" data-close="1" aria-label="关闭">✕</button>
     </div>
     <div class="up-list" id="setList"></div>
+  </div>
+</div>
+
+<!-- ================= 明信片大图弹窗（图鉴 → 明信片点击打开） ================= -->
+<div class="modal" id="modalPostcard" hidden>
+  <div class="modal-mask" data-close="1"></div>
+  <div class="modal-box postcard-box">
+    <div class="modal-head">
+      <h3 class="pixel" id="pcdTitle">明 信 片</h3>
+      <span class="mh-sub" id="pcdStars">0 / 15 ★</span>
+      <button class="x" data-close="1" aria-label="关闭">✕</button>
+    </div>
+    <div class="pcd-scene" id="pcdScene"></div>
+    <p class="pcd-tag" id="pcdTag"></p>
   </div>
 </div>
 
@@ -6319,6 +6353,12 @@ TC.bootError = null;
       if (t) UI.setBookTab(t.getAttribute('data-subtab'));
     });
 
+    // 明信片卡片：点击看大图（没解锁只弹提示）
+    on($('sub-card'), 'click', function (e) {
+      var card = closest(e.target, '[data-card]');
+      if (card) UI.tapPostcard(card.getAttribute('data-card'));
+    });
+
     // 页面切到后台时停掉地球仪自转，回到前台再续上（省电、也不白白占 rAF）
     if (typeof document !== 'undefined') {
       on(document, 'visibilitychange', function () {
@@ -6328,7 +6368,7 @@ TC.bootError = null;
     }
 
     // 弹窗关闭（遮罩 / ✕ 都带 data-close）
-    ['modalUpgrade', 'modalSettings'].forEach(function (id) {
+    ['modalUpgrade', 'modalSettings', 'modalPostcard'].forEach(function (id) {
       on($(id), 'click', function (e) {
         if (closest(e.target, '[data-close]')) UI.closeModal(id);
       });
@@ -8596,10 +8636,20 @@ TC.bootError = null;
       '</div>';
     }).join('');
 
+    /* 分组小标题：普通 / 特殊各自带进度（DOM 里 cell 的先后顺序不变，
+       下方 canvas 上色仍按 D.CUSTOMERS.concat(guests) 的索引一一对应） */
+    var normalSeen = D.CUSTOMERS.filter(function (c) { return ids.indexOf(c.id) !== -1; }).length;
+    var specialSeen = guests.filter(function (g) { return !!seen[g.id]; }).length;
+
     setHtml('sub-cust',
       '<div class="sec-title"><span>🧑 顾 客</span><span class="st-line"></span>' +
-      '<span class="st-num">' + ids.length + ' / ' + (D.CUSTOMERS.length + guests.length) + '</span></div>' +
-      '<div class="book-grid">' + normal + special + '</div>');
+        '<span class="st-num">' + ids.length + ' / ' + (D.CUSTOMERS.length + guests.length) + '</span></div>' +
+      '<div class="sec-title bk-sub"><span>街坊熟客</span><span class="st-line"></span>' +
+        '<span class="st-num">' + normalSeen + ' / ' + D.CUSTOMERS.length + '</span></div>' +
+      '<div class="book-grid">' + normal + '</div>' +
+      '<div class="sec-title bk-sub"><span>✨ 神秘来客</span><span class="st-line"></span>' +
+        '<span class="st-num">' + specialSeen + ' / ' + guests.length + '</span></div>' +
+      '<div class="book-grid">' + special + '</div>');
 
     var cells = $('sub-cust') ? $('sub-cust').querySelectorAll('.book-cell') : [];
     var all = D.CUSTOMERS.concat(guests);
@@ -8640,7 +8690,20 @@ TC.bootError = null;
     return got;
   };
 
-  /** 地区明信片：纯装饰收藏，通关该地区后点亮 */
+  /** 地区明信片素材文件名（assets/postcards/ 下的 png，国名命名，缺图走兜底） */
+  var CARD_FILE = {
+    asia_street: 'china',
+    paris_cafe: 'france',
+    ramen_shop: 'japan',
+    pizza_house: 'italy',
+    taco_stand: 'mexico'
+  };
+  /** 明信片图片相对路径；没有放图也不报错（onerror 移除后露出色块+emoji 兜底层） */
+  UI.postcardSrc = function (regionId) {
+    return 'assets/postcards/' + (CARD_FILE[regionId] || regionId) + '.png';
+  };
+
+  /** 地区明信片：纯装饰收藏，解锁地区后点亮；点已解锁的看大图 */
   UI.renderBookCard = function () {
     var s = UI.save;
     var ids = C.unlockedRegionIds(s);
@@ -8652,13 +8715,57 @@ TC.bootError = null;
         var on = ids.indexOf(rg.id) !== -1;
         var stars = C.regionStars(s, rg.id);
         var wall = (P.PALETTE[rg.wall] || P.PALETTE.y);
-        return '<div class="postcard' + (on ? '' : ' is-locked') + '">' +
-          '<div class="pc-scene" style="background:' + wall + '">' + rg.icon + '</div>' +
+        /* 已解锁才放素材图；onload 淡入，onerror 自我移除露出兜底层 */
+        var img = on
+          ? '<img class="pc-img" alt="" loading="lazy" src="' + UI.postcardSrc(rg.id) + '"' +
+            ' onload="this.style.opacity=1" onerror="this.parentNode && this.remove()">'
+          : '';
+        return '<div class="postcard' + (on ? ' is-open' : ' is-locked') + '" data-card="' + rg.id + '"' +
+                 (on ? ' role="button" tabindex="0" aria-label="查看明信片大图：' + esc(rg.name) + '"' : '') + '>' +
+          '<div class="pc-scene" style="background:' + wall + '">' + rg.icon + img + '</div>' +
           '<div class="pc-name">' + esc(on ? rg.name : '？？？') + '</div>' +
           '<div class="pc-sub">' + esc(on ? (stars + ' ★ · ' + rg.tagline) : '未解锁') + '</div>' +
         '</div>';
       }).join('') + '</div>');
     return ids.length;
+  };
+
+  /** 点明信片：没解锁只提示；解锁了打开大图弹窗 */
+  UI.tapPostcard = function (regionId) {
+    var rg = D.region(regionId);
+    if (!rg) return false;
+    if (C.unlockedRegionIds(UI.save).indexOf(regionId) === -1) {
+      UI.toast('🔒 通关 ' + rg.name + ' 的全部关卡，解锁这张明信片');
+      sfx('deny');
+      vibrate(18);
+      return false;
+    }
+    return UI.openPostcard(regionId);
+  };
+
+  /** 明信片大图：大图（同样带兜底）+ 地区文案 + 星星与通关进度 */
+  UI.openPostcard = function (regionId) {
+    var rg = D.region(regionId);
+    if (!rg) return false;
+    var s = UI.save;
+    var levels = D.levelsOf(regionId);
+    var stars = C.regionStars(s, regionId);
+    var cleared = levels.filter(function (l) { return C.isLevelCleared(s, l.id); }).length;
+
+    setText('pcdTitle', rg.postcard ? rg.postcard.name : rg.name);
+    setText('pcdStars', stars + ' / ' + (levels.length * 3) + ' ★');
+    var scene = $('pcdScene');
+    if (scene) {
+      scene.style.background = (P.PALETTE[rg.wall] || P.PALETTE.y);
+      scene.innerHTML = rg.icon +
+        '<img class="pcd-img" alt="' + esc(rg.name) + '" src="' + UI.postcardSrc(regionId) + '"' +
+        ' onload="this.style.opacity=1" onerror="this.parentNode && this.remove()">';
+    }
+    setText('pcdTag',
+      (rg.postcard && rg.postcard.sub ? rg.postcard.sub + ' · ' : '') +
+      rg.tagline + '　·　通关 ' + cleared + ' / ' + levels.length + ' 关');
+    sfx('open');
+    return UI.openModal('modalPostcard');
   };
 
   /** 切换图鉴的二级标签（菜谱 / 顾客 / 徽章 / 明信片） */
