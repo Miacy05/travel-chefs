@@ -47,7 +47,7 @@ html,body{height:100%;margin:0;}
 body{
   font-family:var(--font-body);
   color:var(--ink);
-  background:var(--brown);
+  background:var(--cream);
   overflow:hidden;
   overscroll-behavior:none;
   -webkit-font-smoothing:antialiased;
@@ -81,24 +81,31 @@ ul{margin:0;padding:0;list-style:none;}
   display:flex;
   flex-direction:column;
   width:100%;
-  max-width:440px;
+  max-width:430px;
   height:100vh;
   height:100dvh;
   margin:0 auto;
   background:var(--cream);
   overflow:hidden;
 }
+/* 电脑端：整块内容收进一张居中的「手机卡」里。
+   外面的背景必须是浅色 —— 以前这里用的是深棕 --brown，
+   宽屏时两侧那一大片深色会被看成黑边。 */
 @media (min-width:480px){
-  body{background:
-    radial-gradient(circle at 20% 10%, rgba(255,209,102,.18), transparent 55%),
-    radial-gradient(circle at 80% 90%, rgba(6,214,160,.14), transparent 55%),
-    var(--brown);
-    display:flex;align-items:center;justify-content:center;}
+  body{
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,209,102,.20), transparent 55%),
+      radial-gradient(circle at 82% 88%, rgba(6,214,160,.16), transparent 55%),
+      #F4F0E9;
+    display:flex;align-items:center;justify-content:center;
+  }
   #app{
-    height:min(880px,96vh);
-    border-radius:26px;
-    border:var(--bd) solid var(--brown);
-    box-shadow:0 18px 0 rgba(0,0,0,.28);
+    width:min(430px, 100%);
+    /* 高度不再贴着整屏走：留出上下呼吸感，内部元素才不会被纵向拉长 */
+    height:min(880px, 92vh);
+    border-radius:28px;
+    border:1px solid rgba(61,43,31,.16);
+    box-shadow:0 20px 46px rgba(61,43,31,.16);
   }
 }
 
@@ -292,7 +299,6 @@ ul{margin:0;padding:0;list-style:none;}
 .map-progress .mp-top b{font-family:var(--font-pixel);font-size:11px;color:var(--mint);}
 .map-progress .mp-track{height:9px;margin-top:7px;border-radius:99px;background:var(--ink-16);overflow:hidden;}
 .map-progress .mp-track i{display:block;height:100%;border-radius:99px;background:var(--mint);transition:width .5s var(--ease);}
-.map-replay{margin-top:10px;width:100%;font-size:12.5px;}
 
 .region-list{display:flex;flex-direction:column;gap:11px;}
 .region-card{
@@ -365,6 +371,34 @@ ul{margin:0;padding:0;list-style:none;}
 .region-head .rh-info{flex:1 1 auto;min-width:0;}
 .region-head .rh-name{font-size:17px;font-weight:800;}
 .region-head .rh-sub{font-size:11px;color:var(--ink-70);margin-top:3px;}
+/* 返回按钮：任何二级页面都能一步回到世界地图 */
+.btn-back{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-bottom:12px;padding:8px 15px;
+  font-size:12.5px;font-weight:800;
+  background:var(--cream);border:var(--bd) solid var(--brown);
+  border-radius:13px;box-shadow:0 3px 0 var(--ink-16);
+}
+.btn-back:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink-16);}
+/* 关卡列表底部固定区：左边小方块「店铺」+ 右边大按钮「继续下一关」 */
+.levels-foot{
+  flex:0 0 auto;
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px calc(10px + var(--safe-b));
+  background:var(--cream);
+  border-top:var(--bd) solid var(--brown);
+}
+.lf-up{
+  position:relative;flex:0 0 auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  width:56px;height:50px;
+  background:var(--cream);border:var(--bd) solid var(--brown);
+  border-radius:15px;box-shadow:0 3px 0 var(--ink-16);
+}
+.lf-up:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink-16);}
+.lf-up-ico{font-size:19px;line-height:1;}
+.lf-up-txt{font-size:10px;font-weight:800;}
+.lf-go{flex:1 1 auto;height:50px;}
 .level-list{display:flex;flex-direction:column;gap:10px;}
 .level-row{
   display:flex;align-items:center;gap:11px;padding:11px 12px;
@@ -1056,8 +1090,9 @@ ul{margin:0;padding:0;list-style:none;}
 #bottomnav[hidden]{display:none;}
 .nav-btn{
   flex:0 0 auto;
+  position:relative;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  width:56px;height:52px;
+  width:52px;height:52px;
   border-radius:14px;
   color:var(--ink-70);
   transition:background .2s,color .2s,transform .12s var(--ease);
@@ -1066,6 +1101,13 @@ ul{margin:0;padding:0;list-style:none;}
 .nav-btn .nb-ico{font-size:19px;line-height:1;}
 .nav-btn .nb-txt{font-size:10px;font-weight:700;}
 .nav-btn.is-active{background:var(--ink-08);color:var(--brown);}
+/* 店铺入口的红点：有买得起却还没买的升级时才亮 */
+.nb-red{
+  position:absolute;top:5px;right:8px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--tomato);
+  box-shadow:0 0 0 2px var(--cream);
+}
 .nav-primary{flex:1 1 auto;margin-left:2px;}
 
 /* ==========================================================================
@@ -1142,6 +1184,8 @@ ul{margin:0;padding:0;list-style:none;}
 @keyframes dlgIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
 .dialog-box h4{font-size:16px;font-weight:800;margin-bottom:8px;}
 .dialog-box p{font-size:12.5px;color:var(--ink-70);line-height:1.62;}
+.dialog-box .dlg-name{font-size:14px;font-weight:800;color:var(--brown);}
+.dialog-box .dlg-sub{font-size:11.5px;margin-top:4px;}
 .dialog-actions{display:flex;gap:9px;margin-top:17px;}
 .dialog-actions .btn{flex:1 1 0;}
 
@@ -1305,9 +1349,8 @@ ul{margin:0;padding:0;list-style:none;}
             <span><b id="mapStars">0</b> ★</span><i></i>
             <span>Lv.<b id="mapLevel">1</b></span>
           </div>
-          <div class="map-progress" id="mapProgress" hidden></div>
-          <button class="btn btn-ghost map-replay" id="btnReplay" type="button" hidden>↻ 重玩上一关</button>
-        </div>
+        <div class="map-progress" id="mapProgress" hidden></div>
+      </div>
         <div class="region-list" id="regionList"></div>
         <p class="map-foot" id="mapFoot">· 点 点 地 球 仪 试 试 ·</p>
       </div>
@@ -1316,8 +1359,16 @@ ul{margin:0;padding:0;list-style:none;}
     <!-- ===== 地区关卡选择 ===== -->
     <section class="view" id="view-levels" data-view="levels" aria-label="关卡选择">
       <div class="scroll">
+        <button class="btn-back" id="btnLevelsBack" type="button">‹ 返回地图</button>
         <div class="region-head" id="regionHead"></div>
         <div class="level-list" id="levelList"></div>
+      </div>
+      <div class="levels-foot">
+        <button class="lf-up" id="btnLevelsUpgrade" type="button" aria-label="店铺升级">
+          <span class="lf-up-ico">🏪</span><span class="lf-up-txt">店铺</span>
+          <i class="nb-red" id="levelsUpRed" hidden></i>
+        </button>
+        <button class="btn btn-primary lf-go" id="btnLevelsGo" type="button">继 续 下 一 关</button>
       </div>
     </section>
 
@@ -1402,6 +1453,7 @@ ul{margin:0;padding:0;list-style:none;}
     <button class="nav-btn" data-nav="codex" data-tab="book"><span class="nb-ico">📖</span><span class="nb-txt">图鉴</span></button>
     <button class="nav-btn" data-nav="codex" data-tab="ach"><span class="nb-ico">🏆</span><span class="nb-txt">成就</span></button>
     <button class="nav-btn" data-nav="codex" data-tab="daily"><span class="nb-ico">📋</span><span class="nb-txt">任务</span></button>
+    <button class="nav-btn" data-nav="upgrade" aria-label="店铺升级"><span class="nb-ico">🏪</span><span class="nb-txt">店铺</span><i class="nb-red" id="navUpRed" hidden></i></button>
     <button class="btn btn-primary nav-primary" id="btnStart">开始营业</button>
   </nav>
 </div>
@@ -3336,9 +3388,11 @@ TC.bootError = null;
     for (var i = 0; i < w.length; i++) if (w[i].uid === run.selected) return w[i];
     return w.slice().sort(function (a, b) { return a.patienceLeft - b.patienceLeft; })[0];
   };
-  /** 该菜品当前正在备料的锅（用来判断哪些步骤已点） */
+  /** 该菜品当前正在备料/已在灶上的锅（用来判断哪些步骤已点；自动开火后也要能认出「已经下过」） */
   L.prepPotOf = function (run, dishId) {
-    return run.pots.filter(function (p) { return p && p.dishId === dishId && p.state === 'prep'; })[0] || null;
+    return run.pots.filter(function (p) {
+      return p && p.dishId === dishId && (p.state === 'prep' || p.state === 'cooking');
+    })[0] || null;
   };
   /**
    * 当前订单：菜、所需食材与完成状态
@@ -6228,12 +6282,15 @@ TC.bootError = null;
       var hard = closest(e.target, '[data-hard]');
       if (hard) { UI.openHard(hard.getAttribute('data-hard')); return; }
       var row = closest(e.target, '[data-level]');
-      if (row) UI.openLevel(row.getAttribute('data-level'));
+      if (row) UI.tapLevel(row.getAttribute('data-level'));
     });
 
     on($('bottomnav'), 'click', function (e) {
       var b = closest(e.target, '[data-nav]');
       if (!b) return;
+      var nav = b.getAttribute('data-nav');
+      /* 店铺：和结算页的「升级店铺」走同一个 UI.openUpgrade 弹窗 */
+      if (nav === 'upgrade') { UI.openUpgrade(); return; }
       var tab = b.getAttribute('data-tab') || 'book';
       // 已经在图鉴页时换标签：视图名没变，得 force 一下才会重新渲染
       var needForce = (TC.Router.current === 'codex' && UI.codexTab !== tab);
@@ -6241,9 +6298,14 @@ TC.bootError = null;
     });
 
     on($('btnStart'), 'click', function () { UI.openNextLevel(); });
-    on($('btnReplay'), 'click', function () {
-      if (UI.save.lastLevelId) UI.openLevel(UI.save.lastLevelId);
+    /* 地区关卡列表页：返回地图 / 店铺升级 / 继续下一关 */
+    on($('btnLevelsBack'), 'click', function () { UI.levelsBack(); });
+    on($('btnLevelsUpgrade'), 'click', function () {
+      /* 和结算页、底部导航共用同一个 UI.openUpgrade 弹窗组件 */
+      UI.openUpgrade();
     });
+    on($('btnLevelsGo'), 'click', function () { UI.playRegionNext(); });
+
     on($('tbAction'), 'click', function () { UI.runTopbarAction(); });
 
     on($('codexTabs'), 'click', function (e) {
@@ -6624,17 +6686,6 @@ TC.bootError = null;
     UI.syncGlobeHud();          // 角标 / 底部文案，同时完成跨天归零
     UI.renderRegionProgress(s);  // 地区解锁进度条（第九优先级）
 
-    /* 一键重玩上一关（第九优先级）：玩过至少一关才显示 */
-    var replayBtn = $('btnReplay');
-    if (replayBtn) {
-      var last = s.lastLevelId && D.level(s.lastLevelId);
-      replayBtn.hidden = !last;
-      if (last) {
-        replayBtn.textContent = '↻ 重玩 ' + last.name;
-        replayBtn.setAttribute('aria-label', '重玩上一关：' + last.name);
-      }
-    }
-
     setHtml('regionList', D.REGIONS.map(regionCardHtml).join(''));
     UI.topbarCenter = 'Travel Chefs';
     UI.refreshBadges();
@@ -6725,6 +6776,89 @@ TC.bootError = null;
     return true;
   };
 
+  /** 关卡列表页返回地图（顶部返回按钮 / 安卓返回键都走这里） */
+  UI.levelsBack = function () {
+    sfx('tap');
+    return TC.Router.go('map', { force: true });
+  };
+
+  /**
+   * 本地区「下一个该打的关卡」：
+   *   ① 还没通关的最低一关 → start
+   *   ② 全通过但不满星 → star（回头补星）
+   *   ③ 全通且全三星 → replay（重打最后一关）
+   */
+  UI.regionNext = function (regionId) {
+    var s = UI.save;
+    var levels = D.levelsOf(regionId || UI.regionId);
+    if (!levels.length) return null;
+    for (var i = 0; i < levels.length; i++) {
+      if (!C.isLevelUnlocked(s, levels[i].id)) break;
+      if (C.levelStars(s, levels[i].id) === 0) return { lv: levels[i], mode: 'start' };
+    }
+    for (var j = 0; j < levels.length; j++) {
+      if (C.levelStars(s, levels[j].id) < 3) return { lv: levels[j], mode: 'star' };
+    }
+    return { lv: levels[levels.length - 1], mode: 'replay' };
+  };
+
+  /** 底部主按钮「继续下一关」：直进本地区该打的那一关（按钮已经写明去哪关，不再二次确认） */
+  UI.playRegionNext = function () {
+    var n = UI.regionNext(UI.regionId);
+    if (!n || !n.lv) return false;
+    return UI.tapLevel(n.lv.id, { skipConfirm: true });
+  };
+
+  /**
+   * 点关卡行的统一入口：
+   *   没解锁 → Toast + 抖动音效；已通关 → 先弹「再来一局」确认框；可挑战 → 直接开打
+   * @param {string} levelId
+   * @param {{skipConfirm?:boolean}} [opts]
+   */
+  UI.tapLevel = function (levelId, opts) {
+    opts = opts || {};
+    var lv = D.level(levelId);
+    if (!lv) return false;
+    if (!C.isLevelUnlocked(UI.save, levelId)) {
+      UI.toast('🔒 ' + lv.name + ' 还锁着，先通关第 ' + (lv.index - 1) + ' 关');
+      sfx('deny');
+      vibrate(18);
+      return false;
+    }
+    if (!opts.skipConfirm && C.isLevelCleared(UI.save, levelId)) {
+      var st = C.levelStars(UI.save, levelId);
+      UI.dialog({
+        title: '再 来 一 局',
+        body: '<p class="dlg-name">' + esc(lv.name) + '</p>' +
+              '<p class="dlg-sub">最好成绩 ★ ' + st + ' / 3　重玩会被新成绩覆盖</p>',
+        yesText: '重 玩', noText: '再 想 想',
+        onYes: function () { UI.openLevel(levelId); }
+      });
+      return true;
+    }
+    return UI.openLevel(levelId);
+  };
+
+  /** 关卡列表页底部条：主按钮文案跟着进度走，店铺红点跟着可升级数走 */
+  UI.syncLevelsFoot = function (s, rg) {
+    s = s || UI.save;
+    var btn = $('btnLevelsGo');
+    var n = rg ? UI.regionNext(rg.id) : null;
+    if (btn) {
+      if (n && n.lv) {
+        btn.textContent = n.mode === 'start' ? ('开 始 第 ' + n.lv.index + ' 关')
+          : (n.mode === 'star' ? ('刷 星 · 第 ' + n.lv.index + ' 关')
+            : ('重 玩 第 ' + n.lv.index + ' 关'));
+        btn.setAttribute('aria-label', '进入：' + n.lv.name);
+      } else {
+        btn.textContent = '继 续 下 一 关';
+      }
+    }
+    var dot = $('levelsUpRed');
+    if (dot) dot.hidden = UI.upgradableCount(s) === 0;
+    return true;
+  };
+
   /* ======================== 地区关卡选择 ======================== */
   UI.renderLevels = function (regionId) {
     var s = UI.save;
@@ -6748,6 +6882,8 @@ TC.bootError = null;
 
     setHtml('levelList', levels.map(levelRowHtml).join('') + hardEntryHtml(rg.id));
     UI.topbarCenter = rg.name;
+    UI.syncLevelsFoot(s, rg);
+    UI.refreshBadges();
     return true;
   };
 
@@ -7494,14 +7630,7 @@ TC.bootError = null;
       '</button>';
     }).join('');
 
-    /* 一键下锅：只剩两样以上才出现（只剩一样时点它自己更快） */
-    if (left > 1) {
-      html += '<button class="pantry-all" data-act="prep-all" type="button" ' +
-                'aria-label="一键下锅：把剩下的 ' + left + ' 样配料一次下完">' +
-                '<span aria-hidden="true">📥</span><span class="pa-name">一键下锅</span>' +
-                '<span class="pa-left">剩 ' + left + ' 样</span>' +
-              '</button>';
-    }
+    /* 「一键下锅」按钮已移除：三样配料点齐后由 UI.tapIngredient 自动下锅开火 */
     host.innerHTML = html;
 
     var btns = host.querySelectorAll('.pantry-btn');
@@ -7711,9 +7840,26 @@ TC.bootError = null;
     UI._orderSig = null;
     UI.syncPantry(run);
     UI.syncOrder(run);
-    if (res.prepDone) UI.stageToast('✅ 备料齐了 · 点锅开火');
     UI.tutAction('ingredient');
+    /* 三样配料都点齐了 → 自动下锅 + 开火，不再需要玩家点锅 */
+    if (res.prepDone) UI.autoFire(res);
     return res;
+  };
+
+  /**
+   * 备料齐了：自动下锅 + 自动开火（用来替代原来的「一键下锅」按钮）
+   * 能不能开火仍然由 TC.Level.tapPot 判定，本层只负责把这一步串起来。
+   */
+  UI.autoFire = function (res) {
+    res = res || {};
+    var run = UI.run;
+    if (!run || run.over) return false;
+    var idx = (res.potIdx != null && res.potIdx >= 0) ? res.potIdx : -1;
+    if (idx < 0 && res.pot && run.pots) idx = run.pots.indexOf(res.pot);
+    if (idx < 0) return false;
+    var r = UI.tapPot(idx);
+    if (r) UI.stageToast('✅ 备料齐了 · 自动下锅开火');
+    return !!r;
   };
 
   /**
@@ -7737,8 +7883,8 @@ TC.bootError = null;
     UI.syncPantry(run);
     UI.syncOrder(run);
     UI.stageToast('📥 ' + res.tapped.length + ' 样配料一次下锅');
-    if (res.prepDone) UI.stageToast('✅ 备料齐了 · 点锅开火');
     UI.tutAction('ingredient');
+    if (res.prepDone) UI.autoFire(res);
     return res;
   };
 
@@ -8067,8 +8213,6 @@ TC.bootError = null;
       if (card) UI.pickCustomer(card.getAttribute('data-uid'));
     });
     on($('pantryBand'), 'click', function (e) {
-      var all = closest(e.target, '[data-act="prep-all"]');
-      if (all) { UI.prepAll(); return; }
       var b = closest(e.target, '[data-ing]');
       if (b) UI.tapIngredient(b.getAttribute('data-ing'));
     });
@@ -8632,6 +8776,21 @@ TC.bootError = null;
   };
 
   /* ======================== 底部导航角标 ======================== */
+  /** 有多少项升级「买得起、又还没满级」—— 店铺入口红点用它判断 */
+  UI.upgradableCount = function (save) {
+    save = save || UI.save;
+    if (!save || !TC.Upgrade) return 0;
+    var tabs = TC.Upgrade.tabs ? TC.Upgrade.tabs() : [];
+    var n = 0;
+    for (var i = 0; i < tabs.length; i++) {
+      var rows = TC.Upgrade.rows(save, tabs[i].id) || [];
+      for (var j = 0; j < rows.length; j++) {
+        if (rows[j] && !rows[j].maxed && rows[j].affordable) n++;
+      }
+    }
+    return n;
+  };
+
   UI.refreshBadges = function () {
     var s = UI.save;
     var ach = $('achBadge');
@@ -8646,7 +8805,14 @@ TC.bootError = null;
       daily.textContent = can;
       daily.hidden = can === 0;
     }
-    return { ach: TC.Ach.doneCount(s), daily: TC.Daily.claimableCount(s) };
+    /* 店铺：还有「买得起但没买」的升级项时亮红点 */
+    var up = UI.upgradableCount(s);
+    var upDot = $('navUpRed');
+    if (upDot) upDot.hidden = up === 0;
+    /* 同一个可升级数也点亮关卡列表页底部「店铺」的小红点 */
+    var lvDot = $('levelsUpRed');
+    if (lvDot) lvDot.hidden = up === 0;
+    return { ach: TC.Ach.doneCount(s), daily: TC.Daily.claimableCount(s), upgradable: up };
   };
 
   /* ======================== 页面 5 · 图鉴 / 成就 / 任务 ======================== */

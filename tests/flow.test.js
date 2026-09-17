@@ -95,11 +95,11 @@ function advanceUntil(run, pred, capMs) {
   return -1;
 }
 
-/** 点齐当前订单的食材并开火，一直推进到出锅 */
+/** 点齐当前订单的食材（点齐即自动下锅开火），一直推进到出锅 */
 function cookToReady(run, customer) {
   const dish = D.dish(customer.dishId);
   dish.steps.forEach((id) => UI.tapIngredient(id));
-  ok(UI.tapPot(0), '备料齐了应该能开火');
+  ok(run.pots[0] && run.pots[0].state === 'cooking', '备料齐了应该自动下锅开火');
   const t = advanceUntil(run, () => run.pots[0] && run.pots[0].state === 'ready', 30000);
   gt(t, 0, '应该在 30s 内出锅（实际超时）');
   return run.pots[0];
@@ -178,7 +178,7 @@ test('点食材进锅：不要求顺序，点错不惩罚，点重了会提示',
   });
   const pot = run.pots[0];
   ok(pot, '应该占用第 0 口锅');
-  eq(pot.state, 'prep');
+  eq(pot.state, 'cooking', '三样配料点齐了要自动开火');
   eq(pot.dishId, dish.id);
   eq(pot.done.length, pot.steps.length);
 
@@ -192,14 +192,12 @@ test('点食材进锅：不要求顺序，点错不惩罚，点重了会提示',
   eq(pot.done.length, pot.steps.length, '重复点不会多算一份');
 });
 
-test('点锅开火 → 烹饪 → 出锅；顶栏进度条一直在动', () => {
+test('备料齐自动开火 → 烹饪 → 出锅；顶栏进度条一直在动', () => {
   const run = startRun('A1');
   const c = firstCustomer(run);
   D.dish(c.dishId).steps.forEach((id) => UI.tapIngredient(id));
 
-  const fired = UI.tapPot(0);
-  ok(fired && fired.ok);
-  eq(run.pots[0].state, 'cooking');
+  eq(run.pots[0].state, 'cooking', '最后一样配料下锅后要自动开火');
   gt(run.pots[0].cookLeft, 0);
 
   const t = advanceUntil(run, () => run.pots[0] && run.pots[0].state === 'ready', 30000);
@@ -684,12 +682,13 @@ test('每日任务页：三条任务都渲染，达标后能领奖且不能重�
   eq($('dailyBadge').textContent, String(TC.Daily.claimableCount(UI.save)));
 });
 
-test('底部导航三个按钮：从地图分别进到图鉴 / 成就 / 任务', () => {
+test('底部导航：图鉴/成就/任务进 codex 对应标签，店铺开同一个升级弹窗', () => {
   const nav = $$('#bottomnav .nav-btn');
-  eq(nav.length, 3);
+  eq(nav.length, 4, '图鉴/成就/任务/店铺 四颗');
   eq(nav[0].getAttribute('data-tab'), 'book');
   eq(nav[1].getAttribute('data-tab'), 'ach');
   eq(nav[2].getAttribute('data-tab'), 'daily');
+  eq(nav[3].getAttribute('data-nav'), 'upgrade');
 
   // 底部导航只在地图页显示，所以每次都从地图出发
   [[0, 'book'], [1, 'ach'], [2, 'daily']].forEach(([i, tab]) => {
@@ -700,6 +699,13 @@ test('底部导航三个按钮：从地图分别进到图鉴 / 成就 / 任务',
     ok($('panel-' + tab).classList.contains('is-active'), 'panel-' + tab + ' 应是当前页');
     eq($('bottomnav').hidden, true, 'codex 页隐藏底部导航');
   });
+
+  // 店铺按钮：打开与结算页共用的升级弹窗
+  toMap(emptySave());
+  click(nav[3]);
+  eq($('modalUpgrade').hidden, false, '店铺按钮要打开升级弹窗');
+  UI.closeModal('modalUpgrade');
+  eq($('modalUpgrade').hidden, true);
 });
 
 test('已经在图鉴页时换标签：不会因为「视图没变」被路由吞掉', () => {
@@ -742,11 +748,11 @@ test('验收：地图 → 地区 → 开一关 → 做单 → 上菜 → 结算 
   const c = firstCustomer(run);
   ok(c, '顾客要上门');
 
-  // 4) 点齐食材
+  // 4) 点齐食材（点齐即自动下锅开火）
   D.dish(c.dishId).steps.forEach((id) => ok(UI.tapIngredient(id), '配料 ' + id + ' 要能下锅'));
 
-  // 5) 开火 → 出锅
-  ok(UI.tapPot(0).ok);
+  // 5) 自动开火 → 出锅
+  ok(run.pots[0] && run.pots[0].state === 'cooking', '备料齐了应该自动开火');
   gt(advanceUntil(run, () => run.pots[0] && run.pots[0].state === 'ready', 30000), 0);
 
   // 6) 点锅装盘（走 canvas 命中这条路）

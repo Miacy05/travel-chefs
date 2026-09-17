@@ -293,10 +293,10 @@ test('阶段 3：点「开始营业」直接开一局并进入经营页', () => 
 });
 
 /* ------------------------------ 底部导航 + 图鉴 ------------------------------ */
-test('底部导航三个按钮都切到 codex 并落到对应标签', () => {
+test('底部导航四个按钮：三个进 codex 对应标签，店铺开升级弹窗', () => {
   const s = reset();
   const nav = $$('#bottomnav .nav-btn');
-  eq(nav.length, 3);
+  eq(nav.length, 4, '图鉴/成就/任务/店铺');
 
   click(nav[1]);                      // 成就
   eq(TC.Router.current, 'codex');
