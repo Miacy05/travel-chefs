@@ -119,6 +119,27 @@ test('顾客分类：普通 8 种 + 特殊 4 种；未遇见的画成剪影并�
   eq($$('#sub-cust .book-cell.is-special').length, D.SPECIAL_GUESTS.length);
 });
 
+test('顾客分类：每位顾客都有"胶囊标签"（脾气/身份），未解锁显示"未解锁"', () => {
+  openBook();
+  const pills = $$('#sub-cust .book-cell .bc-pill');
+  eq(pills.length, D.CUSTOMERS.length + D.SPECIAL_GUESTS.length, '普通 + 特殊顾客都要有胶囊标签');
+  let locked = 0;
+  pills.forEach(function (p) { if (p.textContent.indexOf('未解锁') >= 0) locked++; });
+  eq(locked, D.CUSTOMERS.length + D.SPECIAL_GUESTS.length, '新档里所有顾客都还没遇见 → 都标未解锁');
+  /* 解锁后：普通顾客显示脾气标签，特殊顾客显示「神秘来客」标签 */
+  const s = UI.save;
+  D.CUSTOMERS.forEach(function (c) { s.stats.seenCustomers[c.id] = 1; });
+  D.SPECIAL_GUESTS.forEach(function (g) { s.stats.seenCustomers[g.id] = 1; });
+  UI.renderBookCust();
+  const pills2 = $$('#sub-cust .book-cell .bc-pill');
+  eq(pills2.filter(function (p) { return p.textContent.indexOf('未解锁') >= 0; }).length, 0, '遇见后不该再标未解锁');
+  includes($('sub-cust').textContent, D.CUSTOMERS[0].note, '普通顾客应显示脾气标签');
+  includes($('sub-cust').textContent, '神秘来客', '特殊顾客应显示神秘来客标签');
+  /* 复原 */
+  s.stats.seenCustomers = {};
+  UI.renderBookCust();
+});
+
 test('顾客分类：特殊顾客带金色边框类名，遇见过才点亮', () => {
   const s = openBook();
   const cells = $$('#sub-cust .book-cell');
@@ -165,6 +186,27 @@ test('明信片分类：5 张，未解锁显示问号', () => {
   eq($$('#sub-card .postcard').length, D.REGIONS.length);
   eq($$('#sub-card .postcard.is-locked').length, D.REGIONS.length - C.unlockedRegionIds(s).length);
   includes($('sub-card').textContent, '旅 行 明 信 片');
+});
+
+test('明信片大图：未解锁地区点不开，已解锁地区开全屏深色弹窗（且清掉残留淡出态）', () => {
+  const s = openBook();
+  const rg1 = D.REGIONS[0];
+  const rg2 = D.REGIONS[1];
+  eq(C.isRegionUnlocked(s, rg1.id), true, '第 1 区默认解锁');
+  eq(C.isRegionUnlocked(s, rg2.id), false, '第 2 区需星数，新档未开');
+
+  /* 没解锁：点下去只弹提示，大图弹窗不开 */
+  const r2 = UI.tapPostcard(rg2.id);
+  eq(r2, false, '没解锁不该打开大图');
+  eq(UI.isModalOpen('modalPostcard'), false, '弹窗应保持关闭');
+
+  /* 已解锁：打开全屏弹窗，并清掉残留的 is-closing（保证是淡入而非淡出） */
+  $('modalPostcard').classList.add('is-closing');
+  const r1 = UI.tapPostcard(rg1.id);
+  eq(r1, true, '已解锁能打开大图');
+  eq(UI.isModalOpen('modalPostcard'), true, '弹窗应打开');
+  eq($('modalPostcard').classList.contains('is-closing'), false, '打开时要清掉淡出态');
+  UI.closeModal('modalPostcard');
 });
 
 /* ------------------------------ 不能串味 ------------------------------ */

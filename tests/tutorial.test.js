@@ -22,30 +22,36 @@ const $ = (id) => document.getElementById(id);
 const resetSave = () => { UI.save = S.blank(); S.checkDaily(UI.save, U.today()); return UI.save; };
 
 /* ------------------------------ 步骤表 ------------------------------ */
-test('教程步骤表是需求里的 8 个环节，顺序与文案都对得上', () => {
-  eq(D.TUTORIAL.length, 8, '教程必须是 8 步');
+test('教程步骤表是需求里的 11 个环节，顺序与文案都对得上', () => {
+  eq(D.TUTORIAL.length, 11, '教程必须是 11 步');
   eq(D.TUTORIAL_LEVEL, 'A1', '教学演示局固定用第 1 区第 1 关');
   const ids = D.TUTORIAL.map((s) => s.id);
-  eq(new Set(ids).size, 8, '步骤 id 不能重复');
+  eq(new Set(ids).size, 11, '步骤 id 不能重复');
   D.TUTORIAL.forEach((s) => {
     hasKeys(s, ['id', 'no', 'view', 'spot', 'act', 'text'], '步骤字段');
     ok(s.text && s.text.length > 4, '每步都要有一句中文引导：' + s.id);
     ok(['map', 'cook', 'result'].indexOf(s.view) !== -1, '视图只能是 map/cook/result：' + s.id);
   });
-  // 需求里的 8 句原文
+  // 需求里的 11 个环节，一个都不能少
   const byNo = {};
   D.TUTORIAL.forEach((s) => { byNo[s.no] = s; });
-  [1, 2, 3, 4, 5, 6, 7, 8].forEach((n) => ok(byNo[n], '缺少第 ' + n + ' 环节'));
-  includes(byNo[1].text, '点击食材');
-  includes(byNo[2].text, '熟了');
-  includes(byNo[3].text, '盘子');
-  includes(byNo[4].text, '拖给顾客');
-  includes(byNo[5].text, '耐心条');
-  includes(byNo[6].text, '三星');
-  includes(byNo[7].text, '金币');
-  includes(byNo[8].text, '新地区');
-  // 四个「要玩家真的做一次」的动作步
-  eq(D.TUTORIAL.filter((s) => s.act).map((s) => s.act).join(','), 'ingredient,pot,plate,serve');
+  for (let n = 1; n <= 11; n++) ok(byNo[n], '缺少第 ' + n + ' 环节');
+  includes(byNo[1].text, '新地区');                       // ① 解锁新地区
+  includes(byNo[2].text, '点击食材');                     // ②③ 三次配料点击
+  includes(byNo[3].text, '配料');
+  includes(byNo[4].text, '自动下锅');                     // ④ 自动装锅 + 自动开火
+  includes(byNo[5].text, '熟');                           // ⑤ 等进度圈转绿
+  includes(byNo[6].text, '盘子');                         // ⑥ 装盘
+  includes(byNo[7].text, '拖给顾客');                     // ⑦ 上菜
+  includes(byNo[8].text, '耐心条');                       // ⑧ 耐心条
+  includes(byNo[9].text, '金币');                         // ⑨ 金币 & 小费
+  includes(byNo[9].text, '小费');
+  includes(byNo[10].text, '钻石');                        // ⑩ 钻石
+  includes(byNo[11].text, '三星');                        // ⑪ 通关条件
+  // 「点配料」被拆成三步，保证玩家真的会点三下，而不是一句带过
+  eq(D.TUTORIAL.filter((s) => s.act === 'ingredient').length, 3, '配料要点三样，就该留三步');
+  // 四个「要玩家真的做一次」的动作类型
+  eq(Array.from(new Set(D.TUTORIAL.filter((s) => s.act).map((s) => s.act))).join(','), 'ingredient,pot,plate,serve');
 });
 
 /* ------------------------------ 教学局的规则 ------------------------------ */
@@ -95,8 +101,41 @@ test('教学局不会结算、也不会写档', () => {
   UI.run = null;
 });
 
+test('教学局实操：连点配料会一步一进，点齐自动下锅开火（不会卡在第 5 步）', () => {
+  resetSave();
+  UI.tutStart();
+  try {
+    UI.tutNext();                              // → 第 2 步：点第一样配料
+    eq(UI.tutIndex(), 1);
+
+    L.tick(UI.run, 620);                       // 教学局首客 600ms 上门
+    const c = L.waiting(UI.run)[0];
+    ok(c, '教学局第一位顾客应该上门');
+    const steps = D.dish(c.dishId).steps.slice();
+
+    /* 按订单顺序点前两样：各推进一步 */
+    const beforeIdx = UI.tutIndex();
+    UI.tapIngredient(steps[0]);
+    eq(UI.tutIndex(), beforeIdx + 1, '点第一样配料 → 进入下一步');
+    UI.tapIngredient(steps[1]);
+    eq(UI.tutIndex(), beforeIdx + 2, '点第二样配料 → 再进一步');
+
+    /* 点最后一样：应自动下锅开火，教程从第 5 步「自动开火」自动走到第 6 步「装盘」 */
+    UI.tapIngredient(steps[2]);
+    const pot = L.prepPotOf(UI.run, c.dishId);
+    ok(pot, '应该有锅在煮这道菜');
+    eq(pot.state, 'cooking', '配料点齐后必须自动开火');
+    eq(UI.tutIndex(), 5, '开火这一动作会把教程推进到第 6 步（装盘），玩家不用手动点灶台');
+    eq(D.TUTORIAL[UI.tutIndex()].act, 'plate');
+  } finally {
+    SC.stop();
+    UI.tutStop({ done: false });
+    UI.run = null;
+  }
+});
+
 /* ------------------------------ 遮罩开关 ------------------------------ */
-test('首次进游戏自动播；走完 8 步后写 tutorialDone 并收掉遮罩', () => {
+test('首次进游戏自动播；走完 11 步后写 tutorialDone 并收掉遮罩', () => {
   const save = resetSave();
   eq(S.needsTutorial(save), true, '新档应该需要教程');
 
@@ -108,33 +147,40 @@ test('首次进游戏自动播；走完 8 步后写 tutorialDone 并收掉遮罩
   /* 第 1 步在地图上讲「解锁新地区」 */
   eq(UI.tutIndex(), 0);
   eq(D.TUTORIAL[0].view, 'map');
-  eq($('tutStepLab').textContent, '第 1 / 8 步');
+  eq($('tutStepLab').textContent, '第 1 / 11 步');
   eq($('tutText').textContent, D.TUTORIAL[0].text);
   eq($('btnTutNext').hidden, false, '纯讲解步要显示「下一步」');
 
   /* 逐条走下去：讲解步点按钮、动作步做动作 */
-  UI.tutNext();                       // → 2/8 点食材
+  UI.tutNext();                       // → 2/11 点第一样配料
   eq(UI.tutIndex(), 1);
   eq($('btnTutNext').hidden, true, '动作步要隐藏「下一步」，逼玩家真的做一次');
   eq(UI.tutAction('pot'), false, '做错动作不该推进');
   eq(UI.tutAction('ingredient'), true, '做对动作才推进');
   eq(UI.tutIndex(), 2);
-  UI.tutAction('pot');                // → 装盘
+  eq(UI.tutAction('ingredient'), true, '第二样配料各自占一步');      // → 3/11 ...
   eq(UI.tutIndex(), 3);
-  UI.tutAction('plate');              // → 上菜
+  eq(UI.tutAction('ingredient'), true, '第三样配料各自占一步');      // → 自动下锅开火那步
   eq(UI.tutIndex(), 4);
-  UI.tutAction('serve');              // → 耐心条
+  eq(D.TUTORIAL[4].act, 'pot', '第 5 步讲自动下锅开火');
+  UI.tutAction('pot');                // → 装盘
   eq(UI.tutIndex(), 5);
-  UI.tutNext();                       // → 金币
+  UI.tutAction('plate');              // → 上菜
   eq(UI.tutIndex(), 6);
-  UI.tutNext();                       // → 结算页讲三星
+  UI.tutAction('serve');              // → 耐心条
   eq(UI.tutIndex(), 7);
+  UI.tutNext();                       // → 金币 & 小费
+  eq(UI.tutIndex(), 8);
+  UI.tutNext();                       // → 钻石
+  eq(UI.tutIndex(), 9);
+  UI.tutNext();                       // → 结算页讲三星
+  eq(UI.tutIndex(), 10);
   eq(TC.Router.current, 'result', '最后一步要停在结算页');
   eq($('btnTutNext').textContent, '完成教程');
 
   const coinsBefore = UI.save.coins;
   eq(UI.tutNext(), true);             // 完成教程
-  eq(UI.tutActive(), false, '第 8 步之后再点就结束');
+  eq(UI.tutActive(), false, '第 11 步之后再点就结束');
   eq($('tutHost').classList.contains('is-on'), false);
   eq(S.needsTutorial(UI.save), false, '教程看完要写 tutorialDone');
   eq(UI.save.tutorialDone, true);
@@ -178,7 +224,7 @@ test('量不到高亮目标时退化成不挡屏的中间态（jsdom 无布局�
   const spot = $('tutSpot');
   eq(spot.style.left, '50%', '没有布局信息时聚光块应收到中间，而不是铺满屏');
   eq(spot.style.width, '0px');
-  ok($('tutDots').querySelectorAll('i').length === 8, '进度点应有 8 个');
+  ok($('tutDots').querySelectorAll('i').length === 11, '进度点应有 11 个');
   UI.tutStop({ done: false });
 });
 
@@ -192,6 +238,23 @@ test('设置里能「回顾新手教程」，点了就重新播', () => {
   eq(UI.tutActive(), true, '点了就该开始播');
   eq($('modalSettings').hidden, true, '设置弹窗要让开');
   UI.tutStop({ done: false });
+});
+
+test('设置里能「游戏帮助 / 货币说明」，点了打开帮助弹窗并讲清三种货币', () => {
+  resetSave();
+  UI.openSettings();
+  const row = $('setList').querySelector('[data-set="help"]');
+  ok(row, '设置里应该有「游戏帮助 / 货币说明」入口');
+  includes($('setList').textContent, '游戏帮助');
+  eq(UI.onSetting('help'), true, '点帮助应打开帮助弹窗');
+  eq(UI.isModalOpen('modalHelp'), true, '帮助弹窗应打开');
+  const body = $('helpBody').textContent;
+  includes(body, '金币', '要讲金币');
+  includes(body, '小费', '要讲小费');
+  includes(body, '钻石', '要讲钻石');
+  includes(body, '来源', '要分别讲来源');
+  includes(body, '用途', '要分别讲用途');
+  UI.closeModal('modalHelp');
 });
 
 test('教程遮罩不吞掉玩家操作（pointer-events 由 CSS 控制，这里守住结构）', () => {

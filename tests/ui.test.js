@@ -49,6 +49,16 @@ function setStars(save, regionId, levelId, n) {
 const coinTxt = () => $('tbCoins').querySelector('b').textContent;
 const gemTxt = () => $('tbGems').querySelector('b').textContent;
 
+/** 清空提示层 + 抹掉防抖记忆，让每条用例从一个干净状态开始 */
+function clearToasts() {
+  const host = $('toastHost');
+  while (host.firstChild) host.removeChild(host.firstChild);
+  UI._lastToast = { msg: '', at: 0 };
+}
+
+/** 提示层里现有的条数 */
+const toastCount = () => $('toastHost').querySelectorAll('.toast').length;
+
 /* ------------------------------ 启动 ------------------------------ */
 test('index.html 在 jsdom 里能正常启动，没有 boot 报错', () => {
   eq(TC.bootError, null, 'boot 抛异常了：' + (TC.bootError && TC.bootError.message));
@@ -166,8 +176,7 @@ test('彩蛋 1 每天只给一次：同一天再点 10 次不加金币，并弹�
   for (let i = 0; i < 10; i++) UI.tapGlobe();
   eq(s.coins, 50);
 
-  const host = $('toastHost');
-  const before = host.querySelectorAll('.toast').length;
+  clearToasts(); // 提示层最多只留 3 条，先清干净再数，否则新增条数会被上限吃掉
   for (let i = 0; i < 10; i++) {
     const res = UI.tapGlobe();
     eq(res.locked, true, '今天已触发过，应处于锁定态');
@@ -176,8 +185,9 @@ test('彩蛋 1 每天只给一次：同一天再点 10 次不加金币，并弹�
   eq(s.coins, 50, '同一天内拿不到第二份（原来能无限刷）');
   eq($('globeTaps').textContent, '0', '锁住后角标保持 0');
 
-  const all = host.querySelectorAll('.toast');
-  gt(all.length - before, 0, '点下去应该给个提示，而不是毫无反应');
+  const all = $('toastHost').querySelectorAll('.toast');
+  gt(all.length, 0, '点下去应该给个提示，而不是毫无反应');
+  eq(all.length, 1, '同一句提示在防抖窗口里连点 10 次，也只该留一条');
   includes(all[all.length - 1].textContent, '明天', '提示要告诉玩家明天再来');
 });
 
@@ -373,13 +383,45 @@ test('音效 / 震动开关能切换并写档', () => {
 
 /* ------------------------------ 提示 / 弹窗基础设施 ------------------------------ */
 test('toast 插入提示层并能被清掉', () => {
+  clearToasts();
   const host = $('toastHost');
-  const before = host.querySelectorAll('.toast').length;
+  const before = toastCount();
   const n = UI.toast('测试提示');
-  eq(host.querySelectorAll('.toast').length, before + 1);
+  eq(toastCount(), before + 1);
   eq(n.textContent, '测试提示');
   if (n.parentNode) n.parentNode.removeChild(n);
-  eq(host.querySelectorAll('.toast').length, before);
+  eq(toastCount(), before);
+});
+
+/* 提示层防抖：连点同一个锁定关卡不能叠出一摞 Toast */
+test('toast 防抖：同一句话短时间重复只留一条', () => {
+  clearToasts();
+  UI.toast('星数不足');
+  UI.toast('星数不足');
+  UI.toast('星数不足');
+  eq(toastCount(), 1, '同一句提示连发三次，只能有一条');
+});
+
+test('toast 防抖：过了防抖窗口后同一句话可以再次弹出', () => {
+  clearToasts();
+  UI.toast('星数不足');
+  UI._lastToast.at = Date.now() - UI.TOAST_DEBOUNCE - 10; // 模拟时间已经过去
+  UI.toast('星数不足');
+  eq(toastCount(), 2, '隔久了这句提示应该能再弹一次');
+});
+
+test('toast 上限：屏幕上最多同时留 3 条', () => {
+  clearToasts();
+  for (let i = 0; i < 8; i++) UI.toast('第' + i + '条');
+  eq(toastCount(), UI.TOAST_MAX, '超过上限要先挤掉最老的一条');
+});
+
+test('toast 默认停留 1.5 秒后自动消失', () => {
+  clearToasts();
+  eq(UI.TOAST_MS, 1500, '默认停留时间应是 1.5 秒');
+  const n = UI.toast('短命提示');
+  n.parentNode.removeChild(n);
+  eq(toastCount(), 0, '手动清得掉');
 });
 
 test('dialog 只有点确定才执行回调', () => {

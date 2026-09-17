@@ -76,12 +76,12 @@ ul{margin:0;padding:0;list-style:none;}
 /* ==========================================================================
    App 外壳
    ========================================================================== */
-#app{
+#game-container{
   position:relative;
   display:flex;
   flex-direction:column;
   width:100%;
-  max-width:430px;
+  max-width:480px;
   height:100vh;
   height:100dvh;
   margin:0 auto;
@@ -99,8 +99,8 @@ ul{margin:0;padding:0;list-style:none;}
       #F4F0E9;
     display:flex;align-items:center;justify-content:center;
   }
-  #app{
-    width:min(430px, 100%);
+  #game-container{
+    width:min(480px, 100%);
     /* 高度不再贴着整屏走：留出上下呼吸感，内部元素才不会被纵向拉长 */
     height:min(880px, 92vh);
     border-radius:28px;
@@ -564,19 +564,19 @@ ul{margin:0;padding:0;list-style:none;}
   background:var(--cream);
   border-top:var(--bd) solid var(--brown);
   overflow-x:auto;overflow-y:hidden;
-  min-height:64px;
+  min-height:80px;
 }
 .pantry-btn{
   flex:0 0 auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  width:60px;height:52px;
+  width:60px;height:64px;
   background:var(--cream);
   border:2px solid var(--brown);border-radius:13px;
   box-shadow:0 3px 0 var(--ink-16);
   transition:transform .12s var(--ease),box-shadow .12s var(--ease);
 }
 .pantry-btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink-16);}
-.pantry-btn canvas{width:32px;height:32px;}
+.pantry-btn canvas{width:28px;height:28px;}
 .pantry-btn .pb-name{
   font-size:10px;font-weight:700;color:var(--ink-70);
   max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -596,18 +596,6 @@ ul{margin:0;padding:0;list-style:none;}
   max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .pantry-btn .pb-dishes .pb-dish.is-now{background:var(--yellow);color:var(--brown);}
-/* 一键下锅：把「做菜」压成一击 */
-.pantry-all{
-  flex:0 0 auto;align-self:stretch;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  min-width:74px;padding:6px 9px;
-  background:var(--yellow);
-  border:2px solid var(--brown);border-radius:13px;
-  box-shadow:0 3px 0 var(--brown);
-  font-size:10px;font-weight:800;color:var(--brown);
-}
-.pantry-all:active{transform:translateY(3px);box-shadow:0 0 0 var(--brown);}
-.pantry-all .pa-left{font-size:9px;opacity:.75;}
 .pantry-hint{
   flex:1 1 auto;text-align:center;font-size:11px;color:var(--ink-30);
   letter-spacing:.06em;padding:0 6px;
@@ -824,6 +812,15 @@ ul{margin:0;padding:0;list-style:none;}
 .res-actions{display:flex;flex-direction:column;gap:9px;margin-top:20px;padding-bottom:8px;}
 .res-actions .row2{display:flex;gap:9px;}
 .res-actions .row2 .btn{flex:1 1 0;}
+/* 「下一关」是结算页唯一的主行动：整行拉通、字放大一点，一眼就该看到 */
+.res-actions .res-next{min-height:52px;font-size:17px;letter-spacing:.14em;}
+/* 「回地图」降成一行小字链接，不再和主行动抢视线 */
+.res-link{
+  display:block;width:100%;margin-top:2px;padding:6px 0;
+  background:none;border:0;box-shadow:none;
+  color:var(--ink-50);font-size:12.5px;font-weight:800;letter-spacing:.08em;
+  text-decoration:underline;text-underline-offset:3px;
+}
 
 /* ==========================================================================
    页面 4 · 升级弹窗
@@ -916,6 +913,15 @@ ul{margin:0;padding:0;list-style:none;}
 }
 .up-vol b{font-family:var(--font-pixel);font-size:11px;color:var(--mint);min-width:34px;text-align:right;}
 
+/* 游戏帮助 / 货币说明弹窗 */
+.help-box{max-width:420px;}
+.help-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:6px 16px 18px;}
+.help-sec{padding:12px 0;border-bottom:1px dashed var(--ink-16);}
+.help-sec:last-child{border-bottom:0;}
+.help-sec h4{font-size:14px;font-weight:800;margin:0 0 6px;}
+.help-sec p{font-size:12px;color:var(--ink-70);line-height:1.7;margin:0 0 5px;}
+.help-sec p b{color:var(--ink-90);}
+
 /* ==========================================================================
    页面 5 · 图鉴 / 成就 / 每日任务
    ========================================================================== */
@@ -945,6 +951,14 @@ ul{margin:0;padding:0;list-style:none;}
 .book-cell.is-locked canvas{filter:grayscale(1) opacity(.3);}
 .book-cell .bc-name{font-size:11px;font-weight:800;text-align:center;line-height:1.3;}
 .book-cell .bc-sub{font-size:9.5px;color:var(--ink-50);font-family:var(--font-pixel);font-weight:700;}
+/* 顾客「胶囊标签」：一行小药丸，标出脾气/身份，未解锁显示灰色「未解锁」 */
+.book-cell .bc-pill{
+  font-size:9px;font-weight:800;line-height:1;color:var(--ink-70);
+  padding:3px 8px;border-radius:999px;background:var(--ink-08);
+  border:1px solid var(--ink-16);white-space:nowrap;
+}
+.book-cell.is-locked .bc-pill{color:var(--ink-30);background:var(--ink-04);border-color:var(--ink-12);}
+.book-cell.is-special .bc-pill{color:#9A6B00;background:rgba(255,209,102,.32);border-color:rgba(224,161,0,.4);}
 .book-cell.is-locked .bc-name{color:var(--ink-30);}
 /* 特殊顾客（第六优先级）：金色边框独立标注。
    现在数据里还没有 special 顾客，所以不会有金框；等那边做出来会自动生效。 */
@@ -982,14 +996,37 @@ ul{margin:0;padding:0;list-style:none;}
 .pc-sub{font-size:9.5px;color:var(--ink-50);font-family:var(--font-pixel);font-weight:700;}
 .postcard.is-locked .pc-name{color:var(--ink-30);}
 
-/* 明信片大图弹窗 */
-.postcard-box{max-width:340px;}
+/* 明信片大图弹窗：全屏深色沉浸预览，点遮罩 / ✕ 关闭，进出都淡入淡出 */
+#modalPostcard{
+  background:rgba(0,0,0,.86);
+  align-items:center;justify-content:center;padding:0;
+  animation:pcFade .26s var(--ease) both;
+}
+#modalPostcard.is-closing{animation:pcFadeOut .24s var(--ease) both;}
+#modalPostcard .modal-box.postcard-box{
+  background:transparent;border:0;box-shadow:none;border-radius:0;
+  max-width:none;width:100%;max-height:none;padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  animation:none;
+}
+#modalPostcard .modal-head{
+  position:static;border-bottom:0;color:#fff;
+  width:min(92vw,520px);max-width:100%;padding:18px 18px 4px;
+}
+#modalPostcard .modal-head h3,
+#modalPostcard .modal-head .mh-sub{color:#fff;}
+#modalPostcard .modal-head .x{color:#fff;}
 .pcd-scene{
   position:relative;overflow:hidden;
-  height:190px;border-radius:14px;border:2px solid var(--brown);
+  width:min(92vw,520px);aspect-ratio:3/2;border-radius:14px;
+  border:2px solid rgba(255,255,255,.22);
   display:flex;align-items:center;justify-content:center;font-size:46px;
+  background:var(--ink-20);
+  box-shadow:0 22px 60px rgba(0,0,0,.55);
 }
-.pcd-tag{font-size:12px;color:var(--ink-70);text-align:center;line-height:1.7;margin:12px 2px 2px;}
+.pcd-tag{font-size:12.5px;color:rgba(255,255,255,.82);text-align:center;line-height:1.7;margin:14px 8px 8px;}
+@keyframes pcFade{from{opacity:0}to{opacity:1}}
+@keyframes pcFadeOut{from{opacity:1}to{opacity:0}}
 
 /* -------- 图鉴的二级标签：菜谱 / 顾客 / 徽章 / 明信片 --------
    一级标签（图鉴/成就/每日任务）控制"哪一页"，二级标签控制"图鉴里的哪一类"。
@@ -1336,7 +1373,7 @@ ul{margin:0;padding:0;list-style:none;}
 <body>
 
 <!-- ================= App ================= -->
-<div id="app">
+<div id="game-container">
 
   <!-- ---------- 顶栏 ---------- -->
   <header id="topbar">
@@ -1421,12 +1458,14 @@ ul{margin:0;padding:0;list-style:none;}
         <div class="res-money" id="resMoney"></div>
         <div class="res-exp" id="resExp"></div>
         <div class="res-unlock" id="resUnlock"></div>
+        <!-- 主行动就一件事：接着打下一关。够格就给红色主按钮，不够格点一下会告诉你差多少星 -->
         <div class="res-actions">
-          <button class="btn btn-primary" id="btnResultRetry">再来一次</button>
+          <button class="btn btn-primary res-next" id="btnResultNext" type="button">下一关</button>
           <div class="row2">
-            <button class="btn btn-ghost" id="btnResultUpgrade">升级店铺</button>
-            <button class="btn btn-ghost" id="btnResultMap">回地图</button>
+            <button class="btn btn-ghost btn-sm" id="btnResultUpgrade" type="button">升级店铺</button>
+            <button class="btn btn-ghost btn-sm" id="btnResultRetry" type="button">再来一次</button>
           </div>
+          <button class="res-link" id="btnResultMap" type="button">回地图</button>
         </div>
       </div>
     </section>
@@ -1506,6 +1545,18 @@ ul{margin:0;padding:0;list-style:none;}
   </div>
 </div>
 
+<!-- ================= 游戏帮助 / 货币说明 弹窗 ================= -->
+<div class="modal" id="modalHelp" hidden>
+  <div class="modal-mask" data-close="1"></div>
+  <div class="modal-box help-box">
+    <div class="modal-head">
+      <h3 class="pixel">游 戏 帮 助</h3>
+      <button class="x" data-close="1" aria-label="关闭">✕</button>
+    </div>
+    <div class="help-body" id="helpBody"></div>
+  </div>
+</div>
+
 <!-- ================= 明信片大图弹窗（图鉴 → 明信片点击打开） ================= -->
 <div class="modal" id="modalPostcard" hidden>
   <div class="modal-mask" data-close="1"></div>
@@ -1542,7 +1593,7 @@ ul{margin:0;padding:0;list-style:none;}
   <div class="tut-spot" id="tutSpot"></div>
   <div class="tut-bubble" id="tutBubble">
     <div class="tut-card">
-      <div class="tut-step" id="tutStepLab">第 1 / 8 步</div>
+      <div class="tut-step" id="tutStepLab">第 1 / 11 步</div>
       <div class="tut-text" id="tutText"></div>
       <div class="tut-dots" id="tutDots"></div>
       <div class="tut-acts">
@@ -2147,31 +2198,41 @@ TC.bootError = null;
   };
 
   /* ------------------------------ 新手教程 ------------------------------ */
-  /* 8 个环节。数组顺序 = 实际播放顺序，不是编号顺序：
-       先在世界地图讲第 8 步（玩家进游戏时本来就站在地图上），
-       再进教学厨房讲 1~5、7 步，最后跳到结算页讲第 6 步。
+  /* 11 个环节，数组顺序 = 实际播放顺序（需求编号与播放序号保持一致 1~11）：
+       第 1 步在世界地图讲「解锁新地区」（玩家进游戏时本来就站在地图上）；
+       第 2~4 步把「点配料」拆成三次独立点击（原来的 1 步讲不清要点三下）；
+       第 5 步讲「配料点齐 → 自动下锅 + 自动开火」，玩家不用再点灶台；
+       第 6~8 步讲装盘 / 上菜 / 耐心条；
+       第 9~10 步把三种货币分开讲（金币 & 小费、钻石）；
+       第 11 步跳到结算页讲通关与三星条件。
      字段含义：
-       no   —— 需求里给的环节编号（1~8），界面上显示成「n/8」用 index，不显示它
+       no   —— 需求里的环节编号（1~11）；界面上显示的是播放序号 index+1
        view —— 该步所在的视图；教程会先切过去再高亮
        spot —— 高亮目标。DOM 元素 id；'stove'/'counter' 是 canvas 逻辑区域
        act  —— 需要玩家完成的游戏动作标识；为 null 表示纯讲解，显示「下一步」按钮
        text —— 中文引导文案 */
   var TUTORIAL = [
-    { id: 't_map', no: 8, view: 'map', spot: 'regionList', act: null,
-      text: '集齐星星就能解锁新地区' },
-    { id: 't_pantry', no: 1, view: 'cook', spot: 'pantryBand', act: 'ingredient',
-      text: '点击食材开始做菜' },
-    { id: 't_stove', no: 2, view: 'cook', spot: 'stove', act: 'pot',
-      text: '食材下锅后，等进度圈变绿就是熟了' },
-    { id: 't_plate', no: 3, view: 'cook', spot: 'counter', act: 'plate',
+    { id: 't_map', no: 1, view: 'map', spot: 'regionList', act: null,
+      text: '这里是旅行地图：每关能拿 1~3 颗星，集齐星星就能解锁新地区' },
+    { id: 't_pantry1', no: 2, view: 'cook', spot: 'pantryBand', act: 'ingredient',
+      text: '点击食材开始做菜：先按订单点第一样配料' },
+    { id: 't_pantry2', no: 3, view: 'cook', spot: 'pantryBand', act: 'ingredient',
+      text: '很好！接着点第二样配料' },
+    { id: 't_pantry3', no: 4, view: 'cook', spot: 'pantryBand', act: 'ingredient',
+      text: '再点最后一样 —— 配料点齐后会自动下锅、自动开火，不用你点灶台' },
+    { id: 't_stove', no: 5, view: 'cook', spot: 'stove', act: 'pot',
+      text: '锅已经自己点着了：盯住锅上的进度圈，转绿就熟了' },
+    { id: 't_plate', no: 6, view: 'cook', spot: 'counter', act: 'plate',
       text: '把做好的菜拖到盘子里' },
-    { id: 't_serve', no: 4, view: 'cook', spot: 'customerBubble', act: 'serve',
+    { id: 't_serve', no: 7, view: 'cook', spot: 'customerBubble', act: 'serve',
       text: '把盘子拖给顾客完成上菜' },
-    { id: 't_patience', no: 5, view: 'cook', spot: 'custWait', act: null,
+    { id: 't_patience', no: 8, view: 'cook', spot: 'custWait', act: null,
       text: '顾客耐心条从绿变黄变红，红了就会生气离开' },
-    { id: 't_coins', no: 7, view: 'cook', spot: 'tbCoins', act: null,
-      text: '金币用来升级店铺，小费是额外收入' },
-    { id: 't_result', no: 6, view: 'result', spot: 'resConds', act: null,
+    { id: 't_coins', no: 9, view: 'cook', spot: 'tbCoins', act: null,
+      text: '顾客结账给你金币：菜品售价 + 顾客小费一起到账，金币用来升级店铺' },
+    { id: 't_gems', no: 10, view: 'cook', spot: 'tbGems', act: null,
+      text: '钻石是稀有奖励：成就、每日任务、隐藏彩蛋会给，攒着能在设置里兑换金币' },
+    { id: 't_result', no: 11, view: 'result', spot: 'resConds', act: null,
       text: '服务足够顾客即可通关，少让顾客生气就能拿三星' }
   ];
 
@@ -5838,12 +5899,19 @@ TC.bootError = null;
       var pr = lay.pots[i], pot = run.pots[i];
       var locked = i >= activeSlots;
       fill(ctx, pr.x, pr.y, pr.w, pr.h, PAL.k);                         // 锅体
-      fill(ctx, pr.x + 1, pr.y + 1, pr.w - 2, pr.h - 2, locked ? PAL.k : PAL.w);
       if (locked) {
+        fill(ctx, pr.x + 1, pr.y + 1, pr.w - 2, pr.h - 2, PAL.k);       // 暗锅
         fill(ctx, pr.x + 5, pr.y + 9, 6, 5, PAL.y);                     // 锁扣
         fill(ctx, pr.x + 6, pr.y + 6, 1, 3, PAL.y);
         fill(ctx, pr.x + 9, pr.y + 6, 1, 3, PAL.y);
         fill(ctx, pr.x + 6, pr.y + 5, 4, 1, PAL.y);
+        n += 1;
+        continue;
+      }
+      /* 解锁的锅：有菜才画白锅膛；空锅画成暗色空锅，别留一块白 */
+      fill(ctx, pr.x + 1, pr.y + 1, pr.w - 2, pr.h - 2, pot ? PAL.w : PAL.k);
+      if (!pot) {
+        fill(ctx, pr.x + 3, pr.y + 4, pr.w - 6, 2, PAL.k);             // 空锅口暗影
         n += 1;
         continue;
       }
@@ -6291,7 +6359,7 @@ TC.bootError = null;
       action: $('tbAction'),
       nav: $('bottomnav'),
       boot: $('boot'),
-      app: $('app'),
+      app: $('game-container'),
       globe: $('globe'),
       globeTaps: $('globeTaps')
     };
@@ -6370,10 +6438,22 @@ TC.bootError = null;
     }
 
     // 弹窗关闭（遮罩 / ✕ 都带 data-close）
-    ['modalUpgrade', 'modalSettings', 'modalPostcard'].forEach(function (id) {
+    ['modalUpgrade', 'modalSettings', 'modalHelp'].forEach(function (id) {
       on($(id), 'click', function (e) {
         if (closest(e.target, '[data-close]')) UI.closeModal(id);
       });
+    });
+    // 明信片大图：点遮罩 / ✕ 先淡出再关（不抢通用逻辑）
+    on($('modalPostcard'), 'click', function (e) {
+      if (!closest(e.target, '[data-close]')) return;
+      var m = $('modalPostcard');
+      if (m && !m.classList.contains('is-closing')) {
+        m.classList.add('is-closing');
+        setTimeout(function () {
+          UI.closeModal('modalPostcard');
+          if (m.classList) m.classList.remove('is-closing');
+        }, 240);
+      }
     });
     on($('setList'), 'click', function (e) {
       var row = closest(e.target, '[data-set]');
@@ -6678,15 +6758,26 @@ TC.bootError = null;
   };
 
   /* ======================== 提示 / 弹窗 ======================== */
+  /* Toast：默认 1.5 秒自动消失。
+     ① 防抖：同一句话 700ms 内重复触发只算一次，连点不会刷出一长串；
+     ② 限流：同屏最多留 3 条，多出来的把最早的顶掉，视觉不会糊成一团。 */
+  UI.TOAST_MS = 1500;
+  UI.TOAST_DEBOUNCE = 700;
+  UI.TOAST_MAX = 3;
+  UI._lastToast = { msg: '', at: 0 };
   UI.toast = function (msg, kind, ms) {
     var host = $('toastHost');
     if (!host || !host.appendChild) return null;
+    var now = Date.now();
+    if (msg === UI._lastToast.msg && now - UI._lastToast.at < UI.TOAST_DEBOUNCE) return null;
+    UI._lastToast = { msg: msg, at: now };
+    while (host.children.length >= UI.TOAST_MAX) host.removeChild(host.firstChild);
     var n = document.createElement('div');
     n.className = 'toast' + (kind ? ' is-' + kind : '');
     n.textContent = msg;
     host.appendChild(n);
     var kill = function () { if (n.parentNode) n.parentNode.removeChild(n); };
-    setTimeout(kill, ms || 2400);
+    setTimeout(kill, ms || UI.TOAST_MS);
     return n;
   };
 
@@ -7121,12 +7212,46 @@ TC.bootError = null;
         '<span class="up-ico">🎓</span>' +
         '<span class="up-body">' +
           '<span class="up-name">回顾新手教程</span>' +
-          '<span class="up-desc">重看一遍从点食材到上菜的 8 步引导</span>' +
+          '<span class="up-desc">重看一遍从点食材到上菜的 11 步引导</span>' +
         '</span>' +
         '<span class="up-act"><span class="up-lv">重看</span></span>' +
+      '</div>' +
+      '<div class="up-row" data-set="help" role="button" tabindex="0">' +
+        '<span class="up-ico">❓</span>' +
+        '<span class="up-body">' +
+          '<span class="up-name">游戏帮助 / 货币说明</span>' +
+          '<span class="up-desc">金币、钻石、小费从哪来、怎么花</span>' +
+        '</span>' +
+        '<span class="up-act"><span class="up-lv">查看</span></span>' +
       '</div>');
     return true;
   }
+
+  /** 帮助弹窗内容：把三种货币的「来源 + 用途」讲清楚（第九优先级：结算/设置都能进） */
+  UI.renderHelp = function () {
+    var html =
+      '<div class="help-sec">' +
+        '<h4>🪙 金币</h4>' +
+        '<p><b>来源</b>：每一局上菜拿到的基础收入，服务越多、评价越高金币越多。</p>' +
+        '<p><b>用途</b>：在「升级店铺」里买灶台、招揽更多顾客、加快出餐等，是推进进度的主货币。</p>' +
+      '</div>' +
+      '<div class="help-sec">' +
+        '<h4>💰 小费</h4>' +
+        '<p><b>来源</b>：每位顾客按性格有不同的小费倍率——越急的客人、越合口味的菜，给的小费越高。</p>' +
+        '<p><b>用途</b>：直接计入本局总收入，和金币一起进账，是额外的金币来源。</p>' +
+      '</div>' +
+      '<div class="help-sec">' +
+        '<h4>💎 钻石</h4>' +
+        '<p><b>来源</b>：稀有掉落——完成成就、每日任务、触发隐藏彩蛋才会给。</p>' +
+        '<p><b>用途</b>：硬通货，攒着可在设置里兑换成金币，或解锁特殊道具。</p>' +
+      '</div>' +
+      '<div class="help-sec">' +
+        '<h4>⭐ 星星（顺带一提）</h4>' +
+        '<p>每关按「服务人数 / 流失人数 / 最高连击」拿 1~3 颗星；集星解锁新地区，是关卡进度钥匙。</p>' +
+      '</div>';
+    setHtml('helpBody', html);
+    return true;
+  };
 
   UI.onSetting = function (key) {
     var s = UI.save;
@@ -7146,6 +7271,10 @@ TC.bootError = null;
     if (key === 'tutorial') {
       UI.closeModal('modalSettings');
       return UI.tutStart();
+    }
+    if (key === 'help') {
+      UI.renderHelp();
+      return UI.openModal('modalHelp');
     }
     return false;
   };
@@ -7900,8 +8029,15 @@ TC.bootError = null;
     if (idx < 0 && res.pot && run.pots) idx = run.pots.indexOf(res.pot);
     if (idx < 0) return false;
     var r = UI.tapPot(idx);
-    if (r) UI.stageToast('✅ 备料齐了 · 自动下锅开火');
-    return !!r;
+    if (r) {
+      UI.stageToast('✅ 备料齐了 · 自动下锅开火');
+      return true;
+    }
+    /* 兜底：这锅已经自己煮上了（tapPot 会以 cooking/ready 拒绝）。
+       教程第 5 步正等着 'pot' 这个动作，这里必须替玩家认账，否则会卡在那一步。 */
+    var pot = run.pots ? run.pots[idx] : null;
+    if (pot && (pot.state === 'cooking' || pot.state === 'ready')) UI.tutAction('pot');
+    return false;
   };
 
   /**
@@ -8383,6 +8519,7 @@ TC.bootError = null;
   function bindResult() {
     if (resultBound) return;
     resultBound = true;
+    on($('btnResultNext'), 'click', function () { UI.playNextLevel(); });
     on($('btnResultRetry'), 'click', function () {
       var id = UI.result && UI.result.levelId;
       if (id) UI.openLevel(id);
@@ -8390,6 +8527,55 @@ TC.bootError = null;
     on($('btnResultUpgrade'), 'click', function () { UI.openUpgrade(); });
     on($('btnResultMap'), 'click', function () { TC.Router.go('map', { force: true }); });
   }
+
+  /**
+   * 结算页「下一关」该指向哪一关、现在能不能进。
+   *   同地区还有下一关 → 指过去；本地区打完 → 指向下一个地区的第 1 关；
+   *   全局最后一关（第 5 区第 5 关）→ next 为 null，按钮会隐藏。
+   * @returns {{next:object|null, ok:boolean, msg:string}}
+   */
+  UI.nextLevelInfo = function () {
+    var res = UI.result;
+    var lv = res && res.levelId ? D.level(res.levelId) : null;
+    if (!lv) return { next: null, ok: false, msg: '' };
+
+    var next = null;
+    var list = D.levelsOf(lv.regionId);
+    if (lv.index < list.length) next = D.level(D.region(lv.regionId).prefix + (lv.index + 1));
+    if (!next) {
+      /* 本地区通关了：看下一个地区开没开（第 5 区打完就没有下一关了） */
+      var ids = D.REGIONS.map(function (r) { return r.id; });
+      var k = ids.indexOf(lv.regionId);
+      if (k >= 0 && k + 1 < ids.length) next = D.levelsOf(ids[k + 1])[0] || null;
+    }
+    if (!next) return { next: null, ok: false, msg: '🏁 已经是最后一关啦' };
+    if (C.isLevelUnlocked(UI.save, next.id)) return { next: next, ok: true, msg: '' };
+
+    /* 卡住的原因有两种，分别把话说清楚：
+       ① 地区还没开 → 差多少总星数；② 前一关没通关 → 先回去拿星星 */
+    var rg = D.region(next.regionId);
+    if (rg && !C.isRegionUnlocked(UI.save, rg.id)) {
+      var need = Math.max(1, rg.unlockStars - C.totalStars(UI.save));
+      return { next: next, ok: false, msg: '⭐ 星数不足 · 解锁 ' + rg.name + ' 还差 ' + need + ' 颗星' };
+    }
+    return { next: next, ok: false, msg: '⭐ 星数不足 · 先通关「' + lv.name + '」' };
+  };
+
+  /** 点「下一关」：够格就开打，不够格给一句「为什么进不去」，别让玩家干瞪眼 */
+  UI.playNextLevel = function () {
+    var info = UI.nextLevelInfo();
+    if (!info.next) {
+      UI.toast(info.msg || '🏁 已经是最后一关啦', 'gold');
+      return false;
+    }
+    if (!info.ok) {
+      UI.toast(info.msg, 'gold');
+      sfx('deny');
+      return false;
+    }
+    sfx('tap');
+    return UI.openLevel(info.next.id);
+  };
 
   UI.renderResult = function () {
     var res = UI.result;
@@ -8405,7 +8591,7 @@ TC.bootError = null;
     setText('resSub', (UI._hard ? '🔥 挑战模式 · ' : '') + res.regionName + ' · ' + res.levelName + ' · 服务 ' + res.served +
       ' 位 · 流失 ' + res.lost + ' 位 · 最高 ' + res.maxCombo + ' 连击');
 
-    setHtml('resConds', res.conditions.map(condHtml).join(''));
+    setHtml('resConds', (res.conditions || []).map(condHtml).join(''));
 
     /* 满意度（第九优先级）：成功上菜 ÷ 总上门顾客，百分比 */
     var sat = res.satisfaction != null ? res.satisfaction : 0;
@@ -8441,11 +8627,11 @@ TC.bootError = null;
       var lv = D.level(res.unlockedLevelId);
       unlock += unlockHtml('🔓', '解锁新关卡：' + ((lv && lv.name) || res.unlockedLevelId));
     }
-    res.unlockedDishIds.forEach(function (id) {
+    (res.unlockedDishIds || []).forEach(function (id) {
       var d = D.dish(id);
       unlock += unlockHtml('🍜', '新菜谱：' + ((d && d.name) || id));
     });
-    res.unlockedRegionIds.forEach(function (id) {
+    (res.unlockedRegionIds || []).forEach(function (id) {
       var rg = D.region(id);
       unlock += unlockHtml('🌍', '新地区：' + ((rg && rg.name) || id));
     });
@@ -8455,6 +8641,16 @@ TC.bootError = null;
     setHtml('resUnlock', unlock);
     /* 成就全屏动画（第九优先级）：有新成就就依次弹横幅 */
     if (res.newAchievements && res.newAchievements.length) UI.showAchBanner(res.newAchievements);
+
+    /* 底部按钮：先把「下一关」这对主次关系排好，再看有没有下一关可给 */
+    var info = UI.nextLevelInfo();
+    var btnNext = $('btnResultNext');
+    if (btnNext) {
+      btnNext.hidden = !info.next;                     // 最后一关 → 直接不给这个按钮
+      btnNext.textContent = info.next
+        ? ('下一关　' + (info.next.index === 1 ? D.region(info.next.regionId).name : info.next.name))
+        : '下一关';
+    }
 
     UI.topbarCenter = '';
     UI.updateTopbar('result');
@@ -8623,7 +8819,8 @@ TC.bootError = null;
                (c.special ? ' is-special' : '') + '" data-arch="' + c.arch + '">' +
         '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
         '<span class="bc-name">' + esc(on ? c.name : '？？？') + '</span>' +
-        '<span class="bc-sub">' + esc(on ? (c.note + (cnt > 1 ? ' · 已遇见 ' + cnt + ' 次' : '')) : '未遇见') + '</span>' +
+        '<span class="bc-pill">' + esc(on ? c.note : '未解锁') + '</span>' +
+        '<span class="bc-sub">' + esc(on ? (cnt > 1 ? '已遇见 ' + cnt + ' 次' : '已遇见') : '未遇见') + '</span>' +
       '</div>';
     }).join('');
 
@@ -8634,7 +8831,8 @@ TC.bootError = null;
       return '<div class="book-cell is-special' + (on ? '' : ' is-locked') + '" data-arch="' + g.arch + '">' +
         '<canvas width="32" height="32" aria-hidden="true"></canvas>' +
         '<span class="bc-name">' + esc(on ? g.name : '？？？') + '</span>' +
-        '<span class="bc-sub">' + esc(on ? (g.desc + (cnt > 1 ? ' · 已遇见 ' + cnt + ' 次' : '')) : '特殊顾客 · 未遇见') + '</span>' +
+        '<span class="bc-pill">' + esc(on ? '✨ ' + (g.label || '神秘来客') : '未解锁') + '</span>' +
+        '<span class="bc-sub">' + esc(on ? (cnt > 1 ? '已遇见 ' + cnt + ' 次' : '已遇见') : '特殊顾客 · 未遇见') + '</span>' +
       '</div>';
     }).join('');
 
@@ -8766,6 +8964,8 @@ TC.bootError = null;
     setText('pcdTag',
       (rg.postcard && rg.postcard.sub ? rg.postcard.sub + ' · ' : '') +
       rg.tagline + '　·　通关 ' + cleared + ' / ' + levels.length + ' 关');
+    var m = $('modalPostcard');
+    if (m && m.classList) m.classList.remove('is-closing');   // 重新打开要确保是淡入，而不是残留的淡出
     sfx('open');
     return UI.openModal('modalPostcard');
   };
@@ -9069,7 +9269,7 @@ TC.bootError = null;
   };
 
   // 仅在真实 DOM 就绪时启动；纯逻辑单测可手动调用 TC.boot()
-  if (typeof document !== 'undefined' && document.getElementById && document.getElementById('app')) {
+  if (typeof document !== 'undefined' && document.getElementById && document.getElementById('game-container')) {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', TC.boot);
     } else {

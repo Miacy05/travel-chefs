@@ -530,6 +530,108 @@ test('拿到 1 星也算通关：解锁下一关，但星级只记 1 颗', () =>
   eq($$('#resConds .res-cond.is-fail').length, 2);
 });
 
+test('结算页的「下一关」：通关后点它能直接开下一关', () => {
+  const run = startRun('A1');
+  run.served = D.level('A1').stars.served;
+  run.timeLeft = 1;
+  SC.step(50, run);
+  eq(TC.Router.current, 'result');
+
+  const btn = $('btnResultNext');
+  eq(btn.hidden, false, '有下一关就该给按钮');
+  includes(btn.textContent, '下一关');
+  includes(btn.textContent, D.level('A2').name, '按钮上要写明下一关叫什么');
+  includes(btn.className, 'btn-primary', '下一关是主行动，红色实心');
+
+  click(btn);
+  eq(TC.Router.current, 'cook', '点了就该直接开打');
+  eq(UI.run.levelId, 'A2');
+  SC.stop();
+  UI.run = null;
+});
+
+test('结算页的「下一关」：没通关会被星数挡下来，并说明差在哪', () => {
+  const run = startRun('A1');
+  run.timeLeft = 1;                    // 一位都没服务 → 0 星，下一关不开
+  SC.step(50, run);
+  eq(TC.Router.current, 'result');
+  eq(UI.result.stars, 0);
+  eq(C.isLevelUnlocked(UI.save, 'A2'), false);
+
+  click($('btnResultNext'));
+  eq(TC.Router.current, 'result', '不够格就不该换页');
+  ne(UI.run && UI.run.levelId, 'A2', '不够格也不该开下一关的新局');
+  includes(lastToast(), '星数不足', '要告诉玩家为什么进不去');
+  includes(lastToast(), D.level('A1').name, '要说清楚先回去过哪一关');
+});
+
+test('结算页的「下一关」：跨地区时按总星数卡人', () => {
+  const save = emptySave();
+  UI.save = save;
+  // 第 1 区只拿到 3 颗星：还差 3 颗才够开第 2 区（门槛 6）
+  save.regions.asia_street.A1 = 3;
+  const rg2 = D.REGIONS[1];
+  lt(C.totalStars(save), rg2.unlockStars, '这份存档应该还没开第 2 区');
+  eq(C.isRegionUnlocked(save, rg2.id), false, '第 2 区应未解锁');
+
+  UI.result = { levelId: D.levelsOf('asia_street')[4].id, stars: 3, conditions: [] };
+  UI.renderResult();
+  const btn = $('btnResultNext');
+  eq(btn.hidden, false, '还有下一区，按钮要在');
+
+  click(btn);
+  eq(TC.Router.current !== 'cook', true, '地区没开就不该进第 2 区');
+  includes(lastToast(), '星数不足');
+  includes(lastToast(), rg2.name, '要说清楚是哪个地区没开');
+  includes(lastToast(), String(rg2.unlockStars - C.totalStars(save)), '要说清楚还差几颗星');
+
+  // 攒够星星后同一个按钮就能直接进（再拿 3 颗，共 6 = 门槛）
+  save.regions.asia_street.A2 = 3;
+  eq(C.isRegionUnlocked(save, rg2.id), true, '凑满 6 星后第 2 区解锁');
+  click($('btnResultNext'));
+  eq(TC.Router.current, 'cook', '解锁后同一个按钮直接进入第 2 区');
+  UI.run = null;
+  UI.result = null;
+});
+
+test('结算页的「下一关」：打完最后一关就隐藏按钮', () => {
+  const save = emptySave();
+  UI.save = save;
+  const last = D.LEVELS[D.LEVELS.length - 1];
+  UI.result = {
+    levelId: last.id, stars: 3, conditions: [],
+    regionName: D.region(last.regionId).name, levelName: last.name,
+    served: 0, lost: 0, maxCombo: 0, income: 0, tips: 0, exp: 0,
+    unlockedDishIds: [], unlockedRegionIds: [], newAchievements: []
+  };
+  UI.renderResult();
+  eq($('btnResultNext').hidden, true, '全局最后一关不该再给「下一关」');
+  eq(UI.playNextLevel(), false);
+  UI.result = null;
+});
+
+test('结算页的按钮主次：下一关是主行动，回地图降为小字链接', () => {
+  startRun('A1');
+  UI.run.served = D.level('A1').stars.served;
+  UI.run.timeLeft = 1;
+  SC.step(50, UI.run);
+
+  const next = $('btnResultNext');
+  const upgrade = $('btnResultUpgrade');
+  const retry = $('btnResultRetry');
+  const back = $('btnResultMap');
+  ok(next.classList.contains('btn-primary'), '下一关是红色主按钮');
+  ok(!upgrade.classList.contains('btn-primary'), '升级店铺让位给下一关');
+  ok(!retry.classList.contains('btn-primary'), '再来一次让位给下一关');
+  ok(back.classList.contains('res-link'), '回地图是文字链接');
+  eq(back.textContent, '回地图');
+  // 下一关独占一行；升级店铺与再来一次并排在下
+  ok(next.parentNode.classList.contains('res-actions'), '下一关独占第一行');
+  eq(upgrade.parentNode, retry.parentNode, '升级店铺 / 再来一次同一行并排');
+  eq(upgrade.parentNode.className, 'row2');
+  UI.run = null;
+});
+
 test('结算页的「升级店铺」能直接打开升级弹窗，「回地图」能回地图', () => {
   const run = startRun('A1');
   run.timeLeft = 1;
