@@ -117,6 +117,11 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 .split .col{background:var(--ink-08);border-radius:10px;padding:10px 12px}
 .split .col b{font-size:13px;color:var(--brown)}
 .split .col p{font-size:13px;color:var(--ink-70);margin:3px 0 0}
+
+/* 实时核验结果：页面加载时回读线上与仓库文件后当场改写 */
+.live{color:var(--ink-50)}
+.live-ok{color:#1f8a52;font-weight:600}
+.live-bad{color:var(--tomato);font-weight:600}
 </style>
 </head>
 <body>
@@ -124,7 +129,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 <header>
   <div class="badge">🧩 Skill 驱动 · 可分享过程记录</div>
   <h1><span class="pixel">Travel Chefs</span> · 使用 Skill 的开发过程记录</h1>
-  <p class="sub">24 级本科市营 1234 班 · Vibe Coding 部署课期末作业</p>
+  <p class="sub">26 级市营升本 2 班 · 赵翠滢 · 学号 2026301010228 · Vibe Coding 部署课期末作业</p>
   <div class="meta">
     <span>📅 2026-09-15 ~ 09-19</span>
     <span>🧰 3 个 Skill 全程参与</span>
@@ -132,6 +137,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
     <span>🧪 507 断言全绿</span>
     <span>🕹️ v2.5.0</span>
     <span>📝 <b data-gh-n>30+</b> 次提交</span>
+    <span>🛟 国内镜像备用</span>
   </div>
 </header>
 
@@ -320,11 +326,14 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
   <dl>
     <dt>依据</dt><dd>链式命令的回显不可信，每条关键操作后要用独立命令复查；项目名 / 仓库名决定域名前缀，两者要一致。</dd>
     <dt>落地</dt><dd>push 后不用 <code>git push</code> 自己的回显作依据，改用 <code>git ls-remote origin refs/heads/main</code>
-      比对远端 ref（<code>fc35b1a</code> 与本地 <code>HEAD</code> 完全一致）；
-      再用 <code>vercel deploy --prod --yes</code> 上线，随后<strong>回读线上字节并比对 sha256</strong>
-      （线上 458668 字节 / <code>ca2dc159…</code>，与本地 <code>index.html</code> 逐字节相同）。</dd>
-    <dt>复核</dt><dd><a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a> 打开即最新版，
-      不是「本地改了、线上还是旧的」。</dd>
+      比对远端 ref 与本地 <code>HEAD</code> 完全一致（最新提交 <code data-gh-head>实时读取</code>）；
+      再用 <code>vercel deploy --prod --yes</code> 上线，随后<strong>回读线上文件并比对 sha256</strong>：
+      线上 <b data-bytes>458668</b> 字节 / sha256 <code data-sha>680de66f…</code>，与仓库里的 <code>index.html</code> 逐字节相同。</dd>
+    <dt>复核</dt><dd>本页加载时会<strong>重新回读一次线上文件与仓库源文件</strong>并当场重算 sha256 ——
+      <span data-verify class="live">正在回读线上文件与仓库源文件…</span>
+      <noscript><span class="live">（浏览器未启用 JavaScript，无法实时核验；上方数字为部署时实测值）</span></noscript>
+      <br><span style="color:var(--ink-50);font-size:13px">这几个数字（提交数、最新 commit、字节数、sha256）本来会随每次提交与部署漂移，
+      写死必然过期，所以全部改成加载时实时计算 —— 老师一次刷新即可核对。</span></dd>
   </dl>
 </div>
 
@@ -345,7 +354,9 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 <div class="deliver">
   <div class="d-title"><span class="d-score">40 / 40</span>① 公网可访问的网页</div>
   <div class="d-link"><a href="https://travel-chefs.vercel.app/">https://travel-chefs.vercel.app/</a></div>
-  <div class="d-link" style="font-size:13px;color:var(--ink-50)">像素风「环游世界 + 模拟经营」网页小游戏 · 5 地区 25 关 · 手机横竖屏可直接玩 · 零依赖零构建</div>
+  <div class="d-link">国内镜像（无需梯子）：<a href="https://travel-chefs-game.app.workbuddy.host/">https://travel-chefs-game.app.workbuddy.host/</a></div>
+  <div class="d-link" style="font-size:13px;color:var(--ink-50)">像素风「环游世界 + 模拟经营」网页小游戏 · 5 地区 25 关 · 手机横竖屏可直接玩 · 零依赖零构建<br>
+    两个地址内容完全一致（同一份 <code>index.html</code>）。主地址是 <code>.vercel.app</code>；若打不开或提示需梯子，直接用国内镜像。</div>
 </div>
 
 <div class="deliver">
@@ -357,7 +368,8 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 <div class="deliver">
   <div class="d-title"><span class="d-score">30 / 30</span>③ AI 对话 / 过程记录</div>
   <div class="d-link">本页 · <a href="https://conversation-record.vercel.app/">https://conversation-record.vercel.app/</a></div>
-  <div class="d-link" style="font-size:13px;color:var(--ink-50)">以 Skill 使用证据为主线的完整过程记录</div>
+  <div class="d-link">本页国内镜像：<a href="https://travel-chefs-game.app.workbuddy.host/process-record.html">https://travel-chefs-game.app.workbuddy.host/process-record.html</a></div>
+  <div class="d-link" style="font-size:13px;color:var(--ink-50)">以 Skill 使用证据为主线的完整过程记录；本页与仓库里的 <code>process-record.html</code> 为同一份文件</div>
 </div>
 
 <hr>
@@ -440,7 +452,8 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
     <li><strong>仓库提交历史</strong>：<a href="https://github.com/Miacy05/travel-chefs">github.com/Miacy05/travel-chefs</a>
       —— <b data-gh-n>30+</b> 次提交，作者统一为 Miacy05；最近两次分别落在「游戏本体」与「测试适配」，可看出改动是分层的。</li>
     <li><strong>线上作品</strong>：<a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a>
-      —— 与本地 <code>index.html</code> 逐字节一致（458668 字节 / sha256 <code>ca2dc159…</code>）。</li>
+      —— 与仓库里的 <code>index.html</code> 逐字节一致（<b data-bytes>458668</b> 字节 / sha256 <code data-sha>680de66f…</code>，
+      本页加载时实时回读计算，不写死）。</li>
   </ul>
 </div>
 
@@ -656,6 +669,9 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
   <div class="d-link">在线试玩：<a href="https://travel-chefs.vercel.app/">https://travel-chefs.vercel.app/</a></div>
   <div class="d-link">源码仓库：<a href="https://github.com/Miacy05/travel-chefs">https://github.com/Miacy05/travel-chefs</a></div>
   <div class="d-link">过程记录：<a href="https://conversation-record.vercel.app/">https://conversation-record.vercel.app/</a></div>
+  <div class="d-link" style="margin-top:8px;color:var(--ink-50);font-size:13px">🛟 国内镜像（同一份文件，无需梯子）：<br>
+    游戏 <a href="https://travel-chefs-game.app.workbuddy.host/">https://travel-chefs-game.app.workbuddy.host/</a><br>
+    记录 <a href="https://travel-chefs-game.app.workbuddy.host/process-record.html">https://travel-chefs-game.app.workbuddy.host/process-record.html</a></div>
 </div>
 
 <div class="anonymize">
@@ -664,27 +680,93 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 
 <footer>
   Travel Chefs · Skill 驱动的开发过程记录 · 更新于 2026-09-19<br>
-  24 级本科市营 1234 班 · Vibe Coding 部署课 · 由 WorkBuddy 协助完成
+  26 级市营升本 2 班 · 赵翠滢 · 学号 2026301010228 · Vibe Coding 部署课 · 由 WorkBuddy 协助完成
 </footer>
 
 
 <script>
-/* 提交数实时读取：静态兜底写「30+」，能联网时替换成 GitHub 上的真实条数。
-   这样记录页里的数字永远不会和仓库实际提交历史脱节。 */
+/* ── 会漂移的数字，一律在加载时实时回读，不写死 ────────────────────────
+   提交数 / 最新 commit / 线上字节数 / sha256 都会随每次提交与部署变化，
+   写死的数字在下一次提交后自己就失效了。这里在页面加载时做三件事：
+     ① GitHub commits API  → 回填提交数与最新 commit 短哈希
+     ② 回读线上 index.html → 当场算字节数与 sha256
+     ③ 回读仓库里的 index.html（raw）→ 与线上比对，给出是否逐字节一致
+   离线 / 被限流 / 老浏览器则保留静态兜底，并如实说明「未能实时核验」。 */
 (function () {
-  if (typeof fetch !== 'function') return; /* 老浏览器 / 无网环境：直接保留兜底数字 */
-  var api = 'https://api.github.com/repos/Miacy05/travel-chefs/commits?per_page=100';
-  fetch(api, { headers: { Accept: 'application/vnd.github+json' } })
+  var REPO = 'Miacy05/travel-chefs';
+  var LIVE = 'https://travel-chefs.vercel.app/';
+  var RAW  = 'https://raw.githubusercontent.com/' + REPO + '/main/index.html';
+  var API  = 'https://api.github.com/repos/' + REPO + '/commits?per_page=100';
+
+  function each(sel, fn) {
+    Array.prototype.forEach.call(document.querySelectorAll(sel), fn);
+  }
+  function setAll(sel, text) { each(sel, function (el) { el.textContent = text; }); }
+  function say(sel, text, cls) {
+    each(sel, function (el) { el.textContent = text; if (cls) el.className = 'live ' + cls; });
+  }
+  function canHash() {
+    return typeof fetch === 'function' && typeof Promise === 'function'
+      && !!window.crypto && !!window.crypto.subtle;
+  }
+
+  if (!canHash()) {
+    say('[data-verify]', '（当前环境不支持实时核验，上方数字为部署时实测值）', '');
+    setAll('[data-gh-head]', '见仓库');
+    return;
+  }
+
+  function sha256(buf) {
+    return window.crypto.subtle.digest('SHA-256', buf).then(function (h) {
+      var b = new Uint8Array(h), out = '';
+      for (var i = 0; i < b.length; i++) out += ('0' + b[i].toString(16)).slice(-2);
+      return out;
+    });
+  }
+  function load(url) {
+    return fetch(url, { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.arrayBuffer();
+    });
+  }
+
+  /* ① 提交数 + 最新 commit 短哈希 */
+  fetch(API, { headers: { Accept: 'application/vnd.github+json' } })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (list) {
       if (!Array.isArray(list) || !list.length) return;
-      var n = list.length;
-      Array.prototype.forEach.call(document.querySelectorAll('[data-gh-n]'), function (el) {
-        el.textContent = n;
-      });
-      document.documentElement.setAttribute('data-gh-commits', n);
+      setAll('[data-gh-n]', String(list.length));
+      setAll('[data-gh-head]', String(list[0].sha).slice(0, 7));
+      document.documentElement.setAttribute('data-gh-commits', String(list.length));
     })
-    .catch(function () { /* 离线 / 被限流时保留静态数字，不影响阅读 */ });
+    .catch(function () { setAll('[data-gh-head]', '见仓库'); });
+
+  /* ②③ 线上指纹 + 与仓库源文件逐字节比对 */
+  Promise.all([load(LIVE), load(RAW)])
+    .then(function (rs) {
+      return Promise.all([sha256(rs[0]), sha256(rs[1])]).then(function (hs) {
+        setAll('[data-bytes]', String(rs[0].byteLength));
+        setAll('[data-sha]', hs[0].slice(0, 8) + '…');
+        var same = hs[0] === hs[1];
+        say('[data-verify]',
+          same ? '✅ 线上文件与仓库 index.html 逐字节一致（sha256 ' + hs[0].slice(0, 8) + '…）'
+               : '⚠️ 线上文件与仓库 index.html 不一致，请以仓库版本为准',
+          same ? 'live-ok' : 'live-bad');
+        document.documentElement.setAttribute('data-live-verified', same ? 'ok' : 'mismatch');
+      });
+    })
+    .catch(function () {
+      /* 仓库源不可达时，至少把线上指纹读回来 */
+      load(LIVE).then(function (b) {
+        return sha256(b).then(function (h) {
+          setAll('[data-bytes]', String(b.byteLength));
+          setAll('[data-sha]', h.slice(0, 8) + '…');
+          say('[data-verify]', '（仓库源文件暂不可达，已回读线上文件指纹但未做比对）', '');
+        });
+      }).catch(function () {
+        say('[data-verify]', '（网络不可达，未能实时核验；上方数字为部署时实测值）', '');
+      });
+    });
 })();
 </script>
 </body>
