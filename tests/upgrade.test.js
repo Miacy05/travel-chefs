@@ -25,7 +25,7 @@ test('未解锁地区的菜品菜单不出现在升级页', () => {
   const s = blank();
   eq(G.visibleOf(s, 'equipment').length, 3, '设备 3 项');
   eq(G.visibleOf(s, 'decor').length, 3, '装修 3 项');
-  eq(G.visibleOf(s, 'staff').length, 3, '员工 3 项');
+  eq(G.visibleOf(s, 'staff').length, 1, '员工简化后只剩服务员 1 项');
   eq(G.visibleOf(s, 'menu').length, 4, '亚洲 3 道菜 + 加料台');
 
   // 攒够 6 星解锁巴黎后，菜单多出 3 项
@@ -130,30 +130,33 @@ test('summary 汇总所有会影响玩法的属性', () => {
   eq(a.seatsBonus, 0);
   eq(a.tipAdd, 0);
   approx(a.tipMul, 1);
-  approx(a.coinMul, 1);
-  eq(a.helperInterval, 0, '没雇帮厨就没有自动备料');
-  eq(a.waiterInterval, 0);
+  approx(a.coinMul, 1, undefined, '收银员已下线，金币倍率恒为 1');
+  eq(a.waiterInterval, 0, '没雇服务员就没有自动上菜');
   eq(a.ownedDecor, 0);
+  eq(a.decorLv.asia_street, 0, '每个地区各自一份装饰等级');
 
   s.upgrades.stove_speed = 5;
   s.upgrades.warmer = 5;
   s.upgrades.seats = 2;
   s.upgrades.spice = 3;
-  s.upgrades.cashier = 3;
-  s.upgrades.decor_bonus = 5;
-  s.upgrades.helper = 1;
   s.upgrades.waiter = 2;
-  s.decor.asia_street = ['lantern_string', 'cloth_banner'];
+  /* 无地区上下文的全局口径：装饰布置的老字段仍能读出来（兼容旧调用点） */
+  s.upgrades.decor_bonus = 5;
+  /* 有地区上下文的真实口径：每地区独立 */
+  s.decorLv.asia_street = 3;
+  s.decorLv.paris_cafe = 1;
   const b = G.summary(s);
   approx(b.cookTimeMul, 0.6);
   eq(b.plateLife, 22000);
   eq(b.seatsBonus, 2);
   eq(b.tipAdd, 3);
   approx(b.tipMul, 1.25);
-  approx(b.coinMul, 1.18);
-  eq(b.helperInterval, 6000);
-  eq(b.waiterInterval, 5500);
-  eq(b.ownedDecor, 2);
+  approx(b.coinMul, 1);
+  eq(b.waiterInterval, 3000, '服务员 Lv2：每 3 秒一次');
+  eq(b.ownedDecor, 3 + 1, '各地区已解锁装饰件数跨地区累加');
+  eq(b.decorLv.asia_street, 3);
+  eq(b.decorLv.paris_cafe, 1);
+  eq(b.decorLv.ramen_shop, 0, '没升过的地区还是毛坯');
 });
 
 test('升级后的属性真的会被 Calc 用上（不是只显示）', () => {

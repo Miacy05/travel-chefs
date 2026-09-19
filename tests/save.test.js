@@ -30,10 +30,12 @@ test('blank 存档包含方案要求的全部字段', () => {
   eq(s.gems, 0);
   eq(s.level, 1);
   eq(s.exp, 0);
-  ['regions', 'decor', 'upgrades', 'stats', 'achievements', 'daily', 'easter', 'settings']
+  ['regions', 'decor', 'decorLv', 'upgrades', 'stats', 'achievements', 'daily', 'easter', 'settings']
     .forEach((k) => ok(s[k], '缺少 ' + k));
   eq(Object.keys(s.regions).length, 5, '5 个地区都要有星级表');
   eq(Object.keys(s.decor).length, 5, '5 个地区都要有装饰表');
+  eq(Object.keys(s.decorLv).length, 5, '5 个地区都要有装饰等级表');
+  eq(s.staffRefunded, false, '新档还没退过员工的款');
 });
 
 test('blank 的升级等级取自每项的 start', () => {
@@ -84,10 +86,31 @@ test('normalize 保留合法值、剔除非法值', () => {
   eq(s.settings.vibrate, true, '未提供的设置用默认值');
 });
 
-test('normalize 只保留本地区真实存在的装饰', () => {
-  const s = S.normalize({ decor: { asia_street: ['lantern_string', 'fake_thing'], paris_cafe: ['lantern_string'] } });
-  deepEq(s.decor.asia_street, ['lantern_string']);
-  deepEq(s.decor.paris_cafe, [], '串到别的地区的装饰应被剔除');
+test('normalize 把「单件装饰」折成地区装饰等级，并清空旧字段', () => {
+  /* 老档的 save.decor 是「单件购买」：买过 N 件 → 那个地区至少 N 级。
+     新版只认 save.decorLv[regionId]，旧字段读完就清空，不留两份状态互相打架。 */
+  const s = S.normalize({
+    decor: {
+      asia_street: ['big_lantern', 'bamboo_planter'],
+      paris_cafe: ['parasol_set', 'fake_thing', 'iron_sign_lamp', 'flower_planter']
+    }
+  });
+  deepEq(s.decor.asia_street, [], '旧字段迁移完就清空');
+  deepEq(s.decor.paris_cafe, []);
+  eq(s.decorLv.asia_street, 2, '买过 2 件 → 至少 Lv2');
+  eq(s.decorLv.paris_cafe, 3, '买过 4 件也只折算到 Lv3（装饰件数上限 3）');
+  eq(s.decorLv.ramen_shop, 0, '没买过的还是毛坯');
+});
+
+test('normalize 迁移全局 decor_bonus：老玩家的钱不白花，但只退成等级不退钱', () => {
+  /* 老档的「装饰布置」是全局一个等级；新版每地区一份。
+     迁移口径：全局升到 Lv3 → 五个地区都至少 Lv3（他确实花过钱）。
+     取「较大值」而不是覆盖，所以已经单独升过的地区不会被拉低。 */
+  const s = S.normalize({ upgrades: { decor_bonus: 3 }, decorLv: { asia_street: 5 } });
+  eq(s.decorLv.asia_street, 5, '本地区已升得更高 → 保持 5');
+  eq(s.decorLv.paris_cafe, 3, '其余地区继承全局等级');
+  eq(s.decorLv.taco_stand, 3);
+  eq(s.upgrades.decor_bonus, 3, '全局字段本身保留（兼容旧调用点）');
 });
 
 test('normalize 过滤非法成就与任务 id', () => {
@@ -163,14 +186,15 @@ test('write / load 往返一致', () => {
   s.gems = 7;
   s.regions.asia_street.A1 = 3;
   s.upgrades.stove_speed = 4;
-  s.decor.asia_street.push('lantern_string');
+  s.decorLv.asia_street = 2;
   eq(S.write(s, store), true);
   const back = S.load(store);
   eq(back.coins, 999);
   eq(back.gems, 7);
   eq(back.regions.asia_street.A1, 3);
   eq(back.upgrades.stove_speed, 4);
-  deepEq(back.decor.asia_street, ['lantern_string']);
+  eq(back.decorLv.asia_street, 2, '地区装饰等级要能存下来');
+  deepEq(back.decor.asia_street, [], '旧字段恒为空数组，不写任何东西进去');
 });
 
 test('storage() 在没有 localStorage 时回落到内存实现', () => {
@@ -274,18 +298,53 @@ test('buyUpgrade 成功会记一次今日升级（每日任务用）', () => {
   eq(s.daily.metrics.upgrades, 1);
 });
 
-test('buyDecor：每件 260，重复购买被拒，且提升小费', () => {
+test('装饰布置（perRegion）：涨价按地区等级走，钱不够被拒，升级后只影响该地区', () => {
   const s = S.blank();
-  eq(S.buyDecor(s, 'asia_street', 'lantern_string').reason, 'poor');
-  S.addCoins(s, 300);
-  const r = S.buyDecor(s, 'asia_street', 'lantern_string');
+  eq(S.buyUpgrade(s, 'decor_bonus', 'asia_street').reason, 'poor', '没钱买不了');
+  S.addCoins(s, 3000);
+  const r = S.buyUpgrade(s, 'decor_bonus', 'asia_street');
   eq(r.ok, true);
-  eq(r.price, 260);
-  eq(s.coins, 40);
-  eq(S.hasDecor(s, 'asia_street', 'lantern_string'), true);
-  eq(S.buyDecor(s, 'asia_street', 'lantern_string').reason, 'owned');
-  eq(S.buyDecor(s, 'asia_street', 'ghost').reason, 'no-such-decor');
-  eq(TC.Calc.decorTipMul(s, 'asia_street'), 1.08);
+  eq(r.level, 1, '升到该地区的 Lv1');
+  eq(s.decorLv.asia_street, 1);
+  eq(s.decorLv.paris_cafe, 0, '别的地区纹丝不动');
+  /* 第二级更贵：180 → 330 */
+  eq(s.coins, 3000 - 180);
+  const r2 = S.buyUpgrade(s, 'decor_bonus', 'asia_street');
+  eq(r2.ok, true);
+  eq(r2.cost, 330);
+  eq(s.coins, 3000 - 180 - 330);
+  /* 每地区独立计价：巴黎也还能从 Lv0 买第一级（180） */
+  eq(S.buyUpgrade(s, 'decor_bonus', 'paris_cafe').cost, 180);
+  /* 非 perRegion 的升级项仍然要求不带地区 */
+  eq(S.buyUpgrade(s, 'stove_speed').ok, true);
+});
+
+/* ------------------------------ 员工简化（第十一优先级） ------------------------------ */
+test('老档退还在帮厨 / 收银员上花掉的金币，且只退一次', () => {
+  const raw = S.blank();
+  raw.coins = 100;
+  raw.upgrades.helper = 3;      // 300 + 650 + 1100 = 2050
+  raw.upgrades.cashier = 2;     // 240 + 480 = 720
+  const s = S.normalize(raw);
+  eq(s.coins, 100 + 2050 + 720, '两笔投资都折成金币退回来了');
+  eq(s.staffRefunded, true, '盖上退款标记');
+  eq(s.upgrades.helper, undefined, '帮厨等级不再写进存档');
+  eq(s.upgrades.cashier, undefined, '收银员等级不再写进存档');
+  eq(S.normalize(s).coins, s.coins, '再归一化一次不会重复退款');
+});
+
+test('没雇过人的老档不会凭空多钱', () => {
+  const raw = S.blank();
+  raw.coins = 100;
+  const s = S.normalize(raw);
+  eq(s.coins, 100);
+  eq(s.staffRefunded, true);
+  /* 等级越界也要夹住：helper=99 不能退出一套房来 */
+  const crazy = S.blank();
+  crazy.coins = 0;
+  crazy.upgrades.helper = 99;
+  const s2 = S.normalize(crazy);
+  eq(s2.coins, 300 + 650 + 1100, '最多只退满级那一档');
 });
 
 /* ------------------------------ 每日任务 ------------------------------ */
@@ -410,13 +469,14 @@ test('改档 → 落盘 → 重新读入，进度一致', () => {
   S.addCoins(s, 1000);
   S.buyUpgrade(s, 'stove_speed');
   S.setLevelStars(s, 'A1', 3);
-  S.buyDecor(s, 'asia_street', 'cloth_banner');
+  S.buyUpgrade(s, 'decor_bonus', 'asia_street');
   S.write(s, store);
 
   const back = S.load(store);
   eq(back.upgrades.stove_speed, 1);
   eq(back.regions.asia_street.A1, 3);
-  eq(back.coins, 1000 - 180 - 260);
-  deepEq(back.decor.asia_street, ['cloth_banner']);
+  eq(back.coins, 1000 - 180 - 180);
+  eq(back.decorLv.asia_street, 1);
+  deepEq(back.decor.asia_street, [], '旧字段 decor 迁移后清空，不再双份状态');
   gte(TC.Calc.totalStars(back), 3);
 });

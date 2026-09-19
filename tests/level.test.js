@@ -6,7 +6,7 @@
 'use strict';
 const H = require('./harness');
 const { loadGame } = require('./helpers');
-const { test, ok, eq, no, section, deepEq, gt, gte, lte, includes } = H;
+const { test, ok, eq, no, section, deepEq, gt, gte, lte, includes, approx } = H;
 
 section('TC.Level');
 const { TC } = loadGame();
@@ -420,10 +420,11 @@ test('上菜成功：金币、小费、连击、Perfect 全部生效', () => {
   eq(r.perfect, true, '出锅立刻送 → Perfect');
   eq(r.combo, 1);
   eq(r.coins, 18);
-  eq(r.tips, 4);
+  /* 基础小费 4 × Perfect 倍率 2 = 8（C.tipBonusMul：完美 ×tipPerfectMul，连击再叠） */
+  eq(r.tips, 8);
   eq(run.served, 1);
   eq(run.coins, 18);
-  eq(run.tips, 4);
+  eq(run.tips, 8);
   eq(run.perfect, 1);
   eq(run.maxCombo, 1);
   eq(c.state, 'served');
@@ -600,68 +601,156 @@ test('不存在道具 → no-such-tool', () => {
 });
 
 /* ==========================================================================
-   员工自动行为
+   员工（第十一优先级：只保留服务员）
    ========================================================================== */
-test('帮厨：每 6s 自动完成一个备料步骤', () => {
-  const save = blank();
-  save.upgrades.helper = 1;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
-  eq(run.helperInterval, 6000);
-  place(run, 'dumpling');
-  L.tapIngredient(run, 'wrapper');
-  eq(run.pots[0].done.length, 1);
-
-  L.tick(run, 5999);
-  eq(run.pots[0].done.length, 1, '还没到 6s');
-  const ev = L.tick(run, 1);
-  eq(run.pots[0].done.length, 2, '自动补了 1 步');
-  includes(ev.map((e) => e.type), 'helper-prep');
-});
-
-test('帮厨：备齐最后一步时会抛出 prep-done', () => {
-  const save = blank();
-  save.upgrades.helper = 1;
-  const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
-  place(run, 'dumpling');
-  ['wrapper', 'filling', 'veg'].forEach((s) => L.tapIngredient(run, s));
-  const ev = L.tick(run, 6000);
-  eq(run.pots[0].done.length, 4);
-  includes(ev.map((e) => e.type), 'prep-done');
-});
-
-test('没雇帮厨时不会有自动备料', () => {
+test('没有雇服务员时不会自动上菜', () => {
   const run = mk('A1', undefined, { firstSpawn: 99999, skipGuest: true });
-  eq(run.helperInterval, 0);
-  place(run, 'dumpling');
-  L.tapIngredient(run, 'wrapper');
-  L.tick(run, 30000);
-  eq(run.pots[0].done.length, 1);
+  eq(run.waiterInterval, 0);
+  /* 耐心给足，别让顾客先等走了 —— 本用例只关心「没有自动上菜」 */
+  const c = place(run, 'chowmein', { patience: 200000 });
+  run.plates = [plateOf('chowmein', -99999)];
+  const ev = L.tick(run, 10000);
+  eq(run.served, 0);
+  eq(c.state, 'waiting');
+  no(ev.map((e) => e.type).indexOf('auto-serve') !== -1);
 });
 
-test('服务员：每 8s 自动上菜一次', () => {
+test('服务员 Lv1：每 5s 自动上菜一次，先照顾耐心最低的那位', () => {
   const save = blank();
   save.upgrades.waiter = 1;
   const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
-  eq(run.waiterInterval, 8000);
-  const c = place(run, 'chowmein');
-  run.plates = [plateOf('chowmein', run.runtime)];
-  L.tick(run, 7999);
-  eq(run.served, 0, '还没到 8s');
+  eq(run.waiterInterval, 5000);
+  const calm = place(run, 'chowmein', { uid: 'calm', patience: 24000 });
+  const urgent = place(run, 'chowmein', { uid: 'urgent', patience: 24000 });
+  calm.patienceLeft = 22000;      // 还有 92%
+  urgent.patienceLeft = 6000;     // 只剩 25%，更急
+  run.plates = [plateOf('chowmein', -99999)];
+  L.tick(run, 4999);
+  eq(run.served, 0, '还没到 5s');
   const ev = L.tick(run, 1);
   eq(run.served, 1, '自动送出去了');
-  eq(c.state, 'served');
+  eq(urgent.state, 'served', '先照顾最急的那位');
+  eq(calm.state, 'waiting');
   includes(ev.map((e) => e.type), 'auto-serve');
 });
 
-test('服务员：没有可配对的盘子时不动手', () => {
+test('服务员 Lv2：手动上菜小费 ×1.1，自动上菜吃不到这个加成', () => {
   const save = blank();
-  save.upgrades.waiter = 1;
+  save.upgrades.waiter = 2;
+  save.upgrades.spice = 3;         // 基础小费 4 + 3 = 7，乘 1.1 才看得出区别
+
+  const auto = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
+  place(auto, 'chowmein', { uid: 'a1' });
+  auto.plates = [plateOf('chowmein', -99999)];   // 陈盘子 → 不判 Perfect
+  const r1 = L.autoServe(auto);
+  eq(r1.ok, true);
+  eq(r1.tips, 7, '自动上菜：7');
+  eq(r1.manual, false);
+
+  const hand = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
+  const c = place(hand, 'chowmein', { uid: 'h1' });
+  hand.plates = [plateOf('chowmein', -99999)];
+  const r2 = L.serve(hand, 0, c.uid, { manual: true });
+  eq(r2.ok, true);
+  eq(r2.tips, 8, '手动上菜：7 × 1.1 = 7.7 → 8');
+  eq(r2.manual, true);
+});
+
+test('服务员 Lv3：每服务满 5 位顾客，全体还在等的人耐心 +10%', () => {
+  const save = blank();
+  save.upgrades.waiter = 3;
   const run = L.create(save, 'A1', { rand: zrand, firstSpawn: 99999, skipGuest: true });
-  place(run, 'dumpling');
-  run.plates = [plateOf('chowmein', run.runtime)];
-  const ev = L.tick(run, 8000);
-  eq(run.served, 0);
-  no(ev.map((e) => e.type).indexOf('auto-serve') !== -1);
+  eq(run.waiterInterval, 2000, 'Lv3：每 2 秒一次');
+  run.served = 4;                  // 这一单正好是第 5 单
+  const first = place(run, 'chowmein', { uid: 'f1', patience: 20000 });
+  const other = place(run, 'chowmein', { uid: 'f2', patience: 20000 });
+  first.patienceLeft = 5000;
+  other.patienceLeft = 4000;
+  run.plates = [plateOf('chowmein', -99999)];
+  const r = L.serve(run, 0, first.uid, { manual: true });
+  eq(r.ok, true);
+  eq(run.served, 5);
+  eq(r.boost, 1, '只有还在等的那位被回复耐心');
+  eq(other.patienceLeft, 4000 + 2000, '20000 × 10% = 2000');
+});
+
+/* ==========================================================================
+   门口排队（第十一优先级）
+   ========================================================================== */
+test('排队：座位坐满后新客在门口排，队满 2 位就不再上客', () => {
+  const run = mk('A1', undefined, { firstSpawn: 0 });
+  eq(run.queueCap, 2);
+  eq(run.seats, 2);
+  place(run, 'chowmein', { uid: 'q1' });
+  place(run, 'chowmein', { uid: 'q2' });
+  L.tick(run, 1);
+  eq(L.waiting(run).length, 2, '座位上还是 2 位');
+  eq(L.queued(run).length, 1, '第 3 位站到门口');
+  eq(L.queued(run)[0].state, 'queue');
+  run.spawnTimer = 0;
+  L.tick(run, 1);
+  eq(L.queued(run).length, 2, '第 4 位也排上');
+  run.spawnTimer = 0;
+  L.tick(run, 1);
+  eq(L.queued(run).length, 2, '队满 2 位后不再上客');
+  eq(run.customers.length, 4, '一共只生成了 4 位');
+});
+
+test('排队中的顾客不能被上菜（还没入座）', () => {
+  const run = mk('A1', undefined, { firstSpawn: 0 });
+  place(run, 'chowmein', { uid: 'q1' });
+  place(run, 'chowmein', { uid: 'q2' });
+  L.tick(run, 1);
+  const qc = L.queued(run)[0];
+  run.plates = [plateOf(qc.dishId, -99999)];
+  eq(L.serve(run, 0, qc.uid).reason, 'not-waiting');
+  eq(L.select(run, qc.uid).reason, 'not-waiting');
+});
+
+test('排队 → 入座：空出一个座位，队首立刻补位并抛出 seated 事件', () => {
+  const run = mk('A1', undefined, { firstSpawn: 0 });
+  const a = place(run, 'chowmein', { uid: 'q1' });
+  place(run, 'chowmein', { uid: 'q2' });
+  L.tick(run, 1);
+  eq(L.queued(run).length, 1);
+  const qc = L.queued(run)[0];
+  run.spawnTimer = 99999;
+  run.customers.splice(run.customers.indexOf(a), 1);   // 第一位走人，腾出座位
+  const ev = L.tick(run, 1);
+  eq(qc.state, 'waiting', '队首补位入座');
+  eq(qc.seatedAt != null, true, '记下入座时刻，顾客带据此播一次弹跳');
+  eq(L.waiting(run).length, 2);
+  eq(L.queued(run).length, 0);
+  includes(ev.map((e) => e.type), 'seated');
+});
+
+test('排队中的顾客耐心掉得比座上慢一半', () => {
+  const run = mk('A1', undefined, { firstSpawn: 0 });
+  place(run, 'chowmein', { uid: 'q1', patience: 10000 });
+  place(run, 'chowmein', { uid: 'q2', patience: 10000 });
+  L.tick(run, 1);
+  const qc = L.queued(run)[0];
+  const seat = L.waiting(run)[0];
+  const q0 = qc.patienceLeft, s0 = seat.patienceLeft;
+  L.tick(run, 1000);
+  const qLost = q0 - qc.patienceLeft;
+  const sLost = s0 - seat.patienceLeft;
+  gt(qLost, 0);
+  approx(sLost / qLost, 2, 1e-6, '座上掉 1000ms，门口掉 500ms');
+});
+
+test('教学局没有排队：queueCap = 0，座位满了就不再上客', () => {
+  const run = L.create(blank(), 'A1',
+    { rand: zrand, firstSpawn: 0, tutorial: true, skipGuest: true });
+  eq(run.queueCap, 0, '教程永远不出现排队卡片');
+  eq(run.seats, 1);
+  L.tick(run, 1);
+  eq(L.waiting(run).length, 1);
+  eq(L.queued(run).length, 0);
+  run.spawnTimer = 0;
+  L.tick(run, 1);
+  eq(run.customers.length, 1, '座位满了就不再上客');
+  eq(L.queued(run).length, 0);
 });
 
 test('autoServe 直接把结果返回，便于 UI 复用', () => {
@@ -847,7 +936,10 @@ test('端到端：完整做满 7 单 → 3 星 → 解锁第 2 关', () => {
   eq(run.served, 7);
   eq(run.combo, 7);
   eq(run.coins, 7 * 18);
-  eq(run.tips, 7 * 4);
+  /* 小费不是朴素的 7 × 4：每单都 Perfect（×2）且连击逐级递增，
+     逐单 8 / 10 / 11 / 13 / 14 / 16 / 18 = 90。
+     公式唯一出处是 C.tipBonusMul，这里把曲线钉住，防止被悄悄改掉。 */
+  eq(run.tips, 90, '完美 ×2 + 连击递增（步长 0.2，封顶 3 倍）');
   eq(run.lost, 0);
 
   const res = L.finish(save, run);

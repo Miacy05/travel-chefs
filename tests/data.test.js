@@ -12,6 +12,10 @@ const { TC } = loadGame();
 const D = TC.DATA;
 
 const COLORS = ['k', 'w', 'y', 'r', 'm'];
+/* 场景专用的扩展色（第十一优先级：地区店铺模型需要更多材质色）。
+   刻意与 TC.Pixel.PALETTE 分开 —— 后者是「数据自检白名单」，
+   一旦被污染，所有数据校验都会失去意义。 */
+const sceneKeys = () => Object.keys(TC.Pixel.SCENE_PAL || {});
 const TPLS = ['bowl', 'cup', 'bottle', 'leaf', 'powder', 'ball', 'slab', 'bread', 'coil', 'fan'];
 
 /* ------------------------------ 地区 ------------------------------ */
@@ -37,7 +41,8 @@ test('每个地区都有 5 关 / 3 道菜 / 3 件装饰 / 明信片 / 配色', (
     eq(r.decor.length, 3, r.id + ' 应有 3 件装饰');
     eq(r.decorName.length, 3, r.id + ' 装饰名数量对不上');
     [r.floor, r.wall, r.accent].forEach((c) => {
-      ok(COLORS.indexOf(c) !== -1, r.id + ' 的配色 ' + c + ' 不在 5 色板内');
+      ok(COLORS.indexOf(c) !== -1 || sceneKeys().indexOf(c) !== -1,
+        r.id + ' 的配色 ' + c + ' 既不在 5 色板、也不在场景扩展色内');
     });
     gt(r.priceMul, 0, r.id + ' priceMul 应为正');
   });
@@ -196,16 +201,17 @@ test('关卡金币目标按地区 priceMul 缩放', () => {
 });
 
 /* ------------------------------ 升级 ------------------------------ */
-test('升级项共 25 项且 id 唯一', () => {
-  eq(D.UPGRADES.length, 25, '3 设备 + 16 菜单(15 菜 + 加料台) + 3 装修 + 3 员工 = 25');
-  eq(new Set(D.UPGRADES.map((u) => u.id)).size, 25);
+test('升级项共 23 项且 id 唯一', () => {
+  eq(D.UPGRADES.length, 23, '3 设备 + 16 菜单(15 菜 + 加料台) + 3 装修 + 1 员工 = 23');
+  eq(new Set(D.UPGRADES.map((u) => u.id)).size, 23);
 });
 
 test('四个标签的项目数符合方案', () => {
   eq(D.UP_TABS.length, 4);
   eq(D.upgradesOf('equipment').length, 3, '厨房设备 3 项');
   eq(D.upgradesOf('decor').length, 3, '餐厅装修 3 项');
-  eq(D.upgradesOf('staff').length, 3, '员工雇佣 3 项');
+  /* 员工简化（第十一优先级）：只留服务员 —— 帮厨 / 收银员已下线 */
+  eq(D.upgradesOf('staff').length, 1, '员工雇佣只剩服务员');
   eq(D.upgradesOf('menu').length, 16, '菜单研发 = 15 道菜 + 加料台');
 });
 

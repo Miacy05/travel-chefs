@@ -23,6 +23,12 @@ const withUp = (id, lv, over) => {
   s.upgrades[id] = lv;
   return s;
 };
+/** 只改某个地区的「装饰布置」等级（第十一优先级：每地区独立） */
+const withDecor = (regionId, lv, over) => {
+  const s = blank(over);
+  s.decorLv[regionId] = lv;
+  return s;
+};
 
 /* ------------------------------ 升级数值 ------------------------------ */
 test('upLv 缺省回落到 start，并夹在 [start, maxLevel]', () => {
@@ -72,25 +78,60 @@ test('售价含地区倍率与菜单等级加成', () => {
   eq(C.sellPrice('guacamole', 'taco_stand', blank()), 21, '13 × 1.60 = 20.8 → 21');
 });
 
-test('小费＝(基础小费 + 加料台) × 顾客倍率 × 升级加成 × 地区装饰加成', () => {
+test('小费＝(基础小费 + 加料台) × 顾客倍率 × 本地区装饰等级加成 × 完美/连击', () => {
   eq(C.tip('chowmein', 'office', 'asia_street', blank()), 4, '4 × 1.0');
   eq(C.tip('chowmein', 'tourist', 'asia_street', blank()), 5, '4 × 1.35 = 5.4 → 5');
   eq(C.tip('chowmein', 'office', 'asia_street', withUp('spice', 3)), 7, '(4+3) × 1.0');
-  const s1 = withUp('decor_bonus', 5);
+  /* 装饰布置是「每地区独立」的：直接给该地区定级，而不是改全局 decor_bonus */
+  const s1 = withDecor('asia_street', 5);
+  eq(C.decorLv(s1, 'asia_street'), 5);
+  eq(C.decorShown(s1, 'asia_street'), 3, '每地区最多长 3 件装饰');
+  eq(C.decorGlow(s1, 'asia_street'), 2, 'Lv4/5 转为发光描边档位');
   eq(C.tip('chowmein', 'office', 'asia_street', s1), 5, '4 × 1.25 = 5');
-  const s2 = blank();
-  s2.decor.asia_street = ['lantern_string', 'cloth_banner'];
-  approx(C.decorTipMul(s2, 'asia_street'), 1.16, 1e-9);
-  eq(C.tip('chowmein', 'office', 'asia_street', s2), 5, '4 × 1.16 = 4.64 → 5');
+  /* 没升过的地区不受影响 —— 这正是「地区专属」的意义 */
+  eq(C.tip('chowmein', 'office', 'paris_cafe', s1), 4, '巴黎还是毛坯：4 × 1.0');
+  eq(C.decorLv(s1, 'paris_cafe'), 0);
+  /* Lv3 刚好长满 3 件、还不发光 */
+  const s3 = withDecor('asia_street', 3);
+  eq(C.decorShown(s3, 'asia_street'), 3);
+  eq(C.decorGlow(s3, 'asia_street'), 0);
+  /* decorLv 越界会被夹住 */
+  eq(C.decorLv(withDecor('asia_street', 99), 'asia_street'), 5);
+  eq(C.decorLv(withDecor('asia_street', -4), 'asia_street'), 0);
 });
 
-test('收银员加成乘在订单金币上，不影响小费', () => {
-  const s = withUp('cashier', 3);
-  eq(C.coinMul(s), 1.18);
+test('金币倍率固定为 1（收银员已下线），小费不受影响', () => {
+  const s = blank();
+  eq(C.coinMul(s), 1, '员工简化后不再有金币加成');
   const inc = C.orderIncome('chowmein', 'office', 'asia_street', s);
-  eq(inc.coins, 21, '18 × 1.18 = 21.24 → 21');
-  eq(inc.tips, 4, '小费不受收银员影响');
-  eq(inc.total, 25);
+  eq(inc.coins, 18);
+  eq(inc.tips, 4);
+  eq(inc.total, 22);
+});
+
+/* ------------------------------ 服务员（唯一员工） ------------------------------ */
+test('服务员：Lv0 手动 / Lv1~3 自动间隔 5s→3s→2s', () => {
+  eq(C.waiterLv(blank()), 0);
+  const u = TC.DATA.UPGRADES.filter((x) => x.id === 'waiter')[0];
+  ok(!!u, '服务员升级项还在');
+  eq(u.maxLevel, 3);
+  eq(u.value[1], 5, 'Lv1：5 秒一次');
+  eq(u.value[2], 3, 'Lv2：3 秒一次');
+  eq(u.value[3], 2, 'Lv3：2 秒一次');
+});
+
+test('服务员 Lv2 起手动上菜小费 ×1.1，自动上菜不吃这个加成', () => {
+  eq(C.manualTipMul(blank()), 1, 'Lv0/Lv1 没有手动小费加成');
+  eq(C.manualTipMul(withUp('waiter', 1)), 1);
+  approx(C.manualTipMul(withUp('waiter', 2)), 1.1, 1e-9);
+  approx(C.manualTipMul(withUp('waiter', 3)), 1.1, 1e-9);
+});
+
+test('帮厨 / 收银员升级项已从数据表里移除', () => {
+  const ids = TC.DATA.UPGRADES.map((u) => u.id);
+  no(ids.indexOf('helper') !== -1, '帮厨不该还在');
+  no(ids.indexOf('cashier') !== -1, '收银员不该还在');
+  ok(ids.indexOf('waiter') !== -1, '服务员保留');
 });
 
 /* ------------------------------ 设备与场景 ------------------------------ */

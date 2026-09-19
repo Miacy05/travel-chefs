@@ -168,6 +168,55 @@ test('layout：墙上装饰按地区走，位置等距且不越界（5 个地区
   });
 });
 
+test('layout：装饰的 on 标志跟着「该地区」的装饰等级走（每地区独立）', () => {
+  const save = S.blank();
+  save.decorLv.asia_street = 2;         // 亚洲长 2 件、还没发光
+  save.decorLv.paris_cafe = 5;          // 巴黎满级：3 件 + 发光
+  const asia = SC.layout(320, 180,
+    L.create(save, D.region('asia_street').prefix + '1', { rand: () => 0, skipGuest: true }));
+  eq(asia.shellId, 'asia_street');
+  eq(asia.decorLv, 2);
+  eq(asia.decorGlow, 0);
+  eq(asia.decor.map((d) => d.on).join(','), 'true,true,false', '只解锁前 2 件');
+
+  const paris = SC.layout(320, 180,
+    L.create(save, D.region('paris_cafe').prefix + '1', { rand: () => 0, skipGuest: true }));
+  eq(paris.shellId, 'paris_cafe');
+  eq(paris.decorLv, 5);
+  eq(paris.decorGlow, 2, 'Lv4/5 转成发光描边档位');
+  eq(paris.decor.map((d) => d.on).join(','), 'true,true,true', '满级三件全解锁');
+});
+
+test('layout：pal 是「该地区」解析好的三色，切地区就换一套', () => {
+  const seen = {};
+  D.REGIONS.forEach((rg) => {
+    const run = makeRun(rg.prefix + '1');
+    const lay = SC.layout(320, 180, run);
+    ok(lay.pal && lay.pal.wall && lay.pal.floor && lay.pal.accent, rg.id + ' 缺 pal');
+    ok(Object.keys(P.PALETTE).concat(Object.keys(P.SCENE_PAL))
+      .indexOf(rg.wall) !== -1);
+    /* 记录每个地区的三色组合，最后确认 5 个地区不是同一套（否则「一眼认出地区」不成立） */
+    seen[rg.id] = [rg.wall, rg.floor, rg.accent].join('/');
+  });
+  eq(new Set(Object.keys(seen).map((k) => seen[k])).size, 5, '5 个地区的配色组合必须互不相同');
+});
+
+test('draw：换地区画出来的东西完全不同（像素级指纹）', () => {
+  const sig = {};
+  D.REGIONS.forEach((rg) => {
+    const save = S.blank();
+    save.regions[rg.id][rg.prefix + '1'] = 3;
+    const run = L.create(save, rg.prefix + '1', { rand: () => 0, skipGuest: true });
+    const ctx = fakeCtx();
+    SC.draw(ctx, run, SC.layout(320, 180, run), 1);
+    sig[rg.id] = ctx.calls.filter((c) => c.op === 'fillRect')
+      .map((c) => [c.x, c.y, c.w, c.h, c.color].join(':')).join('|');
+  });
+  const keys = Object.keys(sig);
+  eq(new Set(keys.map((k) => sig[k])).size, keys.length,
+    '每个地区的绘制序列都必须独一无二 —— 否则「切地区一眼能认出」是假的');
+});
+
 test('layout：返回的是快照，改它不会污染 SC.STATIONS 常量', () => {
   const a = SC.layout(320, 180, makeRun());
   a.stations.fridge.x = 999;
@@ -436,12 +485,17 @@ test('draw：所有绘制都落在 160×90 逻辑画布内（第 1 次铺满留�
   });
 });
 
-test('draw：用到的颜色全部来自 5 色板（不会漏出线稿占位色 / 纯黑）', () => {
+test('draw：用到的颜色全部来自 5 色板 + 场景扩展色（不会漏出线稿占位色 / 纯黑）', () => {
   const run = makeRun();
   const ctx = fakeCtx();
   SC.draw(ctx, run, SC.layout(320, 180, run), 1);
-  const legal = Object.keys(P.PALETTE).map((k) => P.PALETTE[k]);
-  eq(legal.length, 5, '色板只有 5 色');
+  const base = Object.keys(P.PALETTE).map((k) => P.PALETTE[k]);
+  eq(base.length, 5, '基础色板只有 5 色');
+  /* 场景扩展色（SCENE_PAL）单列：地区店铺模型的材质色（石材 / 木色 / 水色）从这里取，
+     不能塞进 P.PALETTE —— 那个表是「数据自检白名单」，混进材质色就失去意义了。 */
+  const scene = Object.keys(P.SCENE_PAL || {}).map((k) => P.SCENE_PAL[k]);
+  gt(scene.length, 0, '应有场景扩展色');
+  const legal = base.concat(scene);
   ctx.calls.filter((c) => c.op === 'fillRect').forEach((c) => {
     ok(c.color === '' || legal.indexOf(c.color) !== -1,
       '出现了色板外的颜色：' + c.color);
@@ -450,9 +504,10 @@ test('draw：用到的颜色全部来自 5 色板（不会漏出线稿占位色 
 
 test('draw：5 个地区的地面 / 墙面配色都合法且画得出来', () => {
   D.REGIONS.forEach((rg) => {
-    ok(P.PALETTE[rg.wall], rg.id + ' 的 wall 色号非法：' + rg.wall);
-    ok(P.PALETTE[rg.floor], rg.id + ' 的 floor 色号非法：' + rg.floor);
-    ok(P.PALETTE[rg.accent], rg.id + ' 的 accent 色号非法：' + rg.accent);
+    const legalKeys = Object.keys(P.PALETTE).concat(Object.keys(P.SCENE_PAL || {}));
+    ok(legalKeys.indexOf(rg.wall) !== -1, rg.id + ' 的 wall 色号非法：' + rg.wall);
+    ok(legalKeys.indexOf(rg.floor) !== -1, rg.id + ' 的 floor 色号非法：' + rg.floor);
+    ok(legalKeys.indexOf(rg.accent) !== -1, rg.id + ' 的 accent 色号非法：' + rg.accent);
     const run = makeRun(rg.prefix + '1');
     gt(SC.draw(fakeCtx(), run, SC.layout(320, 180, run), 0), 0, rg.id + ' 画不出来');
   });
@@ -469,8 +524,12 @@ test('draw：留白区下半段用地板色延续（否则地板下方会露出�
     const ctx = fakeCtx();
     SC.draw(ctx, run, lay, 0);
 
-    const wall = P.PALETTE[rg.wall];
-    const floor = P.PALETTE[rg.floor];
+    /* 色号既可能来自基础 5 色板，也可能来自场景扩展色（石材 / 木色 / 水色） */
+    const lutPal = Object.assign({}, P.PALETTE, P.SCENE_PAL || {});
+    const wall = lutPal[rg.wall];
+    const floor = lutPal[rg.floor];
+    ok(wall, rg.id + ' 的 wall 色号解析不出来：' + rg.wall);
+    ok(floor, rg.id + ' 的 floor 色号解析不出来：' + rg.floor);
     // 变换之前画的都是屏幕坐标（缩放留白区），变换之后的才是 160×90 逻辑坐标
     const ti = ctx.calls.findIndex((c) => c.op === 'translate');
     gt(ti, 0, '应当先画留白再 translate');
