@@ -7,10 +7,14 @@
 **零依赖、零构建、单文件**：整个游戏就是一个 `index.html`，双击即玩，也能直接丢到任意静态托管上。
 
 - 🔗 **在线试玩**：<https://travel-chefs.vercel.app/> —— 手机浏览器打开即玩，进度存在浏览器本地
-- 🔗 **在线试玩（国内直连）**：<http://travelchefs.bond/> —— 免梯子，同一份游戏
+- 🔗 **在线试玩（国内直连）**：<https://travelchefs.bond/> —— 自有域名 + Let's Encrypt 证书，免梯子、无证书警告，同一份游戏
 - 📦 **仓库地址**：<https://github.com/Miacy05/travel-chefs>
 - 🧩 **过程记录**：<https://conversation-record.vercel.app/> —— 使用 Skill 的开发过程记录
-- 🧩 **过程记录（国内直连）**：<http://travelchefs.bond/process-record.html> —— 免梯子
+- 🧩 **过程记录（国内直连）**：<https://travelchefs.bond/process-record.html> —— 免梯子
+
+> ⚠️ `travelchefs.bond` 未做 ICP 备案，**在微信 / QQ 内点开会命中腾讯的安全拦截**（「已停止访问该网页」）。
+> 这是域名层面的拦截，站点本身正常 —— 请用手机浏览器（Safari / Chrome）或电脑浏览器打开。
+> 备用镜像：<https://travel-chefs-game.app.workbuddy.host/>
 
 > 仓库已与 Vercel 连接：向 `main` 分支推送后会自动重新部署，改完 `index.html` 直接 push 即可上线。
 
@@ -387,9 +391,13 @@ travel-chefs/
 
 ### 已经在线
 
-当前版本已发布在 **<https://travel-chefs.vercel.app/>**（国内直连 **<http://travelchefs.bond/>**）—— 纯静态单文件，没有后端依赖，不需要登录。
+当前版本已发布在 **<https://travel-chefs.vercel.app/>**（国内直连 **<https://travelchefs.bond/>**）—— 纯静态单文件，没有后端依赖，不需要登录。
+
+国内直连那一份托管在**阿里云 OSS 香港**（`travelchefs-bond-site-hk`，免备案地域），自定义域名已绑定
+Let's Encrypt 证书，`http` / `https` 双通；`assets/` 等静态资源一并上传，与仓库里 `index.html` 逐字节一致。
 
 仓库与 Vercel 已建立 Git 连接，**向 `main` 分支推送即自动重新部署**，无需手动操作。
+OSS 那一份不跟随 push 自动更新，改动后需手工重新上传对应文件。
 
 ### 部署方案（本项目实际采用的路径）
 
@@ -451,7 +459,10 @@ npx vercel deploy --prod --yes
 
 ### 验证标准
 
-把网址发到手机微信，点开能正常进入地图、开始营业、完成一单，才算真的上线成功。
+用**手机浏览器**（Safari / Chrome）打开国内直连地址 <https://travelchefs.bond/>，能正常进入地图、开始营业、完成一单，才算真的上线成功。
+
+> 别用微信内打开来验收 —— 未备案域名在微信 / QQ 内会被安全拦截，那条路验不出站点的真实状态。
+> 判断「站点本身是否正常」用命令行更直接：DNS 多家一致 + HTTP/HTTPS 都 200 + 与仓库 `index.html` 比 sha256。
 
 ### 常见问题
 
@@ -462,6 +473,9 @@ npx vercel deploy --prod --yes
 | `git push` 超时 / `TLS connection was reset` | 本机到 `github.com:443` 不通。改用 `node tools/push-to-github.js`（走可达的 `api.github.com`），或换网络 / 换代理节点后重试 |
 | 提示分支名不是 `main` | 执行 `git branch -M main` 再 push |
 | 部署后打开是 404 | 确认 `index.html` 在仓库根目录，Root Directory 留空 |
+| 微信里点开提示「已停止访问该网页」 | 未备案域名命中腾讯安全拦截，**与站点无关**（同域名在浏览器里正常）。改用手机浏览器打开，或改用已备案域名 |
+| 浏览器提示「连接不是私密连接」 | 自定义域名没绑 HTTPS 证书。用主账号在 OSS 控制台 → 域名管理 → 上传 `tools/certs/fullchain.pem` + `privkey.pem`；若走 RAM 子账号调 API，还需给它 `AliyunYundunCertFullAccess`（即 `yundun-cert:*`） |
+| OSS 里 HTTPS 返回 200 但仍报证书错误 | `https` 不校验证书时当然返回 200，「能通」不等于「证书对」。要用默认校验跑一遍；刚绑定完还有几分钟的证书下发延迟，连采 20 次看通过率是否收敛到 100% |
 | 进度没保存 | 数据存在浏览器 `localStorage`，换设备或清缓存会重置（作业要求不碰数据库） |
 
 ---
