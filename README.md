@@ -7,8 +7,10 @@
 **零依赖、零构建、单文件**：整个游戏就是一个 `index.html`，双击即玩，也能直接丢到任意静态托管上。
 
 - 🔗 **在线试玩**：<https://travel-chefs.vercel.app/> —— 手机浏览器打开即玩，进度存在浏览器本地
+- 🔗 **在线试玩（国内直连）**：<http://travelchefs.bond/> —— 免梯子，同一份游戏
 - 📦 **仓库地址**：<https://github.com/Miacy05/travel-chefs>
 - 🧩 **过程记录**：<https://conversation-record.vercel.app/> —— 使用 Skill 的开发过程记录
+- 🧩 **过程记录（国内直连）**：<http://travelchefs.bond/process-record.html> —— 免梯子
 
 > 仓库已与 Vercel 连接：向 `main` 分支推送后会自动重新部署，改完 `index.html` 直接 push 即可上线。
 
@@ -385,7 +387,7 @@ travel-chefs/
 
 ### 已经在线
 
-当前版本已发布在 **<https://travel-chefs.vercel.app/>** —— 纯静态单文件，没有后端依赖，不需要登录。
+当前版本已发布在 **<https://travel-chefs.vercel.app/>**（国内直连 **<http://travelchefs.bond/>**）—— 纯静态单文件，没有后端依赖，不需要登录。
 
 仓库与 Vercel 已建立 Git 连接，**向 `main` 分支推送即自动重新部署**，无需手动操作。
 
