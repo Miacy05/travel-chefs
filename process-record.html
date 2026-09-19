@@ -131,7 +131,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
     <span>📦 单文件 · 零依赖</span>
     <span>🧪 507 断言全绿</span>
     <span>🕹️ v2.5.0</span>
-    <span>📝 29 次提交</span>
+    <span>📝 <b data-gh-n>30+</b> 次提交</span>
   </div>
 </header>
 
@@ -227,7 +227,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
       链式 git 命令的回显不可信，每条关键操作后要用独立复查命令核验；提交信息用 <code>-F msg.txt</code> 不要用 <code>-m</code> 传中文。</dd>
     <dt>落地</dt><dd>PortableGit 前置到 PATH；用 Node <code>execFileSync(...,'utf8')</code> 读 git log 再写文件确认，
       没有去「修」根本没坏的编码；每次 push 后用 <code>git rev-parse HEAD</code> 与 <code>git ls-remote origin</code> 比对。</dd>
-    <dt>复核</dt><dd>仓库 29 次提交、作者统一为 Miacy05，GitHub 页面与 API 一致。</dd>
+    <dt>复核</dt><dd>仓库 <b data-gh-n>30+</b> 次提交、作者统一为 Miacy05，GitHub 页面与 API 一致。</dd>
   </dl>
 </div>
 
@@ -251,7 +251,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
     <dt>落地</dt><dd>用 Node 分别探测 github.com / api.github.com / ssh.github.com:443 / api.vercel.com，
       确认直连失败、SSH over 443 握手成功后，改用 SSH over 443 推送；另按本节提示关掉仓库级
       <code>http.schannelCheckRevoke</code> 解决证书吊销检查报错。</dd>
-    <dt>复核</dt><dd>29 次提交全部成功推送到 <a href="https://github.com/Miacy05/travel-chefs">github.com/Miacy05/travel-chefs</a>。</dd>
+    <dt>复核</dt><dd><b data-gh-n>30+</b> 次提交全部成功推送到 <a href="https://github.com/Miacy05/travel-chefs">github.com/Miacy05/travel-chefs</a>。</dd>
   </dl>
 </div>
 
@@ -333,7 +333,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
   <dl>
     <dt>依据</dt><dd>先跑自检脚本再凭感觉判断；本机网络不通 ≠ 线上打不开；证据表里每一条都必须是真实发生过的动作。</dd>
     <dt>落地</dt><dd>跑 <code>check_deliverables.py --web --repo --ai</code> 三项逐项探测，结果 <strong>100 / 100</strong>；
-      另用 GitHub API 独立数 commit（<strong>29 次 ≥ 3</strong>），不依赖脚本结论。</dd>
+      另用 GitHub API 独立数 commit（<b data-gh-n>30+</b> 次，门槛 ≥ 3），不依赖脚本结论。</dd>
     <dt>复核</dt><dd>本页第三节三项交付物卡片，以及脚本输出的 40 / 30 / 30 分项。</dd>
   </dl>
 </div>
@@ -351,7 +351,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 <div class="deliver">
   <div class="d-title"><span class="d-score">30 / 30</span>② GitHub 项目仓库</div>
   <div class="d-link"><a href="https://github.com/Miacy05/travel-chefs">https://github.com/Miacy05/travel-chefs</a></div>
-  <div class="d-link" style="font-size:13px;color:var(--ink-50)">29 次提交（≥3 次）· 提交作者与仓库账号一致 · README 含功能清单与部署步骤</div>
+  <div class="d-link" style="font-size:13px;color:var(--ink-50)"><b data-gh-n>30+</b> 次提交（≥3 次）· 提交作者与仓库账号一致 · README 含功能清单与部署步骤</div>
 </div>
 
 <div class="deliver">
@@ -409,7 +409,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
   <div class="a">基本按前测的四步走完，但比计划多了一轮「地区差异化」迭代（店铺模型 / 装修 / 排队 / 员工简化）。
   每轮结束都跑 23 个测试文件、用脚本穷举探测绘制边界，最后跑交付物自检脚本收尾。</div>
   <div class="q">Q4 达成判据？</div>
-  <div class="a"><strong>五条全部达成</strong>：手机可打开 ✅ · 能玩通一关 ✅ · 29 次提交 ≥ 3 ✅ · 507 条断言全绿 ✅ · 三项链接均 HTTP 200 ✅。
+  <div class="a"><strong>五条全部达成</strong>：手机可打开 ✅ · 能玩通一关 ✅ · <b data-gh-n>30+</b> 次提交 ≥ 3 ✅ · 507 条断言全绿 ✅ · 三项链接均 HTTP 200 ✅。
   自检脚本给出 <strong>100 / 100</strong>。</div>
 </div>
 
@@ -428,7 +428,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
   <h4>一、目标达成度</h4>
   <p>对照前测定下的五条判据逐条核对：① 手机浏览器打开 <a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a> 可正常游玩 ✅；
   ② 能完整走通「备料 → 下锅 → 装盘 → 上菜 → 结算」并拿到星级 ✅；
-  ③ 仓库 <strong>29 次提交</strong>（门槛 ≥ 3）✅；④ <strong>23 个测试文件 / 507 条断言全绿</strong> ✅；
+  ③ 仓库 <b data-gh-n>30+</b> 次提交（门槛 ≥ 3）✅；④ <strong>23 个测试文件 / 507 条断言全绿</strong> ✅；
   ⑤ 网页、仓库、记录页三项链接均返回 HTTP 200 ✅。交付物自检脚本给出 <strong>100 / 100</strong>。</p>
 </div>
 
@@ -438,7 +438,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
     <li><strong>过程记录页（本页）</strong>：<a href="https://conversation-record.vercel.app/">conversation-record.vercel.app</a>
       —— 第一节列出实际加载过的 Skill，第二节把「依据哪一条 → 怎么落地 → 怎么复核」逐条对应。</li>
     <li><strong>仓库提交历史</strong>：<a href="https://github.com/Miacy05/travel-chefs">github.com/Miacy05/travel-chefs</a>
-      —— 29 次提交，作者统一为 Miacy05；最近两次分别落在「游戏本体」与「测试适配」，可看出改动是分层的。</li>
+      —— <b data-gh-n>30+</b> 次提交，作者统一为 Miacy05；最近两次分别落在「游戏本体」与「测试适配」，可看出改动是分层的。</li>
     <li><strong>线上作品</strong>：<a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a>
       —— 与本地 <code>index.html</code> 逐字节一致（458668 字节 / sha256 <code>ca2dc159…</code>）。</li>
   </ul>
@@ -647,7 +647,7 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 <div class="grid2">
   <div class="card"><b>最终版本</b><div class="num">v2.5.0</div><p style="font-size:13px;color:var(--ink-70)">9 项优先级 + 地区差异化全部完成</p></div>
   <div class="card"><b>单元测试</b><div class="num">507</div><p style="font-size:13px;color:var(--ink-70)">条断言 · 23 个文件 · 全绿</p></div>
-  <div class="card"><b>Git 提交</b><div class="num">29</div><p style="font-size:13px;color:var(--ink-70)">次提交 · 作者统一 Miacy05</p></div>
+  <div class="card"><b>Git 提交</b><div class="num" data-gh-n>30+</div><p style="font-size:13px;color:var(--ink-70)">次提交 · 作者统一 Miacy05</p></div>
   <div class="card"><b>内容规模</b><div class="num">25关</div><p style="font-size:13px;color:var(--ink-70)">5 地区 · 5 套店铺场景 · 15 菜 · 45 食材</p></div>
 </div>
 
@@ -667,5 +667,25 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
   24 级本科市营 1234 班 · Vibe Coding 部署课 · 由 WorkBuddy 协助完成
 </footer>
 
+
+<script>
+/* 提交数实时读取：静态兜底写「30+」，能联网时替换成 GitHub 上的真实条数。
+   这样记录页里的数字永远不会和仓库实际提交历史脱节。 */
+(function () {
+  if (typeof fetch !== 'function') return; /* 老浏览器 / 无网环境：直接保留兜底数字 */
+  var api = 'https://api.github.com/repos/Miacy05/travel-chefs/commits?per_page=100';
+  fetch(api, { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (list) {
+      if (!Array.isArray(list) || !list.length) return;
+      var n = list.length;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-gh-n]'), function (el) {
+        el.textContent = n;
+      });
+      document.documentElement.setAttribute('data-gh-commits', n);
+    })
+    .catch(function () { /* 离线 / 被限流时保留静态数字，不影响阅读 */ });
+})();
+</script>
 </body>
 </html>
