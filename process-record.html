@@ -1,15 +1,9 @@
 <!DOCTYPE html>
-<!--
-  vibecoding-srl-trainer · 过程记录页（本轮收尾：总检查清单六项修复）
-  说明：本页是照 vibecoding-srl-trainer 的 Step 4 生成的「Skill 使用证据」页，
-  记录本轮（2026-09-15 ~ 09-17）对照用户的总检查清单把游戏打磨到成品的过程。
-  游戏本体仍是 index.html，本页可单独部署或随仓库提交。
--->
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Travel Chefs · 总检查清单收尾 · Skill 过程记录</title>
+<title>Travel Chefs · Skill 驱动的开发过程记录</title>
 <meta name="theme-color" content="#FFD166">
 <style>
 :root{
@@ -19,33 +13,44 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  background:var(--cream);color:var(--ink);line-height:1.7;padding:0 16px 60px;max-width:760px;margin:0 auto;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--cream); color:var(--ink); line-height:1.7;
+  padding:0 16px 60px; max-width:760px; margin:0 auto;
+}
 a{color:var(--tomato);text-decoration:none;border-bottom:1px solid rgba(239,71,111,.4)}
+a:hover{border-bottom-color:var(--tomato)}
 header{padding:38px 0 20px;text-align:center}
-.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--brown);background:var(--yellow);
-  border:2px solid var(--brown);border-radius:999px;padding:3px 14px;margin-bottom:14px}
-h1{font-size:23px;line-height:1.3;margin-bottom:8px}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--brown);
+  background:var(--yellow);border:2px solid var(--brown);border-radius:999px;padding:3px 14px;margin-bottom:14px}
+h1{font-size:25px;line-height:1.3;margin-bottom:8px}
 h1 .pixel{color:var(--tomato)}
 .sub{color:var(--ink-50);font-size:14px}
 .meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
-.meta span{font-size:12px;font-weight:700;color:var(--brown);background:#fff;border:1.5px solid var(--ink-16);
-  border-radius:8px;padding:4px 10px}
+.meta span{font-size:12px;font-weight:700;color:var(--brown);background:#fff;
+  border:1.5px solid var(--ink-16);border-radius:8px;padding:4px 10px}
 hr{border:none;border-top:2px solid var(--ink-08);margin:32px 0}
 h2{font-size:20px;margin-bottom:14px;padding-left:10px;border-left:5px solid var(--mint)}
 h2.hot{border-left-color:var(--tomato)}
 h3{font-size:16px;margin:22px 0 10px;color:var(--brown)}
 p{font-size:15px;margin:8px 0}
 .note{font-size:13px;color:var(--ink-50);background:var(--ink-08);border-radius:10px;padding:10px 14px;margin:12px 0}
-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--ink-08);border-radius:4px;padding:1px 5px}
-.skillbox{background:#fff;border:3px solid var(--brown);border-radius:18px;padding:18px;margin:14px 0;box-shadow:4px 4px 0 var(--brown)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+  background:var(--ink-08);border-radius:4px;padding:1px 5px}
+
+/* ===== Skill 卡片 ===== */
+.skillbox{background:#fff;border:3px solid var(--brown);border-radius:18px;padding:18px;margin:14px 0;
+  box-shadow:4px 4px 0 var(--brown)}
 .skillbox .sb-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
-.skillbox .sb-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;font-weight:800;color:var(--brown);
-  background:var(--yellow);border:2px solid var(--brown);border-radius:8px;padding:2px 10px}
+.skillbox .sb-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;font-weight:800;
+  color:var(--brown);background:var(--yellow);border:2px solid var(--brown);border-radius:8px;padding:2px 10px}
 .skillbox .sb-tag{font-size:11px;font-weight:700;color:#fff;background:var(--mint);border-radius:6px;padding:2px 8px}
 .skillbox .sb-tag.violet{background:#8b7cf6}
+.skillbox .sb-tag.tomato{background:var(--tomato)}
 .skillbox .sb-desc{font-size:14px;color:var(--ink-70);margin-top:4px}
 .skillbox .sb-when{font-size:12.5px;color:var(--ink-50);margin-top:6px}
+
+/* ===== 证据卡 ===== */
 .ev{background:#fff;border:2px solid var(--ink-16);border-radius:14px;padding:14px 16px;margin:12px 0}
 .ev .ev-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .ev .ev-skill{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:800;color:var(--tomato)}
@@ -53,24 +58,38 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 .ev dl{display:grid;grid-template-columns:64px 1fr;gap:4px 10px;font-size:14px}
 .ev dt{font-weight:800;color:var(--ink-50);font-size:12.5px;padding-top:2px}
 .ev dd{color:var(--ink-70)}
-@media(max-width:520px){.ev dl{grid-template-columns:1fr;gap:0}.ev dt{margin-top:8px}}
+@media(max-width:520px){
+  .ev dl{grid-template-columns:1fr;gap:0}
+  .ev dt{margin-top:8px}
+}
+
+/* ===== 交付物 ===== */
 .deliver{background:#fff;border:2px solid var(--ink-16);border-radius:16px;padding:18px;margin:14px 0}
 .deliver .d-title{font-weight:800;font-size:15px;margin-bottom:4px}
 .deliver .d-link{font-size:14px;word-break:break-all;margin:4px 0}
-.d-score{float:right;font-size:12px;font-weight:800;color:#048a68;background:rgba(6,214,160,.16);border-radius:6px;padding:1px 8px}
+.deliver .d-link a{font-weight:700}
+.d-score{float:right;font-size:12px;font-weight:800;color:#048a68;background:rgba(6,214,160,.16);
+  border-radius:6px;padding:1px 8px}
+
+/* ===== 时间线 ===== */
 .timeline{position:relative;padding-left:24px}
 .timeline::before{content:"";position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:var(--ink-16)}
 .tl-item{position:relative;margin-bottom:22px}
-.tl-item::before{content:"";position:absolute;left:-20px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--mint);border:2px solid #fff;box-shadow:0 0 0 2px var(--mint)}
+.tl-item::before{content:"";position:absolute;left:-20px;top:8px;width:10px;height:10px;border-radius:50%;
+  background:var(--mint);border:2px solid #fff;box-shadow:0 0 0 2px var(--mint)}
 .tl-item.p1::before{background:var(--tomato);box-shadow:0 0 0 2px var(--tomato)}
+.tl-item.p9::before{background:var(--yellow);box-shadow:0 0 0 2px var(--yellow)}
 .tl-time{font-size:12px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums}
 .tl-item.p1 .tl-time{color:var(--tomato)}
+.tl-item.p9 .tl-time{color:#c99a00}
 .tl-title{font-size:16px;font-weight:800;margin:2px 0 4px}
 .tl-body{font-size:14.5px;color:var(--ink-70)}
-.tl-body ul{margin:6px 0 6px 18px}.tl-body li{margin:3px 0}
+.tl-body ul{margin:6px 0 6px 18px}
+.tl-body li{margin:3px 0}
 .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 8px;margin-left:6px;vertical-align:middle}
 .chip.done{background:rgba(6,214,160,.16);color:#048a68}
 .chip.skill{background:rgba(139,124,246,.16);color:#6a56e0}
+
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:520px){.grid2{grid-template-columns:1fr}}
 .card{background:#fff;border:2px solid var(--ink-16);border-radius:14px;padding:14px}
@@ -81,44 +100,87 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 .srl{background:#fff;border:2px dashed var(--ink-16);border-radius:14px;padding:14px 16px;margin:12px 0}
 .srl h4{font-size:14px;color:var(--tomato);margin-bottom:4px}
 .srl p{font-size:14px;color:var(--ink-70)}
+
+/* ===== 前测 / 后测 问卷 ===== */
+.qa{background:#fff;border:2px solid var(--ink-16);border-radius:14px;padding:14px 16px;margin:12px 0}
+.qa .q{font-size:14px;font-weight:800;color:var(--brown);margin-top:12px}
+.qa .q:first-child{margin-top:0}
+.qa .a{font-size:14px;color:var(--ink-70);margin:2px 0 0}
+.refl{background:#fff;border:2px solid var(--ink-16);border-left:5px solid var(--tomato);
+  border-radius:14px;padding:14px 16px;margin:12px 0}
+.refl h4{font-size:14.5px;color:var(--tomato);margin-bottom:4px}
+.refl p{font-size:14px;color:var(--ink-70)}
+.refl ul{margin:6px 0 6px 18px;font-size:14px;color:var(--ink-70)}
+.refl li{margin:3px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+@media(max-width:520px){.split{grid-template-columns:1fr}}
+.split .col{background:var(--ink-08);border-radius:10px;padding:10px 12px}
+.split .col b{font-size:13px;color:var(--brown)}
+.split .col p{font-size:13px;color:var(--ink-70);margin:3px 0 0}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="badge">🧩 Skill 驱动 · 总检查清单收尾记录</div>
-  <h1><span class="pixel">Travel Chefs</span> · 对照总检查清单打磨到成品</h1>
-  <p class="sub">24级本科市营1234班 · Vibe Coding 部署课期末作业</p>
+  <div class="badge">🧩 Skill 驱动 · 可分享过程记录</div>
+  <h1><span class="pixel">Travel Chefs</span> · 使用 Skill 的开发过程记录</h1>
+  <p class="sub">24 级本科市营 1234 班 · Vibe Coding 部署课期末作业</p>
   <div class="meta">
-    <span>📅 2026-09-15 ~ 09-17</span>
-    <span>🧰 vibecoding-srl-trainer</span>
+    <span>📅 2026-09-15 ~ 09-19</span>
+    <span>🧰 3 个 Skill 全程参与</span>
     <span>📦 单文件 · 零依赖</span>
-    <span>🧪 528 断言全绿</span>
-    <span>🕹️ v2.4.0</span>
-    <span>🧩 六大部分全修</span>
+    <span>🧪 507 断言全绿</span>
+    <span>🕹️ v2.5.0</span>
+    <span>📝 29 次提交</span>
   </div>
 </header>
 
 <div class="note">
-  📌 本页是本轮（总检查清单收尾）的过程记录，主线是「<strong>用了哪个 Skill、照它哪一条、落地成什么</strong>」。
-  游戏本体仍是 <code>index.html</code>（部署在 travel-chefs.vercel.app），本页可单独提交 / 部署。
-  账号、令牌均已脱敏，项目内不保留任何凭据。
+  📌 说明：这是一份以「<strong>Skill 使用情况</strong>」为主线的开发过程记录。原始对话由 WorkBuddy 加密存储且受隐私保护，
+  本页以结构化方式还原每一轮需求、决策与实现，并逐条标注<strong>依据哪个 Skill 的哪一条执行</strong>。
+  账号、令牌等敏感信息均已脱敏，项目内不保留任何凭据。
 </div>
 
 <hr>
 
 <h2 class="hot">一、本次使用的 Skill</h2>
+<p>下面三个 Skill 在本次作业中<strong>被实际加载并执行</strong>，不是事后套用的名词。
+它们的名称、作用与介入时机如下：</p>
+
+<div class="skillbox">
+  <div class="sb-head">
+    <span class="sb-name">vibe-coding-deploy</span>
+    <span class="sb-tag">部署课主技能</span>
+    <span class="sb-tag violet">全程</span>
+  </div>
+  <div class="sb-desc">从零做「简约清新风」单页小作品，并用 GitHub + Vercel 免费部署成 <code>xxx.vercel.app</code>。
+  内含交付物结构、设计系统、jsdom 自检方法、Windows/PowerShell 踩坑清单、Vercel CLI 全自动路径、网络被阻断时的替代通道。</div>
+  <div class="sb-when">介入时机：需求确认之后的<strong>每一步</strong>——决定目录结构时看「第二节」、写设计时看「第四节」、
+  跑测试时看「第七节」、装 Git 推仓库时看「第十节」、上线时看「第十一节之二」、网络不通时看「第十二节」。</div>
+</div>
+
+<div class="skillbox">
+  <div class="sb-head">
+    <span class="sb-name">skill-creator</span>
+    <span class="sb-tag tomato">作业收尾</span>
+  </div>
+  <div class="sb-desc">官方技能创建流程：初始化骨架 → 编写 SKILL.md → 配套 references / assets / scripts → 校验打包。
+  用于把本次「对照评分标准做自检、生成 skill 使用证据」的做法沉淀成可复用的技能。</div>
+  <div class="sb-when">介入时机：拿到老师成绩单、决定要把提分方法固化下来之后（即第 3 个 Skill 的诞生过程）。</div>
+</div>
+
 <div class="skillbox">
   <div class="sb-head">
     <span class="sb-name">vibecoding-srl-trainer</span>
-    <span class="sb-tag violet">本轮主用</span>
+    <span class="sb-tag violet">本次新建</span>
     <span class="sb-tag tomato">收尾自检</span>
   </div>
-  <div class="sb-desc">Vibe Coding 部署课的「自我调节学习（SRL）训练器」：抓成绩单评分标准 → 对照三项交付物做扣分自检 →
-    生成能自证「确实使用了 skill」的过程记录 → 产出前测 / 后测 / 反思报告提纲。
-    核心红线：<strong>不许伪造 skill 使用</strong>，证据表每一条都必须是本次会话真实发生过的动作。</div>
-  <div class="sb-when">介入时机：用户给出「总检查清单」并要求「核查到未完成的任务直接开工完成，只看最后成品」之后，
-    按它的 Step 4 把六大部分的逐条修复过程落成可分享记录页。</div>
+  <div class="sb-desc">Vibe Coding 部署课的「自我调节学习（SRL）训练器」：抓取成绩单评分标准 → 对照三项交付物做扣分自检 →
+  生成能自证「确实使用了 skill」的过程记录 → 产出前测 / 后测 / 反思报告提纲。配套 3 份参考资料、
+  1 个自检脚本 <code>check_deliverables.py</code> 和 1 份记录页模板。</div>
+  <div class="sb-when">介入时机：学习评分标准阶段，以及每轮迭代结束的收尾自检。
+  本页「证据对照表」与「SRL 三阶段」两节，就是照它的 Step 3 / Step 5 生成的；
+  最后一轮又按 Step 2 复跑了交付物自检脚本（三项全绿 100/100）。</div>
 </div>
 
 <hr>
@@ -127,126 +189,473 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 <p>逐条列出「照着哪一条做 → 落地成了什么 → 老师可以怎么复核」：</p>
 
 <div class="ev">
-  <div class="ev-top"><span class="ev-skill">vibecoding-srl-trainer</span><span class="ev-sec">Step 4 · 过程记录页（七块顺序）</span></div>
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第二节 · 标准交付物结构</span></div>
   <dl>
-    <dt>依据</dt><dd>记录页七块顺序固定：① 使用的 Skill ② Skill 证据表 ③ 三项交付物 ④ SRL 三阶段 ⑤ 需求 ⑥ 时间线 ⑦ 踩坑与成果；证据表要放在第一屏。</dd>
-    <dt>落地</dt><dd>本页严格按该顺序组织；第一屏即「使用的 Skill + 证据表」。</dd>
-    <dt>复核</dt><dd>打开本页即可一眼看到 skill 被用过、以及「依据哪条 → 产出什么」。</dd>
+    <dt>依据</dt><dd>零依赖、零构建，纯 HTML + CSS + 原生 JS；Vercel Framework Preset 选 Other，不需要 Build Command。</dd>
+    <dt>落地</dt><dd>作品收敛为单文件 <code>index.html</code>（内联全部代码，模块挂 <code>window.TC</code>），
+      <code>index.html</code> 放在仓库根目录，Root Directory 留空，避免 404。</dd>
+    <dt>复核</dt><dd>打开 <a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a> 直接可玩，无 404、无构建等待。</dd>
   </dl>
 </div>
 
 <div class="ev">
-  <div class="ev-top"><span class="ev-skill">vibecoding-srl-trainer</span><span class="ev-sec">红线 · 不伪造 skill 使用</span></div>
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第四节 · 简约清新设计系统</span></div>
   <dl>
-    <dt>依据</dt><dd>证据表每条都必须是本次会话真实发生的动作；没做过的步骤写进去一旦被追问就是诚信问题。</dd>
-    <dt>落地</dt><dd>本页只写本轮真实做的事：用 vibecoding-srl-trainer 驱动「总检查清单」逐条修复 + 测试 + 部署；不编造没用过的 skill。</dd>
-    <dt>复核</dt><dd>每一项修复都能在 <code>git log</code> / 测试报告里对应到具体提交与断言。</dd>
+    <dt>依据</dt><dd>背景不用纯白、文字不用纯黑；一个页面只留一个视觉主角；数字用 tabular-nums；
+      动效统一缓动；必须写 <code>prefers-reduced-motion</code> 降级；手机优先，body 用 <code>overflow-x:hidden</code> 而非 <code>overflow:hidden</code>。</dd>
+    <dt>落地</dt><dd>5 色调色板（黄 / 番茄红 / 薄荷绿 / 奶油白 / 墨棕），每地区自带 accent 色并同步更换全站强调色；
+      结算页单一视觉主角；库存与金币数字全部 <code>tabular-nums</code>；补齐 reduced-motion 降级。</dd>
+    <dt>复核</dt><dd>进入不同地区时整站配色随主题切换；375 / 390 / 414 三档视口均无横向溢出。</dd>
   </dl>
 </div>
 
 <div class="ev">
-  <div class="ev-top"><span class="ev-skill">vibecoding-srl-trainer</span><span class="ev-sec">Step 3 · 自检脚本思路</span></div>
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第七节 · jsdom 跑完整流程</span></div>
   <dl>
-    <dt>依据</dt><dd>交付前先跑自检，别凭感觉判断；网络不通 ≠ 线上打不开，要让用户用手机流量最终裁定。</dd>
-    <dt>落地</dt><dd>每次修复后跑 <code>node tests/run.js</code>（528 断言全绿）作为硬验收；线上用 Vercel API 确认 <code>state=READY</code>。</dd>
-    <dt>复核</dt><dd><code>travel-chefs.vercel.app</code> 可玩；本机到 vercel.app CDN 的 443 被校园网拦，已提示用户用手机流量做最终裁定。</dd>
+    <dt>依据</dt><dd>不要靠「看起来没报错」交付；静态站也能在 Node 里跑端到端冒烟测试。
+      JSDOM 必须给 <code>url:'http://localhost/'</code>，断言要走真实 <code>btn.click()</code>。</dd>
+    <dt>落地</dt><dd>把单文件 HTML 注入 jsdom，用 VirtualConsole 把 <code>jsdomError</code> 当成失败项；
+      断言一律走真实点击与真实等待（<code>await sleep(700)</code> 等关卡切换），覆盖进入 → 解锁 → 开始 → 通关 → 结算 → 存档。</dd>
+    <dt>复核</dt><dd>最终 <strong>507 条断言 / 23 个测试文件全绿</strong>；过程中真的抓出 3 个 bug（出锅高亮变量用错导致 NaN、布局留白穿帮、底部导航切 tab 被路由吞掉）。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第十节 · Windows / PowerShell 踩坑清单</span></div>
+  <dl>
+    <dt>依据</dt><dd>先找 PortableGit 不要假设 PATH 里有 git；中文 commit 乱码是 PowerShell 按 GBK 解码的<strong>显示假象</strong>；
+      链式 git 命令的回显不可信，每条关键操作后要用独立复查命令核验；提交信息用 <code>-F msg.txt</code> 不要用 <code>-m</code> 传中文。</dd>
+    <dt>落地</dt><dd>PortableGit 前置到 PATH；用 Node <code>execFileSync(...,'utf8')</code> 读 git log 再写文件确认，
+      没有去「修」根本没坏的编码；每次 push 后用 <code>git rev-parse HEAD</code> 与 <code>git ls-remote origin</code> 比对。</dd>
+    <dt>复核</dt><dd>仓库 29 次提交、作者统一为 Miacy05，GitHub 页面与 API 一致。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第十一节之二 · Vercel CLI 全自动路径</span></div>
+  <dl>
+    <dt>依据</dt><dd><code>vercel login --non-interactive</code> 设备码登录 + <code>vercel deploy --prod --yes</code>；
+      <strong>项目名 / 仓库名决定域名前缀</strong>，两者都叫 <code>travel-chefs</code> 才有干净域名；用 <code>.vercelignore</code> 精简产物。</dd>
+    <dt>落地</dt><dd>CLI 装在隔离 workspace（不污染全局环境），登录后一次 <code>deploy --prod --yes</code> 完成建项目、连仓库、分配域名；
+      之后每次 push 到 main 自动重新部署。</dd>
+    <dt>复核</dt><dd><a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a>（<code>vercel ls</code> 显示 ● Ready）。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第十二节 · github.com 被阻断时的替代通道</span></div>
+  <dl>
+    <dt>依据</dt><dd>PowerShell 的 <code>Invoke-WebRequest</code> 会走坏掉的代理环境变量，制造「全网不通」的假信号；
+      Node 默认不读 <code>HTTP_PROXY</code>，是最干净的可达性探针。<code>github.com:443</code> 挂了 ≠ GitHub 挂了，
+      可改用 <code>ssh.github.com:443</code>。</dd>
+    <dt>落地</dt><dd>用 Node 分别探测 github.com / api.github.com / ssh.github.com:443 / api.vercel.com，
+      确认直连失败、SSH over 443 握手成功后，改用 SSH over 443 推送；另按本节提示关掉仓库级
+      <code>http.schannelCheckRevoke</code> 解决证书吊销检查报错。</dd>
+    <dt>复核</dt><dd>29 次提交全部成功推送到 <a href="https://github.com/Miacy05/travel-chefs">github.com/Miacy05/travel-chefs</a>。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第九节 · 复杂需求先出方案再写代码</span></div>
+  <dl>
+    <dt>依据</dt><dd>需求升级到「多页面 + 关卡制 + 成就系统 + 彩蛋」量级时不要直接开写：
+      先出方案文档（含真实数字，不写占位符）+ 线框图，把冲突点单独列出来问，架构上守住「规则进纯函数模块」这条线。</dd>
+    <dt>落地</dt><dd>先产出《Travel-Chefs-开发方案.md》与五页线框图，把「单文件 vs 每个文件都要单测」的冲突解法
+      （单 HTML + <code>window.TC</code> 命名空间 + tests/ 分模块）作为推荐项交给用户确认；
+      规则全部进 <code>Calc / Level / Upgrade / Daily / Ach</code> 等纯逻辑模块，渲染层只负责画。</dd>
+    <dt>复核</dt><dd>方案文档与线框图在需求确认阶段交付；单文件依然能被 jsdom 分模块跑测试。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">skill-creator</span><span class="ev-sec">Step 3 初始化 + Step 4 编写</span></div>
+  <dl>
+    <dt>依据</dt><dd>用 <code>init_skill.py &lt;name&gt; --path ~/.workbuddy/skills</code> 建骨架（生成 SKILL.md 与 scripts/ references/ assets/），
+      再按「先写可复用资源、再写 SKILL.md」的顺序补齐，并删掉用不到的示例文件。</dd>
+    <dt>落地</dt><dd>创建用户级技能 <code>vibecoding-srl-trainer</code>：SKILL.md（五步工作流 + 红线 + 扣分速查表）、
+      3 份 references（评分标准存档 / 证据表模板 / SRL 框架）、1 个自检脚本、1 份记录页模板。</dd>
+    <dt>复核</dt><dd>技能已安装在 <code>~/.workbuddy/skills/vibecoding-srl-trainer/</code>，本页即其「Step 4 过程记录页」的产物。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibecoding-srl-trainer</span><span class="ev-sec">Step 1 抓标准 + Step 3 出证据 + Step 5 反思</span></div>
+  <dl>
+    <dt>依据</dt><dd>先抓成绩单原样存档评分标准；再对照三项交付物自检；把 skill 证据做成四列表并放在记录页第一屏；
+      反思报告写满「目标达成度 → 关键证据 → 关键转折 → 迁移计划」四段。</dd>
+    <dt>落地</dt><dd>抓取教师成绩单，确认「作业分 = 网页 40 + 仓库 30 + AI 记录 30，扣分项为未使用 skill −10 / 缺反思 −10 / 缺前测 −5 / 缺后测 −5」；
+      据此把本页重做为以 Skill 证据为主线的版本，并补齐 SRL 三阶段。</dd>
+    <dt>复核</dt><dd>本页第一、二、四节；前测 / 后测 / 反思报告已按同一套 SRL 框架在课程平台提交。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第七节 · 不靠「看起来没报错」交付</span></div>
+  <dl>
+    <dt>依据</dt><dd>渲染类问题不能靠肉眼判断，必须换成<strong>可度量的探测</strong>；改完先跑测试再看效果。</dd>
+    <dt>落地</dt><dd>用「<strong>5 个地区 × 6 档装饰等级 × 3 种画布尺寸</strong>」穷举探测绘制边界，
+      定位到巴黎遮阳棚、披萨砖墙等会画到 <code>x=161</code>（逻辑画布只有 160 宽）；
+      补 <code>fillIn / alphaFillIn / edgeFill</code> 三个夹取助手（超出即裁、完全在外 no-op）后全部回到界内。
+      同时把场景专用色拆成独立的 <code>SCENE_PAL</code>，不再污染被数据自检引用的 5 色 <code>PALETTE</code>。</dd>
+    <dt>复核</dt><dd><strong>23 个测试文件 / 507 条断言全绿</strong>；<code>scene.test.js</code> 新增
+      「地区布局 / 调色板 / 绘制指纹唯一性」断言，让 5 个地区不可能被画成同一套背景。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第六节 · 规则进纯函数模块</span></div>
+  <dl>
+    <dt>依据</dt><dd>渲染层只把操作翻译成逻辑调用；规则一律写在纯逻辑模块里，才能脱离浏览器被单测覆盖。</dd>
+    <dt>落地</dt><dd>顾客排队、员工自动上菜、地区装修加成全部落在 <code>TC.Level</code> / <code>TC.Calc</code> 纯函数：
+      座位满后第 3 位起门口等位、等位耐心消耗减半；服务员 Lv1 每 5 秒自动上菜（优先耐心最低）、
+      Lv2 每 3 秒 + 手动小费 ×1.1、Lv3 每 2 秒 + 每服务 5 人全体耐心 +10%。
+      并修掉 <code>L.currentCustomer</code> 的优先级 bug —— 原来先返回「正占着锅的顾客」，
+      导致「选中的顾客点的菜不同、锅位又已满」时误报「这道菜不需要它」。</dd>
+    <dt>复核</dt><dd><code>level.test.js</code> 65 条断言，含本轮新增的<strong>排队 5 例</strong>与<strong>服务员 4 例</strong>。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibe-coding-deploy</span><span class="ev-sec">第十 / 十一节之二 · 独立复查 + Vercel CLI 全自动路径</span></div>
+  <dl>
+    <dt>依据</dt><dd>链式命令的回显不可信，每条关键操作后要用独立命令复查；项目名 / 仓库名决定域名前缀，两者要一致。</dd>
+    <dt>落地</dt><dd>push 后不用 <code>git push</code> 自己的回显作依据，改用 <code>git ls-remote origin refs/heads/main</code>
+      比对远端 ref（<code>fc35b1a</code> 与本地 <code>HEAD</code> 完全一致）；
+      再用 <code>vercel deploy --prod --yes</code> 上线，随后<strong>回读线上字节并比对 sha256</strong>
+      （线上 458668 字节 / <code>ca2dc159…</code>，与本地 <code>index.html</code> 逐字节相同）。</dd>
+    <dt>复核</dt><dd><a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a> 打开即最新版，
+      不是「本地改了、线上还是旧的」。</dd>
+  </dl>
+</div>
+
+<div class="ev">
+  <div class="ev-top"><span class="ev-skill">vibecoding-srl-trainer</span><span class="ev-sec">Step 2 交付物自检 + 红线</span></div>
+  <dl>
+    <dt>依据</dt><dd>先跑自检脚本再凭感觉判断；本机网络不通 ≠ 线上打不开；证据表里每一条都必须是真实发生过的动作。</dd>
+    <dt>落地</dt><dd>跑 <code>check_deliverables.py --web --repo --ai</code> 三项逐项探测，结果 <strong>100 / 100</strong>；
+      另用 GitHub API 独立数 commit（<strong>29 次 ≥ 3</strong>），不依赖脚本结论。</dd>
+    <dt>复核</dt><dd>本页第三节三项交付物卡片，以及脚本输出的 40 / 30 / 30 分项。</dd>
   </dl>
 </div>
 
 <hr>
 
 <h2>三、三项交付物</h2>
+
 <div class="deliver">
-  <div class="d-title"><span class="d-score">网页</span>① 公网可访问的网页</div>
+  <div class="d-title"><span class="d-score">40 / 40</span>① 公网可访问的网页</div>
   <div class="d-link"><a href="https://travel-chefs.vercel.app/">https://travel-chefs.vercel.app/</a></div>
-  <div class="d-link" style="font-size:13px;color:var(--ink-50)">像素风「环游世界 + 模拟经营」网页小游戏 · 5 地区 25 关 · 手机可直接玩 · 零依赖零构建</div>
+  <div class="d-link" style="font-size:13px;color:var(--ink-50)">像素风「环游世界 + 模拟经营」网页小游戏 · 5 地区 25 关 · 手机横竖屏可直接玩 · 零依赖零构建</div>
 </div>
+
 <div class="deliver">
-  <div class="d-title"><span class="d-score">仓库</span>② GitHub 项目仓库</div>
-  <div class="d-link"><a href="https://github.com/miacy05/travel-chefs">https://github.com/miacy05/travel-chefs</a></div>
-  <div class="d-link" style="font-size:13px;color:var(--ink-50)">提交作者与仓库账号一致（miacy05）；README 含功能清单与部署步骤</div>
+  <div class="d-title"><span class="d-score">30 / 30</span>② GitHub 项目仓库</div>
+  <div class="d-link"><a href="https://github.com/Miacy05/travel-chefs">https://github.com/Miacy05/travel-chefs</a></div>
+  <div class="d-link" style="font-size:13px;color:var(--ink-50)">29 次提交（≥3 次）· 提交作者与仓库账号一致 · README 含功能清单与部署步骤</div>
 </div>
+
 <div class="deliver">
-  <div class="d-title"><span class="d-score">AI记录</span>③ AI 对话 / 过程记录</div>
-  <div class="d-link">本页 · 随仓库提交于 <code>process-record.html</code></div>
+  <div class="d-title"><span class="d-score">30 / 30</span>③ AI 对话 / 过程记录</div>
+  <div class="d-link">本页 · <a href="https://conversation-record.vercel.app/">https://conversation-record.vercel.app/</a></div>
   <div class="d-link" style="font-size:13px;color:var(--ink-50)">以 Skill 使用证据为主线的完整过程记录</div>
 </div>
 
 <hr>
 
 <h2>四、SRL 三阶段（前测 → 执行监控 → 后测与反思）</h2>
-<div class="srl">
-  <h4>阶段一 · 前思 / 前测（目标设定与计划）</h4>
-  <p>目标：把用户的总检查清单（六大部位）逐条核对并修复到成品，且每项改动都要有测试兜底。
-  计划拆成：教程 → 结算页 → 图鉴 → 帮助入口 → 全局 UI，逐项改完跑全量单测，最后部署。</p>
+<p>本次作业按自我调节学习（Self-Regulated Learning）的三阶段推进。前测、后测用<strong>同一套四问</strong>，
+方便老师直接对照成长曲线；反思报告按要求写满「目标达成度 → 关键证据 → 关键转折 → 迁移计划」四段。</p>
+
+<h3>4.1 阶段一 · 前思 / 前测（目标设定与计划）</h3>
+<div class="qa">
+  <div class="q">Q1 我要做出什么？</div>
+  <div class="a">一款<strong>能真的玩起来</strong>的像素风「环游世界 + 模拟经营」网页小游戏：接待顾客 → 按配方备料 → 下锅 → 装盘 → 上菜 → 赚金币升级 → 攒星星解锁下一个地区。
+  交付形态明确为三项：公网可访问的 <code>xxx.vercel.app</code> 网页、公开的 GitHub 仓库、一份 Skill 驱动的过程记录页。</div>
+  <div class="q">Q2 我现在的起点是什么？</div>
+  <div class="a">会写一点 HTML / CSS / JS，但<strong>从没独立把项目部署到公网</strong>，也没系统用过 git 协作流程；
+  对 AI 协作的预期是「AI 能写代码，但架构决策和验收标准必须我自己把关」。</div>
+  <div class="q">Q3 我打算怎么做？</div>
+  <div class="a">拆成四步：① 先出方案文档与线框图，逐条确认再写代码；② 先打通一个地区的完整链路；③ 复用量产其余 4 个地区；④ 部署上线并用自动化测试验收。
+  每一步都指定用哪个 Skill 兜底（设计看设计系统那节、测试看 jsdom 那节、上线看 Vercel CLI 那节、网络不通看替代通道那节）。</div>
+  <div class="q">Q4 怎么算做成了？</div>
+  <div class="a">事先定死五条可验收判据：手机上能打开、能完整玩通一关、commit ≥ 3 次、单元测试全绿、三项交付物链接都能打开。</div>
 </div>
+
+<h3>4.2 阶段二 · 表现 / 执行监控（过程记录）</h3>
 <div class="srl">
-  <h4>阶段二 · 表现 / 执行监控（过程记录）</h4>
-  <p>每改一处都跑 <code>node tests/run.js</code>；被 toast 防抖改动打断的 2 条测试先修好再继续；
-  图鉴 / 结算 / 设置分别补了针对性断言（顾客胶囊标签、下一关星数门槛、帮助弹窗）。</p>
+  <h4>决策点</h4>
+  <p><strong>单文件 vs 多文件</strong>：需求要求「每个模块都要能单测」，但静态托管又要求极简。<br>
+  解法是先问再做，最终选「单个 <code>index.html</code> 内联全部代码，模块挂 <code>window.TC</code> 命名空间，
+  再在 <code>tests/</code> 里按模块拆测试文件」——既保住零依赖部署，又拿到分模块覆盖。</p>
+  <h4 style="margin-top:12px">自检动作</h4>
+  <p>每个阶段结束跑一遍全量单测；关键操作后一律用<strong>独立复查命令</strong>核对，不信任链式命令的回显；
+  上线后回读线上字节并与本地做 sha256 对比，确认「线上就是最新版」而不是「本地改完了」。</p>
+  <h4 style="margin-top:12px">卡点 + 解法</h4>
+  <p>遇到卡点先定位再动手：例如 <code>github.com:443</code> 直连失败时，先做网络可达性探针确认是通道问题而不是账号问题，
+  再换 <code>ssh.github.com:443</code> 一次推成功；渲染越界时不去「盲改坐标」，而是写脚本穷举探测把越界项打印出来。</p>
 </div>
-<div class="srl">
-  <h4>阶段三 · 自我反思（后测 + 反思报告）</h4>
-  <p>目标达成度：六大部分全部修复，528 条断言全绿，已 push 并部署。
-  关键转折：① toast 防抖把「1.5 秒内连点锁定关卡只留一个 toast」做对，但顺带让 2 条旧测试断言失效——改为防抖感知型断言修好；
-  ② 灶台空锅位原本画成白色方块（<code>PAL.w</code>），改为空锅位用暗色，消除白块；
-  ③ 食材按钮高度不足导致菜名与小字重叠，加高到 64px 解决。
-  迁移计划：结构性改动（如把 <code>#app</code> 改名为 <code>#game-container</code>）必须同步改完所有 JS 引用，并用 grep 兜底复查。</p>
+
+<h3>4.3 阶段三 · 后测（与前测同构，便于对照）</h3>
+<div class="qa">
+  <div class="q">Q1 我做出了什么？</div>
+  <div class="a"><strong>v2.5.0</strong>：5 个地区共 25 关，每个地区一套独立店铺场景与专属装修件；
+  顾客从右侧滑入到店、排队呼吸浮动、落座弹跳，耐心耗尽会冒 😠 离开；员工线收敛为单一「服务员」（Lv1 每 5 秒自动上菜 / Lv2 手动小费 +10% / Lv3 每 5 人全体耐心 +10%）。
+  线上 <a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a> 与本地 <code>index.html</code> <strong>逐字节一致</strong>。</div>
+  <div class="q">Q2 起点回顾？</div>
+  <div class="a">入学前完全没部署过。现在能用 <code>vercel login --non-interactive</code> 设备码登录、
+  <code>vercel deploy --prod --yes</code> 发布，并用 <code>git ls-remote</code> 独立核对远端 ref；
+  也知道了「项目名 = 域名前缀，仓库名要一起定死」。</div>
+  <div class="q">Q3 实际怎么做的？</div>
+  <div class="a">基本按前测的四步走完，但比计划多了一轮「地区差异化」迭代（店铺模型 / 装修 / 排队 / 员工简化）。
+  每轮结束都跑 23 个测试文件、用脚本穷举探测绘制边界，最后跑交付物自检脚本收尾。</div>
+  <div class="q">Q4 达成判据？</div>
+  <div class="a"><strong>五条全部达成</strong>：手机可打开 ✅ · 能玩通一关 ✅ · 29 次提交 ≥ 3 ✅ · 507 条断言全绿 ✅ · 三项链接均 HTTP 200 ✅。
+  自检脚本给出 <strong>100 / 100</strong>。</div>
+</div>
+
+<div class="split">
+  <div class="col"><b>认知上变了什么</b>
+    <p>部署不是最后一步，从「建库命名」那刻就开始了 —— 仓库名和项目名决定了域名，后期改要付链接失效的代价。
+    另外「看起来没报错」不等于对，必须换成可度量的验收（断言数、边界探测、字节比对）。</p></div>
+  <div class="col"><b>能力上多了什么</b>
+    <p>会用 CLI 完成发布并回读校验；会用 jsdom 给静态单文件做端到端冒烟；
+    会用脚本穷举做边界探测替代肉眼验收；会把踩过的坑沉淀成可复用的 Skill 步骤。</p></div>
+</div>
+
+<h3>4.4 反思报告</h3>
+
+<div class="refl">
+  <h4>一、目标达成度</h4>
+  <p>对照前测定下的五条判据逐条核对：① 手机浏览器打开 <a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a> 可正常游玩 ✅；
+  ② 能完整走通「备料 → 下锅 → 装盘 → 上菜 → 结算」并拿到星级 ✅；
+  ③ 仓库 <strong>29 次提交</strong>（门槛 ≥ 3）✅；④ <strong>23 个测试文件 / 507 条断言全绿</strong> ✅；
+  ⑤ 网页、仓库、记录页三项链接均返回 HTTP 200 ✅。交付物自检脚本给出 <strong>100 / 100</strong>。</p>
+</div>
+
+<div class="refl">
+  <h4>二、关键证据</h4>
+  <ul>
+    <li><strong>过程记录页（本页）</strong>：<a href="https://conversation-record.vercel.app/">conversation-record.vercel.app</a>
+      —— 第一节列出实际加载过的 Skill，第二节把「依据哪一条 → 怎么落地 → 怎么复核」逐条对应。</li>
+    <li><strong>仓库提交历史</strong>：<a href="https://github.com/Miacy05/travel-chefs">github.com/Miacy05/travel-chefs</a>
+      —— 29 次提交，作者统一为 Miacy05；最近两次分别落在「游戏本体」与「测试适配」，可看出改动是分层的。</li>
+    <li><strong>线上作品</strong>：<a href="https://travel-chefs.vercel.app/">travel-chefs.vercel.app</a>
+      —— 与本地 <code>index.html</code> 逐字节一致（458668 字节 / sha256 <code>ca2dc159…</code>）。</li>
+  </ul>
+</div>
+
+<div class="refl">
+  <h4>三、关键转折</h4>
+  <p><strong>转折 1：把「推送失败」重定义为「通道不通」。</strong>
+  最初 <code>git push</code> 失败，直觉判断是账号或权限问题，差点去重置凭据。
+  改用 Node 做可达性探针后才发现本机 <code>github.com:443</code> 直连被阻断，而 <code>ssh.github.com:443</code> 握手正常 ——
+  换成 SSH over 443 后一次推送成功。如果不是先做探针而直接改账号，这个问题会无解地卡住。</p>
+  <p><strong>转折 2：把「看着不对」换成「量出来不对」。</strong>
+  5 个地区场景做出来后视觉上没发现异常，但穷举探测「5 地区 × 6 装饰等级 × 3 画布尺寸」时，
+  打印出巴黎遮阳棚和披萨砖墙会画到 <code>x=161</code>（画布只有 160 宽）。
+  这说明<strong>肉眼看不出 ≠ 没问题</strong>；补上夹取助手后所有尺寸都在界内，并新增了「地区绘制指纹唯一性」断言防止回归。</p>
+</div>
+
+<div class="refl">
+  <h4>四、迁移计划</h4>
+  <ul>
+    <li><strong>把命名当成架构决策</strong>：仓库名、Vercel 项目名、域名前缀在建库那一刻就统一写死，避免后期改名导致所有已提交的链接失效。</li>
+    <li><strong>关键操作一律独立复查</strong>：push 后查 <code>git ls-remote</code>、部署后回读线上字节比 sha256，
+      永不把链式命令自己的回显当作成功依据。</li>
+    <li><strong>渲染类改动配可度量验收</strong>：凡是「画出来」的东西，都补一个能打印数字的探测脚本（边界 / 颜色 / 尺寸），
+      不依赖肉眼；这次的做法已经可以直接复用到下一个项目。</li>
+    <li><strong>流程固化成 Skill</strong>：把「对照评分标准自检 → 生成 skill 证据表 → 产出记录页」这套收尾动作沉淀成 <code>vibecoding-srl-trainer</code>，
+      下次同类作业可以直接复用，不用重新摸索。</li>
+  </ul>
 </div>
 
 <hr>
 
-<h2>五、本轮修复清单（六大部分）</h2>
+<h2>五、项目与需求</h2>
+<p>作品是一款像素风「环游世界 + 模拟经营」网页小游戏 <strong>Travel Chefs</strong>。
+最初是基于配方点选的模拟经营原型（v1），升级为<strong>关卡制 + 地区解锁 + Canvas 像素场景 + 圆角卡片 UI</strong> 的正式版本（v2）。</p>
+
+<h3>用户确立的约束</h3>
+<ul>
+  <li>先出方案、确认后再写代码；</li>
+  <li>每次改完必须跑全部单测；</li>
+  <li>不自行添加没要求的系统；</li>
+  <li>单 <code>index.html</code> 内联全部代码，模块挂 <code>window.TC</code>；</li>
+  <li>5 个地区全部做可玩内容（25 关 / 15 道菜），不做占位；</li>
+  <li>完全离线自包含（音效用 WebAudio 合成，不引任何图片 / 音频资源）。</li>
+</ul>
+
+<h3>九项优先级需求（全部完成）</h3>
 <div class="timeline">
-  <div class="tl-item p1"><div class="tl-time">第一部分 · 教程</div>
-    <div class="tl-title">新手教程扩到 11 步 <span class="chip done">已修</span></div>
-    <div class="tl-body">原 8 步补到 11 步：拆分面条 / 青菜 / 酱汁三次点击、加入自动装锅生火、金币 / 钻石 / 小费说明、解锁新地区说明；
-    教程步数文案与进度点同步为 11。</div></div>
-  <div class="tl-item"><div class="tl-time">第二部分 · 结算</div>
-    <div class="tl-title">结算页加「下一关」主按钮 <span class="chip done">已修</span></div>
-    <div class="tl-body">红色主按钮「下一关」指向下一关；星数不足弹「还差几颗星」并阻止跳转；最后一关隐藏该按钮；
-    升级店铺 / 再来一次并排、回地图降为小字链接。</div></div>
-  <div class="tl-item"><div class="tl-time">第三部分 · 主页/关卡</div>
-    <div class="tl-title">主界面与关卡列表 <span class="chip done">已核对</span></div>
-    <div class="tl-body">（历史已完成）btnReplay 删除、view-levels 与 openRegion 就绪、关卡解锁逻辑自洽。</div></div>
-  <div class="tl-item"><div class="tl-time">第四部分 · 图鉴</div>
-    <div class="tl-title">明信片全屏深色预览 + 顾客胶囊标签 <span class="chip done">已修</span></div>
-    <div class="tl-body">明信片大图改为全屏深色沉浸预览，点遮罩 / ✕ 先淡出再关；未解锁地区只弹提示不弹窗；
-    顾客页每位加「胶囊标签」（脾气 / 神秘来客），未遇见显示「未解锁」。</div></div>
-  <div class="tl-item"><div class="tl-time">第五部分 · 经济/帮助</div>
-    <div class="tl-title">设置里加「游戏帮助 / 货币说明」 <span class="chip done">已修</span></div>
-    <div class="tl-body">齿轮设置新增帮助入口，弹窗讲清金币 / 钻石 / 小费三种货币的来源与用途，并顺带说明星星。</div></div>
-  <div class="tl-item p1"><div class="tl-time">第六部分 · 全局UI</div>
-    <div class="tl-title">game-container + 灶台空锅 + 食材栏重叠 <span class="chip done">已修</span></div>
-    <div class="tl-body">容器改名 <code>#game-container</code> 并放宽到 max-width 480 居中；空锅位不再画白块；
-    食材按钮加高到 64px 消除菜名与小字重叠；Toast 1.5s + 防抖（1.5s 内连点同一锁定关卡只留一个）。</div></div>
+  <div class="tl-item p1"><div class="tl-time">优先级 1</div>
+    <div class="tl-title">新手教程系统</div>
+    <div class="tl-body">遮罩式 8 步引导（点食材 → 下锅 → 出餐 → 上菜…），首次进游戏自动播，设置里可随时重看。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 2</div>
+    <div class="tl-title">简化操作复杂度</div>
+    <div class="tl-body">≤3 步做一道菜；食材旁标注「可做的菜」；多灶台逐步点亮；按钮加文字说明。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 3</div>
+    <div class="tl-title">普通关卡难度</div>
+    <div class="tl-body">顾客等待时间 ×2，三星仍有挑战性。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 4</div>
+    <div class="tl-title">困难模式 / 挑战关卡</div>
+    <div class="tl-body">独立星级、耐心缩短、随机灶台故障，通关后点亮困难徽章。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 5</div>
+    <div class="tl-title">顾客模型</div>
+    <div class="tl-body">每地区 8 种职业，程序化像素立绘，2 行 3 列排队。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 6</div>
+    <div class="tl-title">特殊顾客系统</div>
+    <div class="tl-body">4 种特殊顾客 + 6 种触发条件 + 30 秒道具 buff + 金框标记。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 7</div>
+    <div class="tl-title">图鉴系统补全</div>
+    <div class="tl-body">已遇见次数、徽章效果说明、明信片收藏。</div></div>
+  <div class="tl-item"><div class="tl-time">优先级 8</div>
+    <div class="tl-title">徽章系统</div>
+    <div class="tl-body">10 枚普通徽章 + 特殊徽章带实际效果（如永久解锁流浪猫光顾）。</div></div>
+  <div class="tl-item p9"><div class="tl-time">优先级 9</div>
+    <div class="tl-title">新增功能 11 项</div>
+    <div class="tl-body">下一步提示箭头、熟度进度圈、耐心条变色 + 警示音、成就全屏动画、每日登录奖励、
+    一键重玩、地区进度条、满意度、音效/震动开关、音量滑块、明信片等。</div></div>
 </div>
 
-<hr>
-
-<h2>六、中途的明确指令</h2>
+<h3>补充需求 · 地区差异化（第二轮，已全部落地）</h3>
 <div class="timeline">
-  <div class="tl-item"><div class="tl-time">指令</div>
-    <div class="tl-title">「核查到未完成的任务或命令，直接开工完成，我只看最后的成品」</div>
-    <div class="tl-body">放弃逐条报告，按总检查清单一口气修完六大部分，最后统一跑测试 + 部署 + 出本记录页。</div></div>
-  <div class="tl-item"><div class="tl-time">约束</div>
-    <div class="tl-title">作者名一致 + .vercel.app 后缀</div>
-    <div class="tl-body">提交作者统一为 miacy05；交付地址使用 travel-chefs.vercel.app。</div></div>
+  <div class="tl-item p1"><div class="tl-time">需求 A</div>
+    <div class="tl-title">地区店铺模型 <span class="chip done">已上线</span></div>
+    <div class="tl-body">5 个地区各一套独立的店铺外壳与室内陈设，切换地区时整店重绘，不出现生硬闪屏。</div></div>
+  <div class="tl-item"><div class="tl-time">需求 B</div>
+    <div class="tl-title">地区化装修系统 <span class="chip done">已上线</span></div>
+    <div class="tl-body">座位 / 招牌 / 装修加成一律作用于<strong>当前地区</strong>；每个地区新增 Lv1-3 专属装饰件，
+    Lv4-5 追加发光描边；买完当帧生效，不需要重开一局。</div></div>
+  <div class="tl-item"><div class="tl-time">需求 C</div>
+    <div class="tl-title">顾客到店与排队动画 <span class="chip done">已上线</span></div>
+    <div class="tl-body">右侧滑入到店 · 队列呼吸浮动 · 落座弹跳 · 上菜冒 ❤️ / 耐心耗尽冒 😠；座位满后第 3 位起在门口等位，
+    等位期间耐心消耗减半。教学局不启用排队，保证引导是线性的。</div></div>
+  <div class="tl-item"><div class="tl-time">需求 D</div>
+    <div class="tl-title">员工系统简化 <span class="chip done">已上线</span></div>
+    <div class="tl-body">只保留「服务员」一条线，删除帮厨与收银员；Lv1 每 5 秒自动上菜（优先耐心最低的顾客）、
+    Lv2 每 3 秒 + 手动上菜小费 +10%、Lv3 每 2 秒 + 每服务 5 位顾客全体耐心 +10%。
+    旧存档一次性退还已购帮厨 / 收银员金币，且不会重复退。</div></div>
 </div>
 
 <hr>
 
-<h2>七、交付成果一览</h2>
+<h2>六、开发时间线（每步标注 Skill 依据）</h2>
+<div class="timeline">
+  <div class="tl-item"><div class="tl-time">阶段 0 · 方案</div>
+    <div class="tl-title">先出方案，逐条确认 <span class="chip done">已确认</span>
+      <span class="chip skill">vibe-coding-deploy · 第九节</span></div>
+    <div class="tl-body">产出《Travel-Chefs-开发方案.md》+ 五页线框图。锁定单文件架构、Canvas + 卡片 UI、离线自包含、
+    5 地区全可玩等 6 条关键决策，数据模型里的价格 / 时长 / 花费全部写真实数字。</div></div>
+  <div class="tl-item"><div class="tl-time">阶段 1-3 · 核心循环</div>
+    <div class="tl-title">单文件引擎 + 经营页核心循环 <span class="chip done">已落码</span>
+      <span class="chip skill">vibe-coding-deploy · 第六节</span></div>
+    <div class="tl-body">160×90 逻辑像素 Canvas 厨房 + DOM 卡片 UI；点食材 → 进锅 → 点锅 → 拖盘 → 上菜全链路打通。
+    模块按 IIFE 挂 <code>window.TC</code>，游戏规则全部进纯逻辑模块；关卡倒计时一律用时间戳（<code>deadline - Date.now()</code>）。</div></div>
+  <div class="tl-item"><div class="tl-time">阶段 4-6 · 结算 / 音效</div>
+    <div class="tl-title">结算、升级、图鉴 + WebAudio 音效 <span class="chip done">已落码</span>
+      <span class="chip skill">vibe-coding-deploy · 第五节</span></div>
+    <div class="tl-body">15 种振荡器合成音效（零音频文件）；修掉「声音开关是死控件」的真实缺陷。</div></div>
+  <div class="tl-item"><div class="tl-time">阶段 7-8 · 内容补齐</div>
+    <div class="tl-title">补齐另外 4 个地区 + 移动端打磨 <span class="chip done">已落码</span>
+      <span class="chip skill">vibe-coding-deploy · 第四节</span></div>
+    <div class="tl-body">5 地区 25 关 15 道菜全部可玩；三档真机视口（375 / 390 / 414）无溢出。</div></div>
+  <div class="tl-item p1"><div class="tl-time">阶段 9 · 部署</div>
+    <div class="tl-title">GitHub + Vercel 上线 <span class="chip done">已上线</span>
+      <span class="chip skill">vibe-coding-deploy · 第十 / 十一 / 十二节</span></div>
+    <div class="tl-body">SSH over 443 推 GitHub（绕开被阻断的 <code>github.com:443</code>）；Vercel CLI 设备码登录 +
+    <code>deploy --prod --yes</code>，拿到 <code>travel-chefs.vercel.app</code>；提交作者统一为 Miacy05。</div></div>
+  <div class="tl-item"><div class="tl-time">迭代 1 · 优先级 1-8</div>
+    <div class="tl-title">新手教程 → 徽章系统 逐项实现 <span class="chip done">已提交</span>
+      <span class="chip skill">vibe-coding-deploy · 第七节</span></div>
+    <div class="tl-body">8 个优先级依次完成，每项配套独立单测；版本推进 2.2.x → 2.3.2。</div></div>
+  <div class="tl-item p9"><div class="tl-time">迭代 2 · 优先级 9</div>
+    <div class="tl-title">新增功能 11 项全部落地 <span class="chip done">已完成</span>
+      <span class="chip skill">vibe-coding-deploy · 第七节</span></div>
+    <div class="tl-body">下一步提示箭头、熟度进度圈、耐心条变色、成就全屏动画、每日登录奖励、一键重玩、
+    地区进度条、满意度、音量滑块等；版本 → 2.4.0；后续地区差异化迭代推进到 2.5.0，回归 507 条断言全绿。</div></div>
+  <div class="tl-item p1"><div class="tl-time">迭代 3 · 地区差异化</div>
+    <div class="tl-title">5 套店铺模型 + 地区专属装修 + 顾客排队 + 员工简化 <span class="chip done">已上线</span>
+      <span class="chip skill">vibe-coding-deploy · 第六 / 七节</span></div>
+    <div class="tl-body">把 5 个地区从「共用一套背景」改成各自独立的店铺外壳与室内陈设（亚洲街头 / 巴黎咖啡 / 拉面屋 / 披萨店 / 塔可摊）；
+    装修（座位 / 招牌 / 加成）改为作用于当前地区，并新增 Lv1-3 专属装饰件、Lv4-5 发光描边；
+    顾客到店加右侧滑入、排队呼吸浮动、落座弹跳与 ❤️ / 😠 反馈；
+    座位坐满后第 3 位起门口等位（等位耐心消耗减半）；员工线从「帮厨 + 收银员 + 服务员」收敛为<strong>单一服务员</strong>
+    （Lv1 每 5 秒 / Lv2 每 3 秒 + 手动小费 +10% / Lv3 每 2 秒 + 每 5 人全体耐心 +10%），
+    旧存档一次性退还已购的帮厨 / 收银员金币（<code>staffRefunded</code> 幂等闸门防重复退）。
+    期间修掉 2 个真实缺陷：场景绘制越界到 <code>x=161</code>（画布仅 160 宽）、
+    <code>currentCustomer</code> 优先级错导致误报「这道菜不需要它」。版本推进 2.4.0 → <strong>2.5.0</strong>。</div></div>
+  <div class="tl-item p1"><div class="tl-time">收尾</div>
+    <div class="tl-title">对照评分标准自检 + 重做记录页 <span class="chip done">已完成</span>
+      <span class="chip skill">vibecoding-srl-trainer · Step 1-5</span></div>
+    <div class="tl-body">抓取教师成绩单确认评分口径 → 三项交付物逐项自检（脚本给出 100 / 100）→
+    把「用过的 skill × 依据章节 × 落地方式 × 可复核产出」做成证据表置于本页第一屏 →
+    补齐 SRL 三阶段（前测 / 执行监控 / 后测 / 反思报告四段）→ 分层提交并推送，再部署上线后回读比对字节。</div></div>
+</div>
+
+<hr>
+
+<h2>七、中途的明确指令与调整</h2>
+<div class="timeline">
+  <div class="tl-item"><div class="tl-time">调整 1</div>
+    <div class="tl-title">环球小飞机彩蛋改为「每日一次」</div>
+    <div class="tl-body">原彩蛋「攒满 10 次发 50 金币清零」存在无限刷金币漏洞。改为：点满 10 次 / 天触发、
+    计数每日重置；当天已触发后再点则弹提示并停止计数。</div></div>
+  <div class="tl-item"><div class="tl-time">调整 2</div>
+    <div class="tl-title">移除「重置存档」功能</div>
+    <div class="tl-body">按用户要求「不允许用户自主重置存档」，已从设置页删除该功能入口。</div></div>
+  <div class="tl-item"><div class="tl-time">调整 3</div>
+    <div class="tl-title">图鉴菜谱不显示「已制作次数」</div>
+    <div class="tl-body">菜谱只显示解锁状态 + 配料，不显示制作次数。</div></div>
+  <div class="tl-item"><div class="tl-time">调整 4</div>
+    <div class="tl-title">员工线收敛为「只留服务员」</div>
+    <div class="tl-body">按用户要求删除帮厨与收银员，避免出现「买了却看不懂用处在哪」的冗余系统；
+    同时把教程里的上菜步骤文案改为提到服务员，并为旧存档做一次性金币退还。</div></div>
+  <div class="tl-item"><div class="tl-time">调整 5</div>
+    <div class="tl-title">顾客坐不下时改为门口排队，而不是直接拒绝</div>
+    <div class="tl-body">座位饱和时不再让后面的顾客凭空消失，而是到门口等位（等位期间耐心消耗减半），
+    有人离座才补位；教学局仍保持不排队，避免新手被等位机制干扰。</div></div>
+  <div class="tl-item"><div class="tl-time">课程要求</div>
+    <div class="tl-title">作者名一致 + <code>.vercel.app</code> 后缀</div>
+    <div class="tl-body">提交作者统一为 Miacy05；交付地址使用 <code>travel-chefs.vercel.app</code>。</div></div>
+</div>
+
+<hr>
+
+<h2>八、踩过的坑（多为 Skill 提醒过、或补进 Skill 的经验）</h2>
+<ul>
+  <li><strong>git push 假回显</strong>：报「Everything up-to-date / nothing to commit」不代表没推成功，用 <code>git ls-remote</code> 比对远端 ref 才准。</li>
+  <li><strong>PowerShell / Bash 工具不回显 stdout</strong>：结果一律写文件再读；git 输出按 GBK 解码会显示中文乱码（显示假象，非真写坏）。</li>
+  <li><strong>github.com:443 时通时断</strong>：SSH over 443（<code>ssh.github.com:443</code>）是最稳的推送通道。</li>
+  <li><strong>代理环境变量制造假信号</strong>：Node 默认不读 <code>HTTP_PROXY</code>，用它做网络探针才准。</li>
+  <li><strong>测试驱动抓出 3 个真实 bug</strong>：出锅高亮用错变量（NaN 高度）、布局留白穿帮、底部导航切 tab 被路由吞掉。</li>
+  <li><strong>看不了图时的替代验收</strong>：用「溢出度量 + 画布颜色直方图 + 驱动游戏状态断言」代替肉眼截图；
+    用 CDP 的 <code>Runtime.evaluate</code> 把页面状态「读」回来做断言。</li>
+  <li><strong>肉眼看不出 ≠ 没问题</strong>：5 个地区场景视觉上都没异常，直到穷举探测「5 地区 × 6 装饰等级 × 3 画布尺寸」，
+    才打印出巴黎遮阳棚 / 披萨砖墙画到了 <code>x=161</code>（逻辑画布只有 160 宽）。</li>
+  <li><strong>测试夹具没归零会被误判成功能坏了</strong>：教程用例里 <code>UI.TUT_DWELL</code> 没置 0，
+    两次点击间隔不够，结果被读成「教程不推进」—— 其实是测试写法的问题。</li>
+  <li><strong>「断言过时」会伪装成「代码坏了」</strong>：教程从「按动作标签推进」重构为「按游戏状态推进」后，
+    旧断言必然失败。正确做法是先取一份基线（<code>git show HEAD:</code>）跑同一套测试，
+    确认哪些失败是这次重构的预期结果，再改测试；不要一看到红就去改实现。</li>
+  <li><strong>本地预览服务会自己挂掉</strong>：端口 <code>ECONNREFUSED</code> 时不要以为代码坏了，
+    用同一个只读脚本重启，再从磁盘和 HTTP 双向回读字节数确认服务恢复。</li>
+</ul>
+
+<hr>
+
+<h2>九、交付成果一览</h2>
 <div class="grid2">
-  <div class="card"><b>最终版本</b><div class="num">v2.4.0</div><p style="font-size:13px;color:var(--ink-70)">六大部分全部修复</p></div>
-  <div class="card"><b>单元测试</b><div class="num">528</div><p style="font-size:13px;color:var(--ink-70)">条断言 · 24 个文件 · 全绿</p></div>
-  <div class="card"><b>Git 提交</b><div class="num">miacy05</div><p style="font-size:13px;color:var(--ink-70)">作者统一 · 已 push main</p></div>
-  <div class="card"><b>内容规模</b><div class="num">25关</div><p style="font-size:13px;color:var(--ink-70)">5 地区 · 15 菜 · 8 顾客</p></div>
+  <div class="card"><b>最终版本</b><div class="num">v2.5.0</div><p style="font-size:13px;color:var(--ink-70)">9 项优先级 + 地区差异化全部完成</p></div>
+  <div class="card"><b>单元测试</b><div class="num">507</div><p style="font-size:13px;color:var(--ink-70)">条断言 · 23 个文件 · 全绿</p></div>
+  <div class="card"><b>Git 提交</b><div class="num">29</div><p style="font-size:13px;color:var(--ink-70)">次提交 · 作者统一 Miacy05</p></div>
+  <div class="card"><b>内容规模</b><div class="num">25关</div><p style="font-size:13px;color:var(--ink-70)">5 地区 · 5 套店铺场景 · 15 菜 · 45 食材</p></div>
 </div>
+
 <div class="deliver" style="margin-top:18px">
   <div class="d-title">🔗 访问链接</div>
   <div class="d-link">在线试玩：<a href="https://travel-chefs.vercel.app/">https://travel-chefs.vercel.app/</a></div>
-  <div class="d-link">源码仓库：<a href="https://github.com/miacy05/travel-chefs">https://github.com/miacy05/travel-chefs</a></div>
+  <div class="d-link">源码仓库：<a href="https://github.com/Miacy05/travel-chefs">https://github.com/Miacy05/travel-chefs</a></div>
+  <div class="d-link">过程记录：<a href="https://conversation-record.vercel.app/">https://conversation-record.vercel.app/</a></div>
 </div>
 
 <div class="anonymize">
@@ -254,8 +663,8 @@ footer{margin-top:40px;padding-top:20px;border-top:2px solid var(--ink-08);color
 </div>
 
 <footer>
-  Travel Chefs · 总检查清单收尾 · Skill 过程记录 · 更新于 2026-09-17<br>
-  24级本科市营1234班 · Vibe Coding 部署课 · 由 WorkBuddy 协助完成
+  Travel Chefs · Skill 驱动的开发过程记录 · 更新于 2026-09-19<br>
+  24 级本科市营 1234 班 · Vibe Coding 部署课 · 由 WorkBuddy 协助完成
 </footer>
 
 </body>
