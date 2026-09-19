@@ -11,12 +11,15 @@
 - 📦 **仓库地址**：<https://github.com/Miacy05/travel-chefs>
 - 🧩 **过程记录**：<https://conversation-record.vercel.app/> —— 使用 Skill 的开发过程记录
 - 🧩 **过程记录（国内直连）**：<https://travelchefs.bond/process-record.html> —— 免梯子
+- 📘 **开发者文档**：[`docs/DEVELOPER.md`](docs/DEVELOPER.md) —— 架构、模块 API、数据结构、扩展手册、测试、部署 Runbook
 
 > ⚠️ `travelchefs.bond` 未做 ICP 备案，**在微信 / QQ 内点开会命中腾讯的安全拦截**（「已停止访问该网页」）。
 > 这是域名层面的拦截，站点本身正常 —— 请用手机浏览器（Safari / Chrome）或电脑浏览器打开。
-> 备用镜像：<https://travel-chefs-game.app.workbuddy.host/>
+> 该拦截已于 2026-09-20 提交申诉并收到「**已临时恢复访问**」的受理通知，但「临时」不代表永久，
+> 交付时仍建议两个地址一起给，并注明微信内请用浏览器打开。
 
 > 仓库已与 Vercel 连接：向 `main` 分支推送后会自动重新部署，改完 `index.html` 直接 push 即可上线。
+> **注意 OSS 那一份不会自动更新**，国内直连域名下的 `index.html` 需要手工重新上传（见 [§八](#八部署)）。
 
 ---
 
@@ -200,7 +203,7 @@ Perfect 上菜  出锅后 ≤ 烹饪时间 × 60% 内送达即可触发，小费
 | | 保温台 | 5 级 | 装盘保鲜 +10s |
 | 📖 菜单研发 | 加料台 | 3 级 | 每单小费 +3 |
 | | 每道菜 · 菜单等级 | 5 级 | 该菜售价 +48%（15 道菜各一项） |
-| 🪑 餐厅装修 | 加座 | 2 级 | 同时在场顾客 +2 |
+| 🪑 餐厅装修 | 加座 | 3 级 | 同时在场顾客 +3（同屏上限 6） |
 | | 招牌灯箱 | 3 级 | 上客间隔 +1.2s |
 | | 装饰布置 | 5 级 | 小费 +25% |
 | 🧑‍🍳 员工雇佣 | 服务员 | 3 级 | 自动上菜（见下表） |
@@ -255,7 +258,7 @@ Perfect 上菜  出锅后 ≤ 烹饪时间 × 60% 内送达即可触发，小费
 
 | 功能 | 说明 |
 | --- | --- |
-| 🎓 新手教程 | 首次进入自动播 8 步遮罩引导，设置里可随时重看 |
+| 🎓 新手教程 | 首次进入自动播 11 步遮罩引导，设置里可随时重看 |
 | ⚡ 简化操作 | 一键下锅、多灶台逐步点亮、食材旁标「可做的菜」 |
 | ⏱ 耐心条变色 | 顾客耐心条绿 → 黄 → 红三档，变红会「咚」地警示一声并抖动 |
 | 🔥 熟度进度圈 | 灶台上的菜用进度圈表示熟度：生（红）→ 半熟（黄）→ 熟（绿） |
@@ -279,11 +282,14 @@ Perfect 上菜  出锅后 ≤ 烹饪时间 × 60% 内送达即可触发，小费
 
 ```
 TC.Util   → TC.DATA  → TC.Calc   → TC.Save   → TC.Upgrade
-TC.Level  → TC.Daily → TC.Easter → TC.Ach    → TC.Pixel
-TC.Scene  → TC.Audio → TC.UI     → TC.Router
+TC.Level  → TC.Daily → TC.Easter → TC.Guest  → TC.Ach
+TC.Pixel  → TC.Scene → TC.Audio  → TC.UI     → TC.Router
 ```
 
-**一条架构红线**：所有游戏规则写在纯函数模块里（`DATA / Calc / Save / Level / Upgrade / Daily / Easter / Ach`），
+共 **16 个模块 / 394 个公开函数**，各模块的职责、行号区间与完整 API 见
+[`docs/DEVELOPER.md` §3 架构总览](docs/DEVELOPER.md#3-架构总览)。
+
+**一条架构红线**：所有游戏规则写在纯函数模块里（`DATA / Calc / Save / Level / Upgrade / Daily / Easter / Guest / Ach`），
 `Scene / UI / Audio` 只负责「画出来」和「把用户操作翻译成对逻辑层的调用」，自己不做任何规则判断。
 这样约 90% 的规则代码都能被单元测试直接覆盖，而不需要靠截图回归。
 
@@ -322,7 +328,7 @@ node tests/run.js calc     # 只跑文件名含 calc 的
 node tests/run.js --list   # 列出所有测试文件
 ```
 
-当前状态：**515 条断言 · 24 个测试文件 · 全部通过**。
+当前状态：**541 条断言 · 24 个测试文件 · 全部通过**（约 2 秒跑完）。
 
 | 测试文件 | 覆盖模块 |
 | --- | --- |
@@ -360,27 +366,32 @@ node tests/run.js --list   # 列出所有测试文件
 
 ```
 travel-chefs/
-├── index.html          ← 整个游戏（结构 + 样式 + 全部逻辑，单文件，约 10700 行）
+├── index.html          ← 整个游戏（结构 + 样式 + 全部逻辑，单文件，10740 行 / 448 KB）
 ├── process-record.html ← 使用 Skill 的开发过程记录（与线上记录页同一份内容）
-├── README.md           ← 本文件
+├── 9d3560146f8f08de027e1b721862757c.txt ← 平台域名归属验证文件（勿删，复验会重新拉）
+├── README.md           ← 本文件（玩法 / 数值 / 部署）
+├── docs/
+│   ├── DEVELOPER.md    ← 开发者文档（架构 / API / 扩展手册 / 测试 / 部署 Runbook）
+│   ├── map.png  cook.png  result.png   ← 游戏截图（390×844 @2x，真机视口实拍）
+│   └── codex.png  badges.png  upgrade.png
 ├── LICENSE             ← MIT
 ├── .gitignore          ← 排除 backup-v1/（v1 原型存档）等
 ├── .vercelignore       ← 部署时排除 tests/ tools/，线上只留 index.html
-├── docs/               ← README 里用到的游戏截图（390×844 @2x）
-│   ├── map.png         cook.png      result.png
-│   └── codex.png       badges.png    upgrade.png
+├── assets/postcards/   ← 5 张地区明信片（图鉴「明信片」页用，需一并上传 OSS）
 ├── tools/              ← 开发期脚本（不参与发布产物）
 │   ├── shot.js         ← 无头浏览器真机截图（生成 docs/ 里的图）；
 │   │                     --eval="<js>" 还能把页面真实状态读回终端，用来验收交互
 │   ├── globe-preview.js ← 把地球仪打成字符画，终端里看形状
 │   ├── globe-png.js    ← 把地球仪导出成 PNG，看配色
+│   ├── compress-postcards.py ← 明信片原图 → 压缩后的 PNG
+│   ├── verify-postcards.js   ← 校验 5 张明信片是否齐全
 │   └── push-to-github.js ← 网络受限时的备用推送通道（走 api.github.com）
 └── tests/
     ├── run.js          ← 测试入口
     ├── harness.js      ← 零依赖断言框架
     ├── helpers.js      ← jsdom 装载器
     ├── flow.test.js    ← 端到端冒烟（jsdom 里真点按钮走完一关，单独跑）
-    └── *.test.js       ← 23 个测试文件 / 507 条断言
+    └── *.test.js       ← 24 个测试文件 / 541 条断言
 ```
 
 部署时只需保证 `index.html` 在仓库根目录即可。
@@ -474,6 +485,9 @@ npx vercel deploy --prod --yes
 | 提示分支名不是 `main` | 执行 `git branch -M main` 再 push |
 | 部署后打开是 404 | 确认 `index.html` 在仓库根目录，Root Directory 留空 |
 | 微信里点开提示「已停止访问该网页」 | 未备案域名命中腾讯安全拦截，**与站点无关**（同域名在浏览器里正常）。改用手机浏览器打开，或改用已备案域名 |
+| 已申诉，结果如何 | 2026-09-20 00:47 收到平台「申诉受理通知 —— **已为你临时恢复访问**」。这是临时措施，**不要当成永久解封**，交付仍建议同时给 `*.vercel.app` |
+| 图鉴「明信片」页只剩色块+emoji | OSS 上漏传 `assets/` 目录（只传了 3 个 html）。补传整个 `assets/`，并逐个文件回读比 sha256 |
+| OSS 默认域名打开变成下载文件 | 默认域名（`*.oss-cn-hongkong.aliyuncs.com`）响应头带 `x-oss-force-download: true`，**不能拿它当兜底地址**，必须走自定义域名 |
 | 浏览器提示「连接不是私密连接」 | 自定义域名没绑 HTTPS 证书。用主账号在 OSS 控制台 → 域名管理 → 上传 `tools/certs/fullchain.pem` + `privkey.pem`；若走 RAM 子账号调 API，还需给它 `AliyunYundunCertFullAccess`（即 `yundun-cert:*`） |
 | OSS 里 HTTPS 返回 200 但仍报证书错误 | `https` 不校验证书时当然返回 200，「能通」不等于「证书对」。要用默认校验跑一遍；刚绑定完还有几分钟的证书下发延迟，连采 20 次看通过率是否收敛到 100% |
 | 进度没保存 | 数据存在浏览器 `localStorage`，换设备或清缓存会重置（作业要求不碰数据库） |
