@@ -8,7 +8,7 @@
 
 - 🔗 **在线试玩**：<https://travel-chefs.vercel.app/> —— 手机浏览器打开即玩，进度存在浏览器本地
 - 📦 **仓库地址**：<https://github.com/Miacy05/travel-chefs>
-- 🧩 **过程记录**：<https://conversation-record.vercel.app/> —— 使用 Skill 的开发过程记录（前测 / 后测 / 反思报告）
+- 🧩 **过程记录**：<https://conversation-record.vercel.app/> —— 使用 Skill 的开发过程记录
 
 > 仓库已与 Vercel 连接：向 `main` 分支推送后会自动重新部署，改完 `index.html` 直接 push 即可上线。
 
