@@ -473,12 +473,19 @@ ul{margin:0;padding:0;list-style:none;}
   60%{opacity:1}
   100%{transform:translateX(0);opacity:1}
 }
-.cust.is-leaving{animation:custLeave .6s var(--ease) forwards;}
+/* 退场动画只在「刚变成 served / lost」的那一帧播一次（JS 侧按 uid 去重）。
+   必须原地淡出：早先向右滑出 70px，正好会压在邻座的立绘与耐心条上，
+   看上去就是「耐心条重叠」。 */
+.cust.is-leaving{animation:custLeave .62s var(--ease) forwards;}
 @keyframes custLeave{
-  0%{transform:translateX(0);opacity:1}
-  30%{transform:translateX(0) scale(1.06)}
-  100%{transform:translateX(70px);opacity:0}
+  0%{transform:scale(1);opacity:1}
+  30%{transform:scale(1.06);opacity:1}
+  100%{transform:scale(.84);opacity:0}
 }
+/* 退场动画已经播完的顾客 —— 静态停在「已消失」的样子。
+   静态（不带动画）就意味着整条顾客带重建时不可能重播，
+   这是「连续点击顾客 → 已上菜顾客闪回来」这个残影的根治点。 */
+.cust.is-gone,.cust.is-gone.is-lost{opacity:0;transform:scale(.84);pointer-events:none;}
 .cust-sprite{
   width:48px;height:72px;
   border:2px solid var(--brown);border-radius:12px;
@@ -531,12 +538,60 @@ ul{margin:0;padding:0;list-style:none;}
   20%{opacity:1;transform:translate(-50%,-4px)}
   100%{opacity:0;transform:translate(-50%,-26px)}
 }
+/* ---- 上菜成功 / 生气离场的小表情反馈（第十一优先级） ---- */
+.cust.is-served .cust-flag{opacity:1;}
+/* ---- 门口排队（第十一优先级）：还没入座的顾客 ----
+   卡片整体压暗一档 + 虚线框，和座位上的人一眼区分开。
+   呼吸浮动只加在立绘上（不是整张卡片）—— 卡片本身的实测矩形必须稳定，
+   否则拖拽落点判定和教程高亮框都会跟着抖。 */
+.cust.is-queue{opacity:.86;}
+.cust.is-queue .cust-sprite{
+  border-style:dashed;border-color:var(--ink-30);
+  box-shadow:none;background:rgba(255,255,255,.55);
+  animation:queueBob 1.9s var(--ease) infinite;
+}
+@keyframes queueBob{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+/* 教程局永远没有排队顾客；万一以后加了，也不让动画干扰高亮框测量 */
+.cust-band.is-tut .cust.is-queue .cust-sprite{animation:none;}
+.cust.is-queue .cust-bubble{opacity:.75;}
+.cust.is-queue .cust-wait{border-style:dashed;}
+.cust-queue-tag{
+  position:absolute;top:-9px;right:-4px;z-index:1;
+  padding:1px 5px;border-radius:8px;
+  background:var(--brown);color:var(--cream);
+  font-size:9px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
+}
+.cust-queue-hint{
+  grid-column:1 / -1;
+  align-self:center;justify-self:center;padding-top:2px;
+  font-size:11px;color:var(--ink-50);letter-spacing:.06em;
+}
+/* 入座：从门口走进座位的一次弹跳（只播一次，JS 侧按 uid 去重） */
+.cust.is-seated .cust-sprite{animation:seatPop .46s var(--ease);}
+@keyframes seatPop{
+  0%{transform:scale(.82) translateY(6px);opacity:.6}
+  55%{transform:scale(1.08) translateY(-2px);opacity:1}
+  100%{transform:scale(1) translateY(0);opacity:1}
+}
 
 .stage-wrap{position:relative;flex:1 1 auto;min-height:150px;overflow:hidden;}
 #scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
+/* 换地区时的转场幕布（第十一优先级）：纯视觉层，absolute 定位不参与布局，
+   所以教程高亮框量实测矩不受影响。z-index 压在 fly-layer(4) 之下，
+   飘金币/舞台提示照样浮在幕布上。 */
+.scene-fade{position:absolute;inset:0;pointer-events:none;z-index:3;background:var(--cream);opacity:0;}
+.scene-fade.is-on{animation:sceneFadeOut .22s var(--ease) both;}
+@keyframes sceneFadeOut{0%{opacity:1}100%{opacity:0}}
 .fly-layer{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden;}
 .fly-coin{
   position:absolute;font-size:18px;line-height:1;
+  will-change:transform,opacity;
+}
+.fly-emote{
+  position:absolute;font-size:20px;line-height:1;
   will-change:transform,opacity;
 }
 .stage-toast{
@@ -786,6 +841,7 @@ ul{margin:0;padding:0;list-style:none;}
 .money-box .mb-lab{font-size:10.5px;color:var(--ink-70);}
 .money-box.is-coin{background:var(--yellow);}
 .money-box.is-tip{background:rgba(6,214,160,.2);}
+.money-box.is-gem{background:rgba(120,190,255,.28);}
 .res-exp{
   margin-top:14px;padding:12px 14px;
   border:var(--bd) solid var(--brown);border-radius:16px;
@@ -895,6 +951,13 @@ ul{margin:0;padding:0;list-style:none;}
 .up-name{display:flex;align-items:baseline;gap:6px;font-size:13.5px;font-weight:800;}
 .up-lv{font-family:var(--font-pixel);font-size:10px;font-weight:700;color:var(--ink-50);}
 .up-desc{font-size:11px;color:var(--ink-70);margin-top:3px;line-height:1.45;}
+/* 每地区独立的升级（装饰布置）：标出作用地区，并给出下一级效果 */
+.up-region{
+  font-family:var(--font-pixel);font-size:10px;font-weight:700;
+  color:var(--brown);background:var(--mint);border-radius:6px;padding:1px 6px;
+}
+.up-next{font-size:11px;color:var(--ink-50);margin-top:4px;}
+.up-row.is-region{border-left:3px solid var(--mint);}
 .up-dots{display:flex;gap:3px;margin-top:5px;}
 .up-dots i{width:12px;height:5px;border-radius:2px;background:var(--ink-16);}
 .up-dots i.on{background:var(--mint);}
@@ -1278,6 +1341,7 @@ ul{margin:0;padding:0;list-style:none;}
   position:absolute;left:50%;top:0;width:min(80vw,306px);
   transform:translateX(-50%);
   pointer-events:auto;
+  transition:left .22s var(--ease),top .22s var(--ease);
   animation:tutIn .28s var(--ease) both;
 }
 @keyframes tutIn{
@@ -1288,6 +1352,7 @@ ul{margin:0;padding:0;list-style:none;}
   padding:14px 15px;
   background:var(--cream);border:var(--bd) solid var(--brown);border-radius:18px;
   box-shadow:0 6px 0 var(--ink-30);
+  text-align:left;              /* 所有步骤统一左对齐，不再有的左有的居中 */
 }
 .tut-step{
   font-family:var(--font-pixel);font-size:10.5px;font-weight:700;
@@ -1297,8 +1362,8 @@ ul{margin:0;padding:0;list-style:none;}
 .tut-text{font-size:13.5px;font-weight:800;line-height:1.6;margin-top:6px;}
 .tut-acts{display:flex;gap:8px;margin-top:13px;}
 .tut-acts .btn{flex:1 1 0;}
-.tut-tip{font-size:10.5px;color:var(--ink-50);margin-top:9px;text-align:center;letter-spacing:.04em;}
-.tut-dots{display:flex;gap:4px;justify-content:center;margin-top:10px;}
+.tut-tip{font-size:10.5px;color:var(--ink-50);margin-top:9px;text-align:left;letter-spacing:.04em;}
+.tut-dots{display:flex;gap:4px;justify-content:flex-start;margin-top:10px;}
 .tut-dots > i{
   width:16px;height:5px;border-radius:999px;background:var(--ink-16);
   transition:background .2s var(--ease);
@@ -1442,6 +1507,7 @@ ul{margin:0;padding:0;list-style:none;}
       <div class="cust-band" id="custBand"></div>
       <div class="stage-wrap">
         <canvas id="scene" aria-label="像素厨房场景"></canvas>
+        <div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
         <div class="fly-layer" id="flyLayer"></div>
         <div class="stage-toast" id="stageToast"></div>
         <div class="stove-hint" id="stoveHint" hidden></div>
@@ -1793,6 +1859,15 @@ TC.bootError = null;
     decorPrice: 260,
     /** 每件装饰为该地区小费提供的永久加成 */
     decorTipBonus: 0.08,
+    /* ---- 员工（第十一优先级：只保留服务员）---- */
+    /** 服务员 Lv2 起，手动上菜的小费倍率 */
+    waiterManualTipMul: 1.1,
+    /** 服务员 Lv3：每服务 5 位顾客，全体顾客耐心回复的比例（相对各自耐心上限） */
+    waiterBoostRatio: 0.10,
+    /** 门口排队：座位坐满后最多再站几位（教学局固定 0） */
+    queueCap: 2,
+    /** 排队中的顾客耐心消耗倍率（站着等总比坐着等好受一点） */
+    queuePatienceMul: 0.5,
     /** 困难模式（第四优先级）：普通关卡全通后开放的挑战版。
         这里存「相对普通关卡」的修正，落到 run.hard 上：
           patienceMul  —— 顾客耐心倍率（越小越难，0.6 即耐心只有普通关的 60%）
@@ -1812,7 +1887,26 @@ TC.bootError = null;
         loginCoinCap  —— 封顶 */
     loginCoinBase: 20,
     loginCoinStep: 5,
-    loginCoinCap: 50
+    loginCoinCap: 50,
+
+    /* ---------------- 三种货币的定位（统一在这里调平衡） ----------------
+       金币 = 主货币：服务顾客 + 通关结算给；用来升级设备、买装饰、解锁菜谱。
+       小费 = 金币的额外补充：完美上菜 / 连击会额外给，结算时并入金币余额。
+       钻石 = 稀有货币：特殊顾客、成就、每日登录给；用来买强力道具。 */
+    /** 完美上菜（Perfect）的小费倍率：基础小费 × 该值 */
+    tipPerfectMul: 2,
+    /** 连击小费加成：第 n 连击时再 ×(1 + (n-1) × 该值) */
+    tipComboStep: 0.2,
+    /** 连击小费加成的封顶倍率，防止滚雪球 */
+    tipComboCap: 3,
+    /** 特殊顾客满意上菜给的钻石 */
+    gemPerSpecialGuest: 1,
+    /** 每日登录：连签每满 N 天给 1 颗钻石（0 = 不给） */
+    gemLoginEvery: 7,
+    /** 道具：每局每样免费次数（用完就得花钻石续） */
+    toolFreePerRun: 1,
+    /** 道具超出免费次数后，每次消耗的钻石 */
+    toolGemCost: 1
   };
 
   /* ------------------------------ 地区 ------------------------------ */
@@ -1821,9 +1915,12 @@ TC.bootError = null;
       id: 'asia_street', name: '亚洲街边摊', icon: '🏮', order: 1, unlockStars: 0,
       prefix: 'A', levels: ['A1', 'A2', 'A3', 'A4', 'A5'],
       dishes: ['chowmein', 'dumpling', 'milktea'],
-      decor: ['lantern_string', 'cloth_banner', 'plastic_stool'],
-      decorName: ['红灯笼串', '布幡', '塑料凳'],
+      /* 装饰三件＝「装饰布置」Lv1/2/3 逐级解锁，顺序即解锁顺序（第十一优先级） */
+      decor: ['big_lantern', 'bamboo_planter', 'neon_sign'],
+      decorName: ['大红灯笼', '竹丛绿植', '霓虹招牌'],
       floor: 'y', wall: 'k', accent: 'r',
+      /* 店铺外壳：红蓝相间塑料棚 + 夜市灯串（在 SC.SHELLS 里按地区 id 取） */
+      shellId: 'asia_street',
       priceMul: 1.00,
       postcard: { name: '亚洲街边摊', sub: '霓虹与蒸汽' },
       tagline: '一口锅，一条街'
@@ -1832,9 +1929,10 @@ TC.bootError = null;
       id: 'paris_cafe', name: '巴黎咖啡馆', icon: '🥐', order: 2, unlockStars: 6,
       prefix: 'B', levels: ['B1', 'B2', 'B3', 'B4', 'B5'],
       dishes: ['croissant', 'auleit', 'macaron'],
-      decor: ['striped_awning', 'rattan_chair', 'tower_souvenir'],
-      decorName: ['条纹遮阳篷', '藤椅', '铁塔摆件'],
-      floor: 'w', wall: 'y', accent: 'm',
+      decor: ['parasol_set', 'flower_planter', 'iron_sign_lamp'],
+      decorName: ['遮阳伞与户外桌椅', '花艺盆栽', '铁艺招牌暖灯'],
+      floor: 'w', wall: 's', accent: 'm',
+      shellId: 'paris_cafe',
       priceMul: 1.15,
       postcard: { name: '巴黎咖啡馆', sub: '黄油与阳光' },
       tagline: '把午后坐成一首诗'
@@ -1843,9 +1941,12 @@ TC.bootError = null;
       id: 'ramen_shop', name: '日本拉面馆', icon: '🍜', order: 3, unlockStars: 14,
       prefix: 'C', levels: ['C1', 'C2', 'C3', 'C4', 'C5'],
       dishes: ['tonkotsu', 'nigiri', 'matcha'],
-      decor: ['noren', 'lucky_cat', 'soy_bottle'],
-      decorName: ['暖帘', '招财猫', '酱油瓶'],
-      floor: 'k', wall: 'r', accent: 'w',
+      decor: ['lantern_noren', 'wood_screen', 'cat_sakura'],
+      decorName: ['纸灯笼与暖帘', '木质屏风', '招财猫与樱花'],
+      /* 地面不能用 'm'（那是饱和薄荷绿，像塑料草地）—— 榻榻米是草黄，
+         席纹由 SC.SHELLS.ramen_shop 的木色席边画出来 */
+      floor: 'y', wall: 'b', accent: 'r',
+      shellId: 'ramen_shop',
       priceMul: 1.30,
       postcard: { name: '日本拉面馆', sub: '一碗热汤' },
       tagline: '深夜也亮着的那盏灯'
@@ -1854,9 +1955,10 @@ TC.bootError = null;
       id: 'pizza_house', name: '意大利披萨店', icon: '🍕', order: 4, unlockStars: 22,
       prefix: 'D', levels: ['D1', 'D2', 'D3', 'D4', 'D5'],
       dishes: ['margherita', 'bolognese', 'gelato'],
-      decor: ['brick_oven', 'tomato_vine', 'wine_basket'],
-      decorName: ['砖砌烤炉', '番茄藤', '藤编酒篮'],
-      floor: 'y', wall: 'r', accent: 'm',
+      decor: ['pendant_lamp', 'marble_barrel', 'tile_oven'],
+      decorName: ['意式吊灯', '大理石台面与木桶', '彩绘瓷砖与烤炉'],
+      floor: 'y', wall: 'r', accent: 'b',
+      shellId: 'pizza_house',
       priceMul: 1.45,
       postcard: { name: '意大利披萨店', sub: '炉火与罗勒' },
       tagline: '四百度，九十秒'
@@ -1865,9 +1967,10 @@ TC.bootError = null;
       id: 'taco_stand', name: '墨西哥塔可摊', icon: '🌮', order: 5, unlockStars: 30,
       prefix: 'E', levels: ['E1', 'E2', 'E3', 'E4', 'E5'],
       dishes: ['street_taco', 'guacamole', 'cheese_wrap'],
-      decor: ['bunting_flags', 'cactus', 'clay_jars'],
-      decorName: ['剪纸彩旗', '仙人掌', '彩色陶罐'],
-      floor: 'y', wall: 'm', accent: 'r',
+      decor: ['cactus_pot', 'papel_picado', 'blanket_pinata'],
+      decorName: ['仙人掌盆栽', '剪纸彩旗', '编织毯与皮纳塔'],
+      floor: 'b', wall: 'y', accent: 'm',
+      shellId: 'taco_stand',
       priceMul: 1.60,
       postcard: { name: '墨西哥塔可摊', sub: '辣椒与音乐' },
       tagline: '酸、辣、阳光'
@@ -2135,20 +2238,23 @@ TC.bootError = null;
     { id: 'signboard', tab: 'decor', name: '招牌灯箱', icon: '🪧', start: 0, maxLevel: 3,
       cost: [160, 340, 560], value: [0, 0.4, 0.8, 1.2],
       effect: ['顾客上门间隔 +0.4s', '+0.8s', '+1.2s'] },
+    /* 装饰布置：**每地区独立**（perRegion），升一级就长一件当前地区的特色装饰。
+       Lv4~5 不再新增物件，改为让已解锁的装饰加一层发光描边 —— 这样升级仍有可见变化，
+       也不用为「你的分级只到 Lv3」把 maxLevel 砍到 3（砍了得给老档退差价）。 */
     { id: 'decor_bonus', tab: 'decor', name: '装饰布置', icon: '🎀', start: 0, maxLevel: 5,
+      perRegion: true,
       cost: [180, 330, 520, 740, 1000], value: [0, 0.05, 0.10, 0.15, 0.20, 0.25],
-      effect: ['小费 +5%', '+10%', '+15%', '+20%', '+25%'] },
+      effect: ['长出第 1 件地区装饰 · 小费 +5%', '第 2 件地区装饰 · 小费 +10%',
+               '第 3 件地区装饰 · 小费 +15%', '装饰加发光描边 · 小费 +20%',
+               '装饰强光 · 小费 +25%'] },
 
-    /* --- 员工雇佣 --- */
-    { id: 'helper', tab: 'staff', name: '帮厨', icon: '🧑‍🍳', start: 0, maxLevel: 3,
-      cost: [300, 650, 1100], value: [0, 6, 4.5, 3],
-      effect: ['每 6s 自动备料 1 步', '每 4.5s 自动备料 1 步', '每 3s 自动备料 1 步'] },
-    { id: 'waiter', tab: 'staff', name: '服务员', icon: '🤵', start: 0, maxLevel: 2,
-      cost: [520, 1050], value: [0, 8, 5.5],
-      effect: ['每 8s 自动上菜 1 次', '每 5.5s 自动上菜 1 次'] },
-    { id: 'cashier', tab: 'staff', name: '收银员', icon: '🧾', start: 0, maxLevel: 3,
-      cost: [240, 480, 820], value: [0, 0.06, 0.12, 0.18],
-      effect: ['金币 +6%', '+12%', '+18%'] }
+    /* --- 员工雇佣（第十一优先级：只保留服务员；帮厨 / 收银员已下线） ---
+       value[i] = 第 i 级的自动上菜间隔（秒），0 = 还没雇，只能手动上菜 */
+    { id: 'waiter', tab: 'staff', name: '服务员', icon: '🤵', start: 0, maxLevel: 3,
+      cost: [420, 900, 1500], value: [0, 5, 3, 2],
+      effect: ['每 5 秒自动上菜（优先照顾耐心最低的顾客）',
+               '每 3 秒自动上菜 · 手动上菜小费 +10%',
+               '每 2 秒自动上菜 · 每服务 5 位顾客，全体顾客耐心 +10%'] }
   ];
 
   /** 为每道菜生成一项「菜单等级」升级（与该菜价格加成绑定） */
@@ -2208,42 +2314,46 @@ TC.bootError = null;
   };
 
   /* ------------------------------ 新手教程 ------------------------------ */
-  /* 11 个环节，数组顺序 = 实际播放顺序（需求编号与播放序号保持一致 1~11）：
-       第 1 步在世界地图讲「解锁新地区」（玩家进游戏时本来就站在地图上）；
-       第 2~4 步把「点配料」拆成三次独立点击（原来的 1 步讲不清要点三下）；
-       第 5 步讲「配料点齐 → 自动下锅 + 自动开火」，玩家不用再点灶台；
-       第 6~8 步讲装盘 / 上菜 / 耐心条；
-       第 9~10 步把三种货币分开讲（金币 & 小费、钻石）；
-       第 11 步跳到结算页讲通关与三星条件。
+  /* 11 个环节，数组顺序 = 实际播放顺序（1~11）：
+       第 1~2 步在世界地图：先认识地图，再进入关卡；
+       第 3~5 步把「点配料」拆成三次独立点击 —— 每次只认菜谱里的那一
+                样，点错别的都不算（判定读游戏状态，不看动作事件）；
+       第 6 步三样齐了自动下锅 + 自动开火；第 7 步等进度圈变绿；
+       第 8 步拖菜到出餐台；第 9 步拖给顾客；
+       第 10~11 步讲清三种货币（金币 + 小费 / 钻石）。
      字段含义：
-       no   —— 需求里的环节编号（1~11）；界面上显示的是播放序号 index+1
-       view —— 该步所在的视图；教程会先切过去再高亮
-       spot —— 高亮目标。DOM 元素 id；'stove'/'counter' 是 canvas 逻辑区域
-       act  —— 需要玩家完成的游戏动作标识；为 null 表示纯讲解，显示「下一步」按钮
-       text —— 中文引导文案 */
+       no    —— 需求里的环节编号（1~11）；界面上显示的是播放序号 index+1
+       view  —— 该步所在的视图；教程会先切过去再高亮
+       spot  —— 高亮目标。DOM 元素 id；'ingredient' = 当前菜谱第 ing 样配料的按钮；
+                'stove'/'counter' 是 canvas 逻辑区域
+       ing   —— spot:'ingredient' 时，这一步要点的是菜谱里的第几样（0 基）
+       check —— 状态判定：读游戏状态，满足即自动前进一步。
+                'ing' 看菜谱第 ing 样是否已下锅；'cooking'/'ready'/'plated'/'served' 同理。
+                为 null 表示纯讲解，显示「下一步」按钮
+       text  —— 中文引导文案；{ing} 会替换成当前订单第 ing 样配料的真实名字 */
   var TUTORIAL = [
-    { id: 't_map', no: 1, view: 'map', spot: 'regionList', act: null,
-      text: '这里是旅行地图：每关能拿 1~3 颗星，集齐星星就能解锁新地区' },
-    { id: 't_pantry1', no: 2, view: 'cook', spot: 'pantryBand', act: 'ingredient',
-      text: '点击食材开始做菜：先按订单点第一样配料' },
-    { id: 't_pantry2', no: 3, view: 'cook', spot: 'pantryBand', act: 'ingredient',
-      text: '很好！接着点第二样配料' },
-    { id: 't_pantry3', no: 4, view: 'cook', spot: 'pantryBand', act: 'ingredient',
-      text: '再点最后一样 —— 配料点齐后会自动下锅、自动开火，不用你点灶台' },
-    { id: 't_stove', no: 5, view: 'cook', spot: 'stove', act: 'pot',
-      text: '锅已经自己点着了：盯住锅上的进度圈，转绿就熟了' },
-    { id: 't_plate', no: 6, view: 'cook', spot: 'counter', act: 'plate',
-      text: '把做好的菜拖到盘子里' },
-    { id: 't_serve', no: 7, view: 'cook', spot: 'customerBubble', act: 'serve',
-      text: '把盘子拖给顾客完成上菜' },
-    { id: 't_patience', no: 8, view: 'cook', spot: 'custWait', act: null,
-      text: '顾客耐心条从绿变黄变红，红了就会生气离开' },
-    { id: 't_coins', no: 9, view: 'cook', spot: 'tbCoins', act: null,
-      text: '顾客结账给你金币：菜品售价 + 顾客小费一起到账，金币用来升级店铺' },
-    { id: 't_gems', no: 10, view: 'cook', spot: 'tbGems', act: null,
-      text: '钻石是稀有奖励：成就、每日任务、隐藏彩蛋会给，攒着能在设置里兑换金币' },
-    { id: 't_result', no: 11, view: 'result', spot: 'resConds', act: null,
-      text: '服务足够顾客即可通关，少让顾客生气就能拿三星' }
+    { id: 't_map', no: 1, view: 'map', spot: 'regionList', check: null,
+      text: '这里是旅行地图：每关最多拿 3 颗星，星星攒够就能解锁下一个地区' },
+    { id: 't_level', no: 2, view: 'map', spot: 'levelList', check: null,
+      text: '点一下亮着的关卡就能开业。我们先在「第 1 关」练手' },
+    { id: 't_ing1', no: 3, view: 'cook', spot: 'ingredient', ing: 0, check: 'ing',
+      text: '开始做菜：点第 1 样配料「{ing}」' },
+    { id: 't_ing2', no: 4, view: 'cook', spot: 'ingredient', ing: 1, check: 'ing',
+      text: '进锅了。接着点第 2 样配料「{ing}」' },
+    { id: 't_ing3', no: 5, view: 'cook', spot: 'ingredient', ing: 2, check: 'ing',
+      text: '最后一样「{ing}」—— 点完它，锅会自己下锅、自己开火' },
+    { id: 't_auto', no: 6, view: 'cook', spot: 'stove', check: 'cooking',
+      text: '三样料齐了：锅自动下锅、自动开火，你不用去点灶台' },
+    { id: 't_cook', no: 7, view: 'cook', spot: 'stove', check: 'ready',
+      text: '盯住锅上的进度圈，转绿就是熟了' },
+    { id: 't_plate', no: 8, view: 'cook', spot: 'counter', check: 'plated',
+      text: '熟了以后，把锅里的菜拖到出餐台的盘子上' },
+    { id: 't_serve', no: 9, view: 'cook', spot: 'customerBubble', check: 'served',
+      text: '再把盘子拖给顾客完成上菜。顾客头顶的耐心条变红，他就会走了。（以后雇了服务员，这里会自动帮你上菜）' },
+    { id: 't_coins', no: 10, view: 'cook', spot: 'tbCoins', check: null,
+      text: '🪙 金币：服务顾客和通关都给。用来升级灶台、加座位、买装饰、解锁新菜谱。「小费」也算金币 —— 完美上菜（Perfect）和连击会给额外小费' },
+    { id: 't_gems', no: 11, view: 'cook', spot: 'tbGems', check: null,
+      text: '💎 钻石：特殊顾客、成就、每日登录才会给。用来买强力道具 —— 每局有免费次数，用完了才花钻石' }
   ];
 
   /* 教学演示局用哪个地区/关卡：固定用第 1 区第 1 关，保证所有新玩家看到的是同一套画面 */
@@ -2376,13 +2486,45 @@ TC.bootError = null;
   };
 
   /* ------------------------- 价格与收益 ------------------------- */
-  C.coinMul = function (save) { return 1 + C.upVal(save, 'cashier'); };
+  /**
+   * 金币倍率。收银员（cashier）已随「员工简化」下线，这里回到 1。
+   * 函数保留是为了让 C.orderIncome / G.summary 等调用点与老测试不用改签名。
+   */
+  C.coinMul = function () { return 1; };
+  /* ---- 服务员（唯一保留的员工）---- */
+  /** 服务员等级 0~3；0 = 还没雇，只能手动上菜 */
+  C.waiterLv = function (save) { return C.upLv(save, 'waiter'); };
+  /** 手动上菜的小费倍率：服务员 Lv2 起 +10%（自动上菜不给，否则「雇了服务员」反而没差别） */
+  C.manualTipMul = function (save) { return C.waiterLv(save) >= 2 ? D.CONFIG.waiterManualTipMul : 1; };
+  /** 服务员 Lv3：每服务满 5 位顾客，全体顾客耐心回复一次 */
+  C.waiterBoostEvery = 5;
+  C.waiterBoostRatio = function () { return D.CONFIG.waiterBoostRatio; };
   C.tipBaseAdd = function (save) { return C.upVal(save, 'spice'); };
-  C.tipUpgradeMul = function (save) { return 1 + C.upVal(save, 'decor_bonus'); };
-  /** 地区装饰带来的永久小费加成 */
-  C.decorTipMul = function (save, regionId) {
-    var owned = (save && save.decor && save.decor[regionId]) || [];
-    return 1 + owned.length * D.CONFIG.decorTipBonus;
+  /**
+   * 某地区的「装饰布置」等级（第十一优先级：地区专属装修）。
+   * 0 = 毛坯；Lv1~3 逐级解锁一件该地区的特色装饰；Lv4~5 不再新增物件，
+   * 改为让已解锁的装饰加一层发光描边（视觉仍有变化），小费加成继续按原曲线涨。
+   * 注意：这是**每地区独立**的，不再是全局 save.upgrades.decor_bonus。
+   */
+  C.decorLv = function (save, regionId) {
+    var m = (save && save.decorLv) || {};
+    var lv = m[regionId];
+    if (typeof lv !== 'number' || isNaN(lv)) lv = 0;
+    return U.clamp(Math.floor(lv), 0, 5);
+  };
+  /** 该地区当前的装饰可解锁件数（每地区 3 件） */
+  C.decorShown = function (save, regionId) { return Math.min(3, C.decorLv(save, regionId)); };
+  /** Lv4~5 触发的「已解锁装饰发光」档位（0 = 不发光，1 / 2 = 两级亮度） */
+  C.decorGlow = function (save, regionId) { return Math.max(0, C.decorLv(save, regionId) - 3); };
+  /**
+   * 装饰布置带来的小费加成倍率 —— 按**当前地区**的装饰等级取值。
+   * 曲线仍复用 D.UPGRADES.decor_bonus.value（[0,.05,.10,.15,.20,.25]），只是索引换成地区等级，
+   * 这样老档的「投过多少钱」能平滑迁移，不用重新调数值。
+   */
+  C.tipUpgradeMul = function (save, regionId) {
+    var u = D.upgrade('decor_bonus');
+    var lv = regionId ? C.decorLv(save, regionId) : C.upLv(save, 'decor_bonus');
+    return 1 + (u && u.value[lv] != null ? u.value[lv] : 0);
   };
   /** 菜品售价（含地区倍率 + 菜单等级加成） */
   C.sellPrice = function (dishId, regionId, save) {
@@ -2392,19 +2534,36 @@ TC.bootError = null;
     var menuBonus = C.upVal(save, 'menu_' + dishId);
     return Math.round(d.price * (rg ? rg.priceMul : 1) * (1 + menuBonus));
   };
-  /** 单笔小费＝(基础小费 + 加料台) × 顾客小费倍率 × 升级加成 × 地区装饰加成 */
-  C.tip = function (dishId, customerId, regionId, save) {
+  /**
+   * 小费加成倍率：完美上菜 ×tipPerfectMul，连击再叠 (1 + (n-1) × tipComboStep)，封顶 tipComboCap。
+   * 注意：基础小费照给 —— 完美 / 连击只是「给得更多」。这样普通上菜也还有小费，
+   * 经济曲线不会断（「只有 Perfect 才给小费」会让前期收入归零）。
+   */
+  C.tipBonusMul = function (bonus) {
+    if (!bonus) return 1;
+    var m = bonus.perfect ? D.CONFIG.tipPerfectMul : 1;
+    var combo = Math.max(1, bonus.combo || 1);
+    var comboMul = Math.min(1 + (combo - 1) * D.CONFIG.tipComboStep, D.CONFIG.tipComboCap);
+    return m * comboMul;
+  };
+  /**
+   * 单笔小费＝(基础小费 + 加料台) × 顾客小费倍率 × 当前地区装饰加成 × 完美/连击加成。
+   * 「装饰布置」的加成只有一处在算（C.tipUpgradeMul 带 regionId），
+   * 早先那套独立的 decorTipMul（每买一件 +8%）已并入等级 —— 同一件东西不留两个来源。
+   */
+  C.tip = function (dishId, customerId, regionId, save, bonus) {
     var d = D.dish(dishId);
     var c = D.customer(customerId) || D.specialGuest(customerId);
     if (!d || !c) return 0;
-    var raw = (d.tipBase + C.tipBaseAdd(save)) * (c.tipMul || 1) * C.tipUpgradeMul(save) * C.decorTipMul(save, regionId);
+    var raw = (d.tipBase + C.tipBaseAdd(save)) * (c.tipMul || 1) *
+      C.tipUpgradeMul(save, regionId) * C.tipBonusMul(bonus);
     return Math.round(raw);
   };
-  /** 一单的完整收益 */
-  C.orderIncome = function (dishId, customerId, regionId, save) {
+  /** 一单的完整收益；bonus 传 {perfect, combo} 时小费含完美/连击加成 */
+  C.orderIncome = function (dishId, customerId, regionId, save, bonus) {
     var coins = Math.round(C.sellPrice(dishId, regionId, save) * C.coinMul(save));
-    var tips = C.tip(dishId, customerId, regionId, save);
-    return { coins: coins, tips: tips, total: coins + tips };
+    var tips = C.tip(dishId, customerId, regionId, save, bonus);
+    return { coins: coins, tips: tips, total: coins + tips, tipMul: C.tipBonusMul(bonus) };
   };
 
   /* ------------------------- 设备与场景参数 ------------------------- */
@@ -2776,6 +2935,9 @@ TC.bootError = null;
       cleared: cleared,
       coins: orderCoins,
       tips: run.tips || 0,
+      /* 钻石在 serve 时就已入账，这里只带出来给结算页显示 */
+      gems: run.gems || 0,
+      gemsSpent: run.gemsSpent || 0,
       income: orderCoins + (run.tips || 0),
       clearBonus: clearBonus,
       firstBonus: firstBonus,
@@ -2851,13 +3013,17 @@ TC.bootError = null;
   S.blank = function () {
     var upgrades = {};
     D.UPGRADES.forEach(function (u) { upgrades[u.id] = u.start; });
-    var regions = {}, decor = {};
-    D.REGIONS.forEach(function (rg) { regions[rg.id] = {}; decor[rg.id] = []; });
+    var regions = {}, decor = {}, decorLv = {};
+    D.REGIONS.forEach(function (rg) { regions[rg.id] = {}; decor[rg.id] = []; decorLv[rg.id] = 0; });
     return {
       version: D.CONFIG.saveVersion,
       coins: 0, gems: 0, exp: 0, level: 1,
       regions: regions,
+      /** 旧字段：地区装饰曾是「单件购买」。第十一优先级并入「装饰布置」等级后不再写入，
+          只在 load 时读一次做迁移（买了 N 件 → decorLv 至少 N 级）。 */
       decor: decor,
+      /** 「装饰布置」等级：save.decorLv[regionId] = 0~5，每地区独立（第十一优先级） */
+      decorLv: decorLv,
       upgrades: upgrades,
       /** 最近玩过的一关（第九优先级：地图页「一键重玩上一关」用） */
       lastLevelId: '',
@@ -2892,7 +3058,9 @@ TC.bootError = null;
       /** 新手教程是否已看完。false 时首次进入游戏自动播放；
           老存档没有这个字段 → normalize 会补成 false，等于让老玩家也看一次，
           这是有意的（他们同样需要看到新手指引）。 */
-      tutorialDone: false
+      tutorialDone: false,
+      /** 员工简化（第十一优先级）的一次性退款标记：旧档的帮厨/收银员投资已折成金币退过款 */
+      staffRefunded: false
     };
   };
 
@@ -2937,7 +3105,7 @@ TC.bootError = null;
       });
     });
 
-    // 地区装饰
+    // 地区装饰（旧字段：只读来做迁移，不再写回）
     D.REGIONS.forEach(function (rg) {
       var arr = (raw.decor && raw.decor[rg.id]) || [];
       out.decor[rg.id] = rg.decor.filter(function (d) { return arr.indexOf(d) !== -1; });
@@ -2948,6 +3116,47 @@ TC.bootError = null;
       var v = raw.upgrades ? raw.upgrades[u.id] : undefined;
       out.upgrades[u.id] = (typeof v === 'number' && isFinite(v)) ? U.clamp(Math.floor(v), u.start, u.maxLevel) : u.start;
     });
+
+    /**
+     * 员工简化（第十一优先级）的退款：helper（帮厨）/ cashier（收银员）两个升级已下线，
+     * 老档里投进去的金币全额退还，不让老玩家的投入凭空蒸发。
+     * 用 raw.staffRefunded 当幂等闸门 —— 否则老档在第一次写档之前重新载入一次就会重复退一次。
+     * 这两张价目表刻意写死在这里：它们对应的升级项已经从 D.UPGRADES 里删掉了。
+     */
+    if (!raw.staffRefunded) {
+      var LEGACY_STAFF_COST = {
+        helper: [300, 650, 1100],
+        cashier: [240, 480, 820]
+      };
+      var refund = 0;
+      Object.keys(LEGACY_STAFF_COST).forEach(function (id) {
+        var v = raw.upgrades ? raw.upgrades[id] : undefined;
+        var lv = (typeof v === 'number' && isFinite(v)) ? Math.max(0, Math.floor(v)) : 0;
+        var tbl = LEGACY_STAFF_COST[id];
+        for (var i = 0; i < Math.min(lv, tbl.length); i++) refund += tbl[i];
+      });
+      if (refund > 0) out.coins += refund;
+    }
+    out.staffRefunded = true;
+
+    /**
+     * 「装饰布置」并入地区等级（第十一优先级）的迁移：
+     * 老档里这个升级是全局的 save.upgrades.decor_bonus，还有一套「单件买装饰」写进 save.decor。
+     * 两者都折算成每个地区各自的 decorLv —— 取两者较大值，保证老玩家不会因为改版反而变差：
+     *   · 全局升到 Lv3 的玩家 → 五个地区都至少 Lv3（他确实花了钱）
+     *   · 单件买满 3 件的地区   → 那个地区也至少 Lv3
+     * 迁移只发生在 load 时；新档 decorLv 全是 0。
+     */
+    var gRaw = raw.upgrades ? raw.upgrades.decor_bonus : undefined;
+    var legacyLv = (typeof gRaw === 'number' && isFinite(gRaw)) ? U.clamp(Math.floor(gRaw), 0, 5) : 0;
+    D.REGIONS.forEach(function (rg) {
+      var own = (out.decor[rg.id] || []).length;
+      var v = raw.decorLv ? raw.decorLv[rg.id] : undefined;
+      var lv = (typeof v === 'number' && isFinite(v)) ? U.clamp(Math.floor(v), 0, 5) : 0;
+      out.decorLv[rg.id] = Math.max(lv, legacyLv, Math.min(3, own));
+    });
+    /* 旧字段 decor 迁移完就清空，避免和 decorLv 两处状态并存被误读 */
+    D.REGIONS.forEach(function (rg) { out.decor[rg.id] = []; });
 
     // 统计
     ['customers', 'perfect', 'maxCombo', 'coinsTotal', 'plays', 'perfectRuns', 'quickRuns', 'bestCoins', 'lostTotal']
@@ -3065,6 +3274,13 @@ TC.bootError = null;
     save.gems = Math.max(0, Math.floor(save.gems + (n || 0)));
     return save.gems;
   };
+  /** 花钻石；不够返回 false（与 spendCoins 对称，钻石的唯一扣减入口） */
+  S.spendGems = function (save, cost) {
+    cost = Math.max(0, Math.floor(cost || 0));
+    if ((save.gems || 0) < cost) return false;
+    save.gems -= cost;
+    return true;
+  };
   S.canAfford = function (save, cost) { return save.coins >= cost; };
   /** 扣金币；不足则返回 false 且不改动 */
   S.spendCoins = function (save, cost) {
@@ -3112,10 +3328,30 @@ TC.bootError = null;
   };
 
   /* ------------------------- 购买 ------------------------- */
-  /** 升级一项；返回 {ok, reason, cost, level} */
-  S.buyUpgrade = function (save, id) {
+  /**
+   * 升级一项；返回 {ok, reason, cost, level}
+   * @param {string} [regionId] perRegion 的升级（目前只有「装饰布置」）必须传：
+   *   它升的是 save.decorLv[regionId]，而不是全局 save.upgrades[id]。
+   *   不传时退化成「当前浏览的地区由 UI 层负责传」，服务端/测试可直接指定。
+   */
+  S.buyUpgrade = function (save, id, regionId) {
     var u = D.upgrade(id);
     if (!u) return { ok: false, reason: 'no-such-upgrade' };
+
+    if (u.perRegion) {
+      if (!regionId) return { ok: false, reason: 'no-region' };
+      if (!D.region(regionId)) return { ok: false, reason: 'no-region' };
+      var rgLv = TC.Calc.decorLv(save, regionId);
+      if (rgLv >= u.maxLevel) return { ok: false, reason: 'max', level: rgLv };
+      var rgCost = u.cost[rgLv];
+      if (rgCost == null) return { ok: false, reason: 'max', level: rgLv };
+      if (!S.spendCoins(save, rgCost)) return { ok: false, reason: 'poor', cost: rgCost, level: rgLv };
+      if (!save.decorLv) save.decorLv = {};
+      save.decorLv[regionId] = rgLv + 1;
+      S.bumpDaily(save, 'upgrades', 1, 'add');
+      return { ok: true, cost: rgCost, level: rgLv + 1, regionId: regionId };
+    }
+
     var lv = TC.Calc.upLv(save, id);
     if (lv >= u.maxLevel) return { ok: false, reason: 'max', level: lv };
     var cost = TC.Calc.upCost(save, id);
@@ -3126,20 +3362,23 @@ TC.bootError = null;
     return { ok: true, cost: cost, level: lv + 1 };
   };
 
-  /** 是否有该地区这件装饰 */
-  S.hasDecor = function (save, regionId, decorId) {
-    return ((save.decor && save.decor[regionId]) || []).indexOf(decorId) !== -1;
+  /**
+   * 直接设置某地区的「装饰布置」等级（迁移 / 测试用）。
+   * 只升不降，避免误调用把玩家的装修抹掉。
+   */
+  S.setDecorLv = function (save, regionId, lv) {
+    if (!D.region(regionId)) return 0;
+    if (!save.decorLv) save.decorLv = {};
+    var cur = TC.Calc.decorLv(save, regionId);
+    var next = Math.max(cur, U.clamp(Math.floor(lv) || 0, 0, 5));
+    save.decorLv[regionId] = next;
+    return next;
   };
-  /** 购买地区装饰；返回 {ok, reason, price} */
-  S.buyDecor = function (save, regionId, decorId) {
+  /** 某地区当前已解锁的装饰 id 列表（UI 图鉴 / 升级页展示用） */
+  S.decorOwned = function (save, regionId) {
     var rg = D.region(regionId);
-    if (!rg || rg.decor.indexOf(decorId) === -1) return { ok: false, reason: 'no-such-decor' };
-    if (S.hasDecor(save, regionId, decorId)) return { ok: false, reason: 'owned' };
-    var price = D.CONFIG.decorPrice;
-    if (!S.spendCoins(save, price)) return { ok: false, reason: 'poor', price: price };
-    if (!save.decor[regionId]) save.decor[regionId] = [];
-    save.decor[regionId].push(decorId);
-    return { ok: true, price: price };
+    if (!rg) return [];
+    return rg.decor.slice(0, Math.min(3, TC.Calc.decorLv(save, regionId)));
   };
 
   /* ------------------------- 每日任务 ------------------------- */
@@ -3187,6 +3426,9 @@ TC.bootError = null;
 
     var coins = Math.min(D.CONFIG.loginCoinBase + (streak - 1) * D.CONFIG.loginCoinStep, D.CONFIG.loginCoinCap);
     var reward = { coins: coins };
+    /* 钻石来源（第十优先级）：连签每满 gemLoginEvery 天补 1 颗钻石 */
+    var every = D.CONFIG.gemLoginEvery || 0;
+    if (every > 0 && streak % every === 0) reward.gems = 1;
     S.award(save, reward);
     return { ok: true, already: false, reward: reward, streak: streak };
   };
@@ -3288,48 +3530,56 @@ TC.bootError = null;
 
   /**
    * 渲染一行升级项所需的全部数据
+   * @param {string} [regionId] perRegion 的升级项（「装饰布置」）必须传：
+   *   等级取自 save.decorLv[regionId]，费用取自该等级在 cost 数组里的下标。
    * @returns {{id,u,level,maxLevel,maxed,cost,affordable,currentEffect,nextEffect,short,progress}}
    */
-  G.row = function (save, id) {
+  G.row = function (save, id, regionId) {
     var u = D.upgrade(id);
     if (!u) return null;
-    var lv = C.upLv(save, id);
+    var per = !!u.perRegion;
+    var lv = per ? C.decorLv(save, regionId) : C.upLv(save, id);
     var maxed = lv >= u.maxLevel;
-    var cost = C.upCost(save, id);
+    var cost = maxed ? null : (per ? u.cost[lv] : C.upCost(save, id));
     return {
       id: id,
       u: u,
       tab: u.tab,
       name: u.name,
       icon: u.icon,
+      perRegion: per,
+      regionId: per ? (regionId || '') : '',
       level: lv,
       maxLevel: u.maxLevel,
       maxed: maxed,
       cost: cost,
       affordable: maxed ? false : S.canAfford(save, cost),
-      short: maxed ? 0 : Math.max(0, cost - save.coins),
-      currentEffect: C.upEffect(save, id),
-      nextEffect: C.upNextEffect(save, id),
+      short: maxed ? 0 : Math.max(0, (cost || 0) - save.coins),
+      currentEffect: per ? (u.effect[lv - 1] || '') : C.upEffect(save, id),
+      nextEffect: per ? (u.effect[lv] || '') : C.upNextEffect(save, id),
       progress: { level: lv, maxLevel: u.maxLevel }
     };
   };
 
-  G.rows = function (save, tab) {
-    return G.visibleOf(save, tab).map(function (u) { return G.row(save, u.id); }).filter(Boolean);
+  G.rows = function (save, tab, regionId) {
+    return G.visibleOf(save, tab).map(function (u) { return G.row(save, u.id, regionId); }).filter(Boolean);
   };
 
   /** 升级（薄封装：校验交给 Calc，扣费与写档交给 Save） */
-  G.buy = function (save, id) {
-    var r = G.row(save, id);
+  G.buy = function (save, id, regionId) {
+    var r = G.row(save, id, regionId);
     if (!r) return { ok: false, reason: 'no-such-upgrade' };
     if (r.maxed) return { ok: false, reason: 'max', row: r };
     if (!r.affordable) return { ok: false, reason: 'poor', short: r.short, row: r };
-    var res = TC.Save.buyUpgrade(save, id);
-    return { ok: res.ok, reason: res.reason, cost: res.cost, level: res.level, row: G.row(save, id) };
+    var res = TC.Save.buyUpgrade(save, id, regionId);
+    return {
+      ok: res.ok, reason: res.reason, cost: res.cost, level: res.level,
+      row: G.row(save, id, regionId)
+    };
   };
 
-  G.canBuy = function (save, id) {
-    var r = G.row(save, id);
+  G.canBuy = function (save, id, regionId) {
+    var r = G.row(save, id, regionId);
     if (!r || r.maxed) return false;
     return r.affordable;
   };
@@ -3346,11 +3596,13 @@ TC.bootError = null;
       tipAdd: C.tipBaseAdd(save),
       tipMul: C.tipUpgradeMul(save),
       coinMul: C.coinMul(save),
-      helperInterval: C.upVal(save, 'helper') * 1000,
       waiterInterval: C.upVal(save, 'waiter') * 1000,
-      ownedDecor: Object.keys(save.decor || {}).reduce(function (n, k) {
-        return n + ((save.decor[k] || []).length);
-      }, 0)
+      /* 已解锁的地区装饰总件数（跨地区累加，图鉴/统计用） */
+      ownedDecor: D.REGIONS.reduce(function (n, rg) {
+        return n + C.decorShown(save, rg.id);
+      }, 0),
+      /* 每个地区的「装饰布置」等级 */
+      decorLv: D.REGIONS.reduce(function (m, rg) { m[rg.id] = C.decorLv(save, rg.id); return m; }, {})
     };
   };
 
@@ -3426,7 +3678,7 @@ TC.bootError = null;
       selected: null,
 
       combo: 0, maxCombo: 0,
-      coins: 0, tips: 0,
+      coins: 0, tips: 0, gems: 0,
       served: 0, lost: 0, timeouts: 0, perfect: 0,
       servedLog: [],
       perfectStreak: 0,
@@ -3437,10 +3689,16 @@ TC.bootError = null;
       penguinUsed: false,
 
       toolCd: { speed: 0, warm: 0, serve: 0 },
-      helperTimer: C.upVal(save, 'helper') * 1000,
+      /* 道具每局免费次数：用完之后每次要花钻石（钻石的消耗出口） */
+      toolFree: {
+        speed: D.CONFIG.toolFreePerRun, warm: D.CONFIG.toolFreePerRun, serve: D.CONFIG.toolFreePerRun
+      },
+      /* 服务员（唯一员工）：值 = 自动上菜间隔秒数，0 表示还没雇 */
       waiterTimer: C.upVal(save, 'waiter') * 1000,
-      helperInterval: C.upVal(save, 'helper') * 1000,
       waiterInterval: C.upVal(save, 'waiter') * 1000,
+      /* 门口排队上限（第十一优先级）：座位坐满后新客在门外排，最多 queueCap 位。
+         教学局固定 0 —— 教程只有 1 位顾客，不能冒出排队卡片。 */
+      queueCap: opts.tutorial ? 0 : D.CONFIG.queueCap,
 
       /* 困难模式（第四优先级）的干扰与加成，普通关卡为 null */
       hard: hard ? mods : null,
@@ -3476,10 +3734,21 @@ TC.bootError = null;
 
   /** 教学局的耐心消耗倍率：放慢到 8%，让新手有时间看清每一步 */
   L.TUTORIAL_PATIENCE_MUL = 0.08;
+  /** 站在门口排队的顾客，耐心消耗再打个对折（站着等总比坐着等好受） */
+  L.QUEUE_PATIENCE_MUL = D.CONFIG.queuePatienceMul;
 
   /* ------------------------- 查询辅助 ------------------------- */
   L.waiting = function (run) {
     return run.customers.filter(function (c) { return c.state === 'waiting'; });
+  };
+  /** 门口排队中的顾客（还没入座 —— 不能被上菜、也不能当拖拽落点） */
+  L.queued = function (run) {
+    return run.customers.filter(function (c) { return c.state === 'queue'; });
+  };
+  /** 还能再站几位（0 表示门口也满了，暂时不再上客） */
+  L.queueRoom = function (run) {
+    var cap = (run && run.queueCap) || 0;
+    return Math.max(0, cap - L.queued(run).length);
   };
   L.customer = function (run, uid) {
     return run.customers.filter(function (c) { return c.uid === uid; })[0] || null;
@@ -3488,11 +3757,67 @@ TC.bootError = null;
     for (var i = 0; i < run.customers.length; i++) if (run.customers[i].uid === uid) return i;
     return -1;
   };
-  /** 当前选中的顾客；没有选中就退回最急的一位 */
+  /**
+   * 正在备料、还没点齐配料的锅（「菜谱锁」的持有者）。
+   * 备料是全局唯一的「半成品」状态：一旦订单被别的菜谱顶掉，
+   * 这口锅既开不了火（not-prepared）也装不了盘（not-ready），
+   * 就会永久占住一个灶位 —— 玩家补不了料、也开不了新锅，
+   * 于是每次点配料都弹「灶台占满了」，直接卡关。
+   */
+  L.prepPot = function (run) {
+    if (!run || !run.pots) return null;
+    for (var i = 0; i < run.pots.length; i++) {
+      var p = run.pots[i];
+      if (p && p.state === 'prep' && p.done.length < p.steps.length) return p;
+    }
+    return null;
+  };
+
+  /** 第一口还在忙的锅（备料中 / 烹饪中）；上菜后用来把焦点交还给对应的顾客 */
+  L.busyPot = function (run) {
+    if (!run || !run.pots) return null;
+    for (var i = 0; i < run.pots.length; i++) {
+      var p = run.pots[i];
+      if (p && (p.state === 'prep' || p.state === 'cooking')) return p;
+    }
+    return null;
+  };
+
+  /** 第一个空闲灶位；-1 表示没空锅（现在开不了新菜） */
+  L.freeSlot = function (run) {
+    if (!run || !run.pots) return -1;
+    var active = L.activeSlots(run);
+    for (var i = 0; i < active; i++) if (!run.pots[i]) return i;
+    return -1;
+  };
+
+  /** 还等着某道菜的顾客，按耐心从少到多排（最急的在前） */
+  L.waitingFor = function (run, dishId) {
+    return L.waiting(run).filter(function (c) { return c.dishId === dishId; })
+      .sort(function (a, b) { return a.patienceLeft - b.patienceLeft; });
+  };
+
+  /**
+   * 当前选中的顾客；没有选中就退回最急的一位。
+   *
+   * 菜谱锁：只要有一口锅「配料没点齐」，订单就必须锁在它那道菜上 ——
+   * 谁点了这道菜，订单就归谁。否则新顾客点的新菜谱会把订单顶掉，
+   * 那口半成品锅就永远做不完、也清不掉，灶台被占死（见 L.prepPot 注释）。
+   */
   L.currentCustomer = function (run) {
     var w = L.waiting(run);
     if (!w.length) return null;
+    /* 玩家明确选中的那位优先。选中是「我要给这个人做菜」的显式意图，
+       不能被下面的「菜谱锁」顶掉 —— 早先这里无条件返回锁主人的订单，
+       结果玩家选中 3 号顾客、点他自己那道菜的配料，却被回一句
+       「这道菜不用它」，完全摸不着头脑（锅真正的问题是「灶台占满了」）。 */
     for (var i = 0; i < w.length; i++) if (w[i].uid === run.selected) return w[i];
+    /* 没选中任何人时，才把订单扣在「半成品锅」的主人身上，保证那口锅有人收尾 */
+    var lock = L.prepPot(run);
+    if (lock) {
+      var owners = L.waitingFor(run, lock.dishId);
+      if (owners.length) return owners[0];
+    }
     return w.slice().sort(function (a, b) { return a.patienceLeft - b.patienceLeft; })[0];
   };
   /** 该菜品当前正在备料/已在灶上的锅（用来判断哪些步骤已点；自动开火后也要能认出「已经下过」） */
@@ -3597,16 +3922,26 @@ TC.bootError = null;
   function pickCustomerType(run) {
     var present = {};
     run.customers.forEach(function (c) {
-      if (c.state === 'waiting') present[c.id] = 1;
+      /* 已经坐着等和正在门口排的都算「在场」，避免同一个顾客被生成两次 */
+      if (c.state === 'waiting' || c.state === 'queue') present[c.id] = 1;
     });
     var pool = D.CUSTOMERS.filter(function (c) { return !present[c.id]; });
     if (!pool.length) pool = D.CUSTOMERS.slice();
     return U.pickWeighted(pool, 'weight', run.rand);
   }
 
+  /**
+   * 生成一位顾客（第十一优先级：引入真排队）。
+   * 有空座、且门口没人在排 → 直接入座（state 'waiting'，可以点单/上菜）；
+   * 否则站到门口队列尾部（state 'queue'，只掉耐心、不能被上菜），
+   * 等座位空出来由 L.tick 按先来后到请进来。队满就不再生成，返回 null。
+   */
   function spawnCustomer(run, events) {
     var type = pickCustomerType(run);
     if (!type) return null;
+    var canSit = L.waiting(run).length < run.seats && L.queued(run).length === 0;
+    var state = canSit ? 'waiting' : 'queue';
+    if (state === 'queue' && L.queued(run).length >= run.queueCap) return null;
     var dishId = U.pick(run.level.dishPool, run.rand);
     var max = C.patience(type.id, run.levelId, run);
     var c = {
@@ -3617,13 +3952,14 @@ TC.bootError = null;
       dishId: dishId,
       patienceMax: max,
       patienceLeft: max,
-      state: 'waiting',
+      state: state,
       bornAt: run.runtime
     };
     run.customers.push(c);
     run.encounterIds[type.id] = 1;
     run.encounterCounts[type.id] = (run.encounterCounts[type.id] || 0) + 1;
-    if (!run.selected) run.selected = c.uid;
+    /* 只有已经入座的顾客才配当「当前订单」的主人；门口排队的不算 */
+    if (!run.selected && c.state === 'waiting') run.selected = c.uid;
     emit(events, 'spawn', { customer: c });
     return c;
   }
@@ -3700,26 +4036,47 @@ TC.bootError = null;
     if (run.guestBuff && run.guestBuff.type === 'warm') pmul = 0;
     for (var i = 0; i < run.customers.length; i++) {
       var c = run.customers[i];
-      if (c.state !== 'waiting') continue;
-      c.patienceLeft -= dtMs * pmul;
+      /* 门口排队的也算「在等」：一样掉耐心，但掉得慢一半（第十一优先级排队制） */
+      if (c.state !== 'waiting' && c.state !== 'queue') continue;
+      var cmul = c.state === 'queue' ? pmul * L.QUEUE_PATIENCE_MUL : pmul;
+      c.patienceLeft -= dtMs * cmul;
       if (c.patienceLeft <= 0) {
         c.patienceLeft = 0;
         c.state = 'lost';
         run.lost += 1;
         run.combo = 0;
         run.perfectStreak = 0;
+        c.leftAt = run.runtime;              /* 离场时刻：顾客带据此播一次退场动画后就摘掉 */
         if (run.selected === c.uid) run.selected = null;
+        /* 焦点交还给「还在等忙锅那道菜」的顾客，别让订单跳到无关的菜谱上 */
+        if (!run.selected) {
+          var busy2 = L.busyPot(run);
+          var owner2 = busy2 ? L.waitingFor(run, busy2.dishId)[0] : null;
+          if (owner2) run.selected = owner2.uid;
+        }
         emit(events, 'lost', { customer: c });
       }
+    }
+
+    /* 门口排队 → 入座（第十一优先级）：一有空座就把队首按先来后到请进来。
+       放在「顾客上门」之前，这样刚腾出来的座位会优先给排队的人，而不是插队的新客。 */
+    while (L.waiting(run).length < run.seats && L.queued(run).length > 0) {
+      var qc = L.queued(run)[0];
+      if (!qc) break;
+      qc.state = 'waiting';
+      qc.seatedAt = run.runtime;         /* 顾客带据此播一次「入座」弹跳 */
+      if (!run.selected) run.selected = qc.uid;
+      emit(events, 'seated', { customer: qc });
     }
 
     /* 顾客上门 */
     run.spawnTimer -= dtMs;
     if (run.spawnTimer <= 0) {
       var seats = run.seats;
-      if (L.waiting(run).length < seats) spawnCustomer(run, events);
-      // 座位满了就顺延，避免一次性堆一串
-      run.spawnTimer = L.waiting(run).length >= seats ? Math.min(run.spawnInterval, 1200) : run.spawnInterval;
+      /* 有空座、或门口还站得下人 → 可以上客；两处都满就先别来，1.2s 后再探 */
+      var room = L.waiting(run).length < seats || L.queueRoom(run) > 0;
+      if (room) spawnCustomer(run, events);
+      run.spawnTimer = room ? run.spawnInterval : Math.min(run.spawnInterval, 1200);
     }
 
     /* 灶台烹饪（speed buff 生效时，烹饪进度加速走） */
@@ -3736,6 +4093,18 @@ TC.bootError = null;
       }
     }
 
+    /* 菜谱锁自愈：备料中的半成品锅，如果已经没有顾客要这道菜了
+       （点这道菜的人等太久走了 / 已经在别处吃到），就把这口锅放掉。
+       少了这一步，半成品锅会永久占住灶位：既开不了火、也装不了盘、
+       玩家还没法给它补料 → 之后每次点配料都「灶台占满了」，卡关。 */
+    for (var s = 0; s < run.pots.length; s++) {
+      var sp = run.pots[s];
+      if (!sp || sp.state !== 'prep') continue;
+      if (L.waitingFor(run, sp.dishId).length) continue;
+      run.pots[s] = null;
+      emit(events, 'pot-cleared', { potIdx: s, dishId: sp.dishId, pot: sp });
+    }
+
     /* 出餐台保鲜 */
     for (var q = run.plates.length - 1; q >= 0; q--) {
       var pl = run.plates[q];
@@ -3746,33 +4115,12 @@ TC.bootError = null;
       }
     }
 
-    /* 帮厨：自动完成一个备料步骤 */
-    if (run.helperInterval > 0) {
-      run.helperTimer -= dtMs;
-      if (run.helperTimer <= 0) {
-        run.helperTimer = run.helperInterval;
-        var target = run.pots.filter(function (x) {
-          return x && x.state === 'prep' && x.done.length < x.steps.length;
-        })[0];
-        if (target) {
-          var need = target.steps.filter(function (s) { return target.done.indexOf(s) === -1; })[0];
-          if (need) {
-            target.done.push(need);
-            emit(events, 'helper-prep', { potIdx: run.pots.indexOf(target), ingredientId: need, pot: target });
-            if (target.done.length >= target.steps.length) {
-              emit(events, 'prep-done', { potIdx: run.pots.indexOf(target), pot: target });
-            }
-          }
-        }
-      }
-    }
-
-    /* 服务员：自动上菜一次 */
+    /* 服务员（唯一员工）：自动上菜一次（优先耐心最低的那位） */
     if (run.waiterInterval > 0) {
       run.waiterTimer -= dtMs;
       if (run.waiterTimer <= 0) {
         run.waiterTimer = run.waiterInterval;
-        var auto = L.autoServe(run);
+        var auto = L.autoServe(run, events);
         if (auto.ok) emit(events, 'auto-serve', auto);
       }
     }
@@ -3947,7 +4295,30 @@ TC.bootError = null;
   /**
    * @returns {{ok,reason?,perfect?,combo?,coins?,tips?,customer?,plate?}}
    */
-  L.serve = function (run, plateIdx, customerUid) {
+  /**
+   * 给所有还在等（已入座 + 门口排队）的顾客回复一点耐心。
+   * @param {number} ratio 相对各自耐心上限的比例，0.10 = 各回复 10%
+   * @returns {number} 实际受影响的顾客数
+   */
+  L.boostAllPatience = function (run, ratio) {
+    var n = 0;
+    for (var i = 0; i < run.customers.length; i++) {
+      var c = run.customers[i];
+      if (c.state !== 'waiting' && c.state !== 'queue') continue;
+      var add = Math.round((c.patienceMax || 0) * ratio);
+      if (add <= 0) continue;
+      c.patienceLeft = Math.min(c.patienceMax, c.patienceLeft + add);
+      n += 1;
+    }
+    return n;
+  };
+
+  /**
+   * 上菜（唯一入账点）
+   * @param {object} [opts] manual —— 玩家手动上菜（服务员 Lv2 时小费 +10%）；
+   *                       events —— 可选的事件数组，服务员 Lv3 的全体耐心回复会写进去
+   */
+  L.serve = function (run, plateIdx, customerUid, opts) {
     var plate = run.plates[plateIdx];
     if (!plate) return { ok: false, reason: 'no-plate' };
     var c = L.customer(run, customerUid);
@@ -3957,8 +4328,12 @@ TC.bootError = null;
     var dt = run.runtime - plate.since;
     // Perfect 判定：出锅后 ≤ 烹饪时间 × 0.6 内送出（TC.Calc.isPerfect 是唯一判定处）
     var perfect = C.isPerfect(dt, plate.cookTotal);
+    /* 连击必须先算出来再算小费：小费含「完美 / 连击」加成，
+       顺序反了的话拿到的永远是上一单的连击数。 */
+    var combo = C.comboNext(run.combo, perfect);
 
-    var earn = C.orderIncome(plate.dishId, c.id, run.regionId, run.save);
+    var earn = C.orderIncome(plate.dishId, c.id, run.regionId, run.save,
+      { perfect: perfect, combo: combo });
 
     /* 特殊顾客 buff（第六优先级）：coin 金币 +%、tip 小费 × 都即时体现在本单 */
     if (run.guestBuff) {
@@ -3969,19 +4344,53 @@ TC.bootError = null;
       }
     }
 
+    /* 服务员 Lv2（第十一优先级）：手动上菜额外 +10% 小费。
+       自动上菜不给这个加成 —— 否则「雇了服务员」就等于玩家亲手送也没差别。 */
+    var manualMul = (opts && opts.manual) ? C.manualTipMul(run.save) : 1;
+    if (manualMul !== 1) earn.tips = Math.round(earn.tips * manualMul);
+
     run.plates.splice(plateIdx, 1);
     c.state = 'served';
     c.servedAt = run.runtime;
+    c.leftAt = run.runtime;                  /* 离场时刻：顾客带据此播一次退场动画后就摘掉 */
     if (run.selected === c.uid) run.selected = null;
 
+    /* 上菜后别让订单「乱跳到别人身上」：如果还有锅在忙，
+       把选中焦点交还给还在等那道菜的顾客 —— 否则新顾客的新菜谱会顶掉
+       当前菜谱，玩家会以为自己上错菜了。 */
+    if (!run.selected) {
+      var busy = L.busyPot(run);
+      if (busy) {
+        var owner = L.waitingFor(run, busy.dishId)[0];
+        if (owner) run.selected = owner.uid;
+      }
+    }
+
     run.served += 1;
+    /* 服务员 Lv3（第十一优先级）：每服务满 5 位顾客，全体还在等的人耐心回复一次。
+       「每服务 5 位」按本局累计的 run.served 取模，手动/自动上菜同等触发。 */
+    var boost = 0;
+    if (C.waiterLv(run.save) >= 3 && run.served % C.waiterBoostEvery === 0) {
+      boost = L.boostAllPatience(run, C.waiterBoostRatio());
+      if (boost > 0 && opts && opts.events) emit(opts.events, 'waiter-boost', { count: boost });
+    }
     run.coins += earn.coins;
     run.tips += earn.tips;
-    run.combo = C.comboNext(run.combo, perfect);
+    run.combo = combo;
     if (run.combo > run.maxCombo) run.maxCombo = run.combo;
     if (perfect) run.perfect += 1;
     run.perfectStreak = perfect ? run.perfectStreak + 1 : 0;
     if (!perfect) run.timeouts += 1;
+
+    /* 钻石来源（第十优先级）：特殊顾客满意上菜 → 直接入账。
+       钻石不进 totalGain（那是金币的口径），单独记在 run.gems 上给结算页看。 */
+    var gems = 0;
+    var guest = D.specialGuest(c.id);
+    if (guest && D.CONFIG.gemPerSpecialGuest > 0) {
+      gems = D.CONFIG.gemPerSpecialGuest;
+      S.addGems(run.save, gems);
+      run.gems = (run.gems || 0) + gems;
+    }
 
     run.servedLog.push(run.runtime);
     if (run.servedLog.length >= 3) {
@@ -3995,19 +4404,29 @@ TC.bootError = null;
     return {
       ok: true, perfect: perfect, rainbow: rainbow,
       combo: run.combo, coins: earn.coins, tips: earn.tips,
+      tipMul: earn.tipMul, gems: gems,
+      manual: manualMul !== 1,          /* 这一单吃到了服务员 Lv2 的手动小费加成 */
+      boost: boost,                     /* 服务员 Lv3：本单触发的全体耐心回复人数 */
       customer: c, plate: plate, dt: dt
     };
   };
 
-  /** 一键上菜：出餐台最老的一盘 → 匹配的等待顾客 */
-  L.autoServe = function (run) {
+  /**
+   * 一键上菜：出餐台最老的一盘 → 最该照顾的那位等待顾客。
+   * 「最该照顾」= 剩余耐心比例最低的匹配顾客（服务员 Lv1 起的自动上菜语义）。
+   */
+  L.autoServe = function (run, events) {
     if (!run.plates.length) return { ok: false, reason: 'no-plate' };
     var waiting = L.waiting(run);
     if (!waiting.length) return { ok: false, reason: 'no-customer' };
     for (var i = 0; i < run.plates.length; i++) {
-      var match = waiting.filter(function (c) { return c.dishId === run.plates[i].dishId; })[0];
+      /* 同一道菜可能有好几位在等 → 挑剩余耐心比例最低的那位（最急的先照顾） */
+      var match = waiting.filter(function (c) { return c.dishId === run.plates[i].dishId; })
+        .sort(function (a, b) {
+          return (a.patienceLeft / (a.patienceMax || 1)) - (b.patienceLeft / (b.patienceMax || 1));
+        })[0];
       if (match) {
-        var r = L.serve(run, i, match.uid);
+        var r = L.serve(run, i, match.uid, { events: events });
         if (r.ok) { r.auto = true; return r; }
       }
     }
@@ -4017,10 +4436,43 @@ TC.bootError = null;
   /* ------------------------- 道具 ------------------------- */
   L.toolCdLeft = function (run, toolId) { return run.toolCd[toolId] || 0; };
 
+  /**
+   * 这次用道具要不要花钻石、花多少（纯粹查询，没有副作用）。
+   * 每局每样道具前 toolFreePerRun 次免费，用完才收费。
+   */
+  L.toolCost = function (run, toolId) {
+    if (!run || !run.toolFree) return 0;
+    if ((run.toolFree[toolId] || 0) > 0) return 0;
+    return D.CONFIG.toolGemCost;
+  };
+  /** 钻石够不够用这个道具（UI 用来决定按钮要不要置灰） */
+  L.canUseTool = function (run, toolId) {
+    var cost = L.toolCost(run, toolId);
+    if (!cost) return true;
+    return !!(run.save && run.save.gems >= cost);
+  };
+  /** 真正扣费：先扣免费额度，没有额度才扣钻石。返回本次实际花掉的钻石数 */
+  function chargeTool(run, toolId) {
+    if (run.toolFree && (run.toolFree[toolId] || 0) > 0) {
+      run.toolFree[toolId] -= 1;
+      return 0;
+    }
+    if (!S.spendGems(run.save, D.CONFIG.toolGemCost)) return -1;
+    run.gemsSpent = (run.gemsSpent || 0) + D.CONFIG.toolGemCost;
+    return D.CONFIG.toolGemCost;
+  }
+  L.chargeTool = chargeTool;
+
   L.useTool = function (run, toolId) {
     var tool = D.tool(toolId);
     if (!tool) return { ok: false, reason: 'no-such-tool' };
     if ((run.toolCd[toolId] || 0) > 0) return { ok: false, reason: 'cooldown', left: run.toolCd[toolId] };
+
+    /* 免费额度用完之后要花钻石：先判够不够再执行，避免「效果生效了但付不起」的中间态 */
+    var cost = L.toolCost(run, toolId);
+    if (cost > 0 && !(run.save && run.save.gems >= cost)) {
+      return { ok: false, reason: 'no-gems', cost: cost, gems: run.save ? run.save.gems : 0 };
+    }
 
     if (toolId === 'speed') {
       var cooking = run.pots.map(function (p, i) { return { p: p, i: i }; })
@@ -4029,7 +4481,7 @@ TC.bootError = null;
       if (!cooking) return { ok: false, reason: 'no-cooking' };
       cooking.p.cookLeft = Math.max(0, cooking.p.cookLeft * 0.5);
       run.toolCd.speed = tool.cd * 1000;
-      return { ok: true, tool: toolId, potIdx: cooking.i, cookLeft: cooking.p.cookLeft };
+      return { ok: true, tool: toolId, potIdx: cooking.i, cookLeft: cooking.p.cookLeft, gems: chargeTool(run, toolId) };
     }
 
     if (toolId === 'warm') {
@@ -4039,7 +4491,7 @@ TC.bootError = null;
       var add = urgent.patienceMax * 0.5;
       urgent.patienceLeft = Math.min(urgent.patienceMax, urgent.patienceLeft + add);
       run.toolCd.warm = tool.cd * 1000;
-      return { ok: true, tool: toolId, customer: urgent, patienceLeft: urgent.patienceLeft };
+      return { ok: true, tool: toolId, customer: urgent, patienceLeft: urgent.patienceLeft, gems: chargeTool(run, toolId) };
     }
 
     if (toolId === 'serve') {
@@ -4047,6 +4499,7 @@ TC.bootError = null;
       if (!r.ok) return r;
       run.toolCd.serve = tool.cd * 1000;
       r.tool = toolId;
+      r.gems = chargeTool(run, toolId);
       return r;
     }
     return { ok: false, reason: 'no-such-tool' };
@@ -4568,6 +5021,15 @@ TC.bootError = null;
 
   P.PALETTE = { k: '#3D2B1F', w: '#FFFCF2', y: '#FFD166', r: '#EF476F', m: '#06D6A0' };
   P.COLORS = ['k', 'w', 'y', 'r', 'm'];
+  /**
+   * 场景专用色（第十一优先级：地区店铺模型）。
+   * 只有 TC.Scene 画「店铺外壳 / 地区装饰」时会用，**故意不并进 P.COLORS** ——
+   * 那个数组是顾客 / 菜品 / 食材配色的白名单（TC.Pixel.check 拿它做数据自检），
+   * 往里加键会连带放宽所有既有像素数据的校验，得不偿失。
+   * 加这三个中性色是为了让五个地区的石材 / 木材 / 布幡能互相区分：
+   * 只用原来 5 色的话，巴黎的青石墙和墨西哥的暖黄墙会长得一样。
+   */
+  P.SCENE_PAL = { b: '#C98A4B', s: '#BCB2A4', t: '#4A7FB5' };
   P.DISH_SIZE = 16;
   P.CUST_W = 16;
   P.CUST_H = 24;
@@ -5634,6 +6096,9 @@ TC.bootError = null;
   var D = TC.DATA, U = TC.Util, C = TC.Calc, P = TC.Pixel, L = TC.Level;
 
   var PAL = P.PALETTE;
+  /* 场景层调色板 = 原有 5 色 + 场景专用 3 色（木材棕 b / 石材灰 s / 晴空蓝 t）。
+     墙色、地色、主色都从这里取，所以 D.REGIONS 的 wall/floor/accent 可以用上新增色。 */
+  var SPAL = U.assign({}, PAL, P.SCENE_PAL || {});
   var LUT_W = 160, LUT_H = 90;
   var POT = 16, POT_GAP = 2;
   var PLATE = 16, PLATE_GAP = 2, PLATE_SLOTS = 3;
@@ -5654,7 +6119,508 @@ TC.bootError = null;
     counter:  { x: 106, y: 52, w: 52, h: 26 }
   };
 
-  SC.DECOR = { x0: 40, step: 42, y: 6, w: 34, h: 16 };
+  /**
+   * 墙上装饰的槽位（每地区 3 件，等距排开）。
+   * y 从 6 下移到 10：上面 0~8 要留给地区店铺外壳的「棚顶 / 门楣」那条带，
+   * 否则亚洲的塑料棚会和装饰框叠在一起。
+   * 注意：这三个槽位现在只是**给测试与图鉴用的逻辑占位**。真正的美术由
+   * SC.SHELLS[rg.id].decor[i] 自由决定画在哪（有的挂墙、有的落地），
+   * 所以槽位矩形不保证等于实际绘制范围。
+   */
+  SC.DECOR = { x0: 40, step: 42, y: 10, w: 34, h: 16 };
+  /* 店铺外壳「棚顶带」高度：0 ~ awningH 是招牌/雨棚/门楣，之下到 WALL_Y 是墙面背景 */
+  SC.SHELL = { awningH: 8 };
+
+  /* ======================== 地区店铺模型（第十一优先级） ========================
+     每个地区一套「店铺外壳」+ 三件「地区特色装饰」：
+       shell(ctx, fr)            —— 棚顶 / 墙面材质与背景 / 地面纹理。永远在，跟等级无关。
+       decor[k](ctx, fr, glow)   —— 第 k 件，由 C.decorLv(save, regionId) 决定解不解锁；
+                                   glow = C.decorGlow()（Lv4 / Lv5 时给已解锁的加发光描边）。
+     两条硬约束：
+       1) 四区坐标（SC.STATIONS）绝不能动 —— 它同时被点击热区、拖拽落点、教程高亮框引用。
+          外壳只画在上部装饰带（y 0~WALL_Y）与地板空档（左 x 0~28 / 右 x 104~160 / 底部 y 80~90）。
+       2) 凡列进 decor[k] 的物件，shell 里不再重复画 —— 否则玩家升级了看不出新增。
+     ======================================================================== */
+
+  /**
+   * 夹到 160×90 之内的 fill / alphaFill。
+   * 店铺外壳里有很多「按固定步长平铺到画布边」的循环（棚布、砖缝、木板…），
+   * 步长除不尽 160 时最后一格就会捅出画布。真实 canvas 会静默画到外面（看不出问题，
+   * 但白白多画），测试里则是一条刺眼的越界断言 —— 统一在这里夹干净。
+   * 完全落在画布外时什么都不画（避免产生 w/h ≤ 0 的无效矩形）。
+   */
+  function fillIn(ctx, x, y, w, h, c) {
+    var x0 = Math.max(0, x), y0 = Math.max(0, y);
+    var x1 = Math.min(LUT_W, x + w), y1 = Math.min(LUT_H, y + h);
+    if (x1 <= x0 || y1 <= y0) return;
+    fill(ctx, x0, y0, x1 - x0, y1 - y0, c);
+  }
+  function alphaFillIn(ctx, x, y, w, h, c, a) {
+    var x0 = Math.max(0, x), y0 = Math.max(0, y);
+    var x1 = Math.min(LUT_W, x + w), y1 = Math.min(LUT_H, y + h);
+    if (x1 <= x0 || y1 <= y0) return;
+    alphaFill(ctx, x0, y0, x1 - x0, y1 - y0, c, a);
+  }
+  /** 描边专用别名（语义更清楚：装饰发光描边会自动夹进画布） */
+  var edgeFill = fillIn;
+
+  /** Lv4/5 的「发光描边」：给已解锁装饰套一圈亮边，让满级前两级仍有肉眼可见的变化 */
+  function glowBox(ctx, x, y, w, h, glow) {
+    if (!glow) return;
+    if (glow >= 2) {
+      var ax = Math.max(0, x - 3), ay = Math.max(0, y - 3);
+      var aw = Math.min(LUT_W, x + w + 3) - ax, ah = Math.min(LUT_H, y + h + 3) - ay;
+      if (aw > 0 && ah > 0) alphaFill(ctx, ax, ay, aw, ah, PAL.y, 0.2);
+    }
+    var c = glow >= 2 ? PAL.w : PAL.y;
+    edgeFill(ctx, x - 1, y - 1, w + 2, 1, c);
+    edgeFill(ctx, x - 1, y + h, w + 2, 1, c);
+    edgeFill(ctx, x - 1, y, 1, h, c);
+    edgeFill(ctx, x + w, y, 1, h, c);
+  }
+
+  /** 地区 id 取店铺模型；没登记的地区回退到第一套（老存档 / 测试造的地区也不会画空） */
+  function shellOf(id) { return SC.SHELLS[id] || SC.SHELLS[D.REGIONS[0].shellId] || null; }
+
+  SC.SHELLS = {
+
+    /* ---------------------------------- 01 · 亚洲街边摊 ----------------------------------
+       红蓝相间塑料棚 + 夜市灯串 + 远处摊位剪影 */
+    asia_street: {
+      shell: function (ctx, fr) {
+        var x, y;
+        for (x = 0; x < LUT_W; x += 16) {                   // 红蓝相间的棚布
+          fill(ctx, x, 0, 8, 7, PAL.r);
+          fill(ctx, x + 8, 0, 8, 7, SPAL.t);
+        }
+        var wob = (fr % 30 < 15) ? 0 : 1;                    // 垂边轻轻晃
+        for (x = 0; x < LUT_W; x += 8) {
+          fill(ctx, x + 3, 7 + wob, 2, 2, ((x / 8) | 0) % 2 ? SPAL.t : PAL.r);
+        }
+        fill(ctx, 0, 6, LUT_W, 1, PAL.k);                    // 棚骨横梁
+        /* 夜市灯串：电线 + 一排暖灯泡（到 158 就收，别把灯泡画出画布） */
+        fill(ctx, 0, 13, LUT_W, 1, PAL.k);
+        for (x = 5; x <= LUT_W - 2; x += 14) {
+          fill(ctx, x, 14, 2, 2, PAL.y);
+          alphaFill(ctx, x - 1, 12, 4, 2, PAL.y, 0.3);
+        }
+        /* 远处亮着灯的摊位：墙本身是夜色暗调，这里必须用「亮」去反衬 ——
+           早先画成深色剪影，直接糊在深墙上看不见。
+           循环多留 24px 余量：每个摊位最宽要占到 x+24，否则最后一个会越出右边界。 */
+        for (x = 0; x + 24 <= LUT_W; x += 26) {
+          fill(ctx, x + 2, 17, 20, 2, PAL.k);                         // 摊位檐
+          fill(ctx, x + 3, 18, 18, 2, ((x / 26) | 0) % 2 ? PAL.r : SPAL.t);  // 红蓝相间檐布
+          fill(ctx, x + 4, 20, 16, 6, PAL.y);                         // 亮着的档口
+          fill(ctx, x + 6, 21, 3, 4, PAL.k);                          // 摊主剪影
+          fill(ctx, x + 11, 22, 2, 3, PAL.k);
+          fill(ctx, x + 15, 21, 4, 3, PAL.m);                         // 台面货品
+          alphaFill(ctx, x + 2, 19, 20, 9, PAL.y, 0.2);               // 灯光外溢
+        }
+        /* 地面：水泥横缝 */
+        for (y = 36; y < LUT_H; y += 16) alphaFill(ctx, 0, y, LUT_W, 1, PAL.k, 0.2);
+      },
+      decor: [
+        /* Lv1 · 大红灯笼（挂墙，轻微摆动） */
+        function (ctx, fr, glow) {
+          var cx = 57, top = 10 + ((fr % 60 < 30) ? 0 : 1);
+          glowBox(ctx, cx - 8, top + 3, 16, 14, glow);
+          fill(ctx, cx - 1, top, 2, 4, PAL.k);
+          fill(ctx, cx - 4, top + 4, 8, 2, PAL.y);
+          fill(ctx, cx - 6, top + 6, 12, 2, PAL.r);
+          fill(ctx, cx - 7, top + 8, 14, 4, PAL.r);
+          fill(ctx, cx - 5, top + 12, 10, 2, PAL.r);
+          fill(ctx, cx - 3, top + 14, 6, 2, PAL.y);
+          fill(ctx, cx - 1, top + 16, 2, 3, PAL.y);
+          fill(ctx, cx - 2, top + 6, 1, 8, PAL.k);          // 竖棱
+          fill(ctx, cx + 1, top + 6, 1, 8, PAL.k);
+          fill(ctx, cx - 4, top + 7, 2, 1, PAL.w);          // 高光
+        },
+        /* Lv2 · 竹丛 + 绿植盆栽（左地板空档） */
+        function (ctx, fr, glow) {
+          var sway = (fr % 40 < 20) ? 0 : 1;
+          glowBox(ctx, 2, 29, 24, 17, glow);
+          fill(ctx, 6, 30, 2, 12, SPAL.b);                  // 竹竿
+          fill(ctx, 11 + sway, 29, 2, 13, SPAL.b);
+          fill(ctx, 16, 31, 2, 11, SPAL.b);
+          fill(ctx, 3, 31, 4, 2, PAL.m);                    // 竹叶
+          fill(ctx, 8 + sway, 29, 5, 2, PAL.m);
+          fill(ctx, 14, 33, 5, 2, PAL.m);
+          fill(ctx, 3, 41, 16, 2, PAL.k);                   // 盆沿
+          fill(ctx, 4, 43, 14, 4, SPAL.b);
+          fill(ctx, 6, 44, 3, 2, PAL.y);                    // 盆身高光
+        },
+        /* Lv3 · 霓虹招牌（右侧墙上，会闪） */
+        function (ctx, fr, glow) {
+          var on = (fr % 40 < 30);
+          glowBox(ctx, 99, 9, 58, 17, glow);
+          fill(ctx, 97, 8, 62, 19, PAL.k);
+          fill(ctx, 99, 10, 58, 15, on ? PAL.k : SPAL.b);
+          var c = on ? PAL.m : SPAL.b, d = on ? PAL.r : SPAL.b;
+          fill(ctx, 103, 13, 50, 1, c);                     // 霓虹外框
+          fill(ctx, 103, 21, 50, 1, c);
+          fill(ctx, 103, 13, 1, 9, c);
+          fill(ctx, 152, 13, 1, 9, c);
+          fill(ctx, 108, 15, 2, 5, d);                      // 「文字」笔画
+          fill(ctx, 114, 15, 2, 5, d);
+          fill(ctx, 118, 17, 6, 2, d);
+          fill(ctx, 128, 15, 2, 5, d);
+          fill(ctx, 133, 15, 8, 2, d);
+          fill(ctx, 137, 15, 2, 5, d);
+          fill(ctx, 144, 15, 3, 2, d);
+          fill(ctx, 144, 19, 3, 2, d);
+          fill(ctx, 126, 6, 2, 2, PAL.k);                   // 挂链
+        }
+      ]
+    },
+
+    /* ---------------------------------- 02 · 巴黎咖啡馆 ----------------------------------
+       条纹遮阳篷 + 石材立面 + 路灯，窗外远景铁塔 */
+    paris_cafe: {
+      shell: function (ctx, fr) {
+        var x, y;
+        for (x = 0; x < LUT_W; x += 14) {                    // 遮阳篷竖条纹
+          fillIn(ctx, x, 0, 7, 6, PAL.w);
+          fillIn(ctx, x + 7, 0, 7, 6, PAL.r);
+        }
+        for (x = 0; x < LUT_W; x += 14) {                    // 波浪垂边
+          fillIn(ctx, x + 3, 6, 8, 2, PAL.w);
+          fillIn(ctx, x + 2, 7, 3, 1, PAL.k);
+        }
+        fill(ctx, 0, 5, LUT_W, 1, PAL.k);
+        fill(ctx, 4, 6, 2, 4, PAL.k);                        // 支杆
+        fill(ctx, 154, 6, 2, 4, PAL.k);
+        /* 石材立面：横缝 + 错缝短竖线 */
+        for (y = 10; y < WALL_Y; y += 6) {
+          alphaFill(ctx, 0, y, LUT_W, 1, PAL.k, 0.16);
+          for (x = ((y / 6) | 0) % 2 ? 8 : 20; x < LUT_W; x += 24) {
+            alphaFill(ctx, x, y, 1, 6, PAL.k, 0.16);
+          }
+        }
+        /* 远景铁塔剪影：下宽上窄 + 两道横梁 + 塔尖（早先画成一个方块，认不出） */
+        var ty;
+        for (ty = 0; ty < 17; ty++) {
+          var tw = 2 + Math.floor(ty * 0.55);
+          alphaFill(ctx, 38 - tw, 11 + ty, tw * 2, 1, PAL.k, 0.4);
+        }
+        alphaFill(ctx, 33, 18, 10, 1, PAL.k, 0.5);
+        alphaFill(ctx, 35, 24, 6, 1, PAL.k, 0.5);
+        fill(ctx, 37, 9, 2, 3, PAL.k);
+        alphaFill(ctx, 28, 27, 20, 1, PAL.k, 0.28);
+        /* 路灯：灯杆 + 暖色灯头 */
+        fill(ctx, 54, 16, 1, 10, PAL.k);
+        fill(ctx, 52, 14, 5, 2, PAL.y);
+        alphaFill(ctx, 51, 13, 7, 4, PAL.y, 0.28);
+        /* 地面：青石板错缝（最后一排贴着画布下边，竖缝要夹住） */
+        for (y = 28; y < LUT_H; y += 12) {
+          alphaFill(ctx, 0, y, LUT_W, 1, PAL.k, 0.2);
+          for (x = ((y / 12) | 0) % 2 ? 10 : 26; x < LUT_W; x += 32) {
+            alphaFillIn(ctx, x, y, 1, 12, PAL.k, 0.2);
+          }
+        }
+      },
+      decor: [
+        /* Lv1 · 遮阳伞 + 户外桌椅（右地板空档） */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 108, 29, 50, 23, glow);
+          fill(ctx, 130, 34, 2, 12, PAL.k);                  // 伞杆
+          fill(ctx, 116, 31, 30, 2, PAL.k);                  // 伞面
+          fill(ctx, 110, 33, 42, 2, PAL.w);                  // 条纹伞面
+          fill(ctx, 118, 33, 6, 2, PAL.r);
+          fill(ctx, 132, 33, 6, 2, PAL.r);
+          fill(ctx, 146, 33, 4, 2, PAL.r);
+          fill(ctx, 112, 35, 3, 1, PAL.w);                   // 伞尖
+          fill(ctx, 108, 42, 16, 2, PAL.w);                  // 桌面
+          fill(ctx, 110, 44, 2, 6, PAL.k);                   // 桌腿
+          fill(ctx, 120, 44, 2, 6, PAL.k);
+          fill(ctx, 138, 42, 10, 2, PAL.k);                  // 椅子座
+          fill(ctx, 137, 38, 2, 5, PAL.k);                   // 椅背
+          fill(ctx, 140, 44, 1, 4, PAL.k);
+          fill(ctx, 146, 44, 1, 4, PAL.k);
+        },
+        /* Lv2 · 花艺盆栽（左地板空档） */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 2, 30, 24, 16, glow);
+          fill(ctx, 4, 42, 18, 4, PAL.k);                    // 盆
+          fill(ctx, 5, 40, 16, 2, SPAL.b);
+          fill(ctx, 6, 44, 4, 1, PAL.y);
+          var b = (fr % 50 < 25) ? 0 : 1;
+          fill(ctx, 8, 34, 3, 7, PAL.m);                     // 枝叶
+          fill(ctx, 13 + b, 32, 3, 9, PAL.m);
+          fill(ctx, 18, 35, 3, 6, PAL.m);
+          fill(ctx, 10, 33, 3, 3, PAL.r);                    // 花球
+          fill(ctx, 15 + b, 31, 3, 3, PAL.r);
+          fill(ctx, 20, 34, 2, 2, PAL.y);
+        },
+        /* Lv3 · 铁艺招牌 + 暖色氛围灯（右墙） */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 120, 10, 38, 16, glow);
+          fill(ctx, 122, 11, 34, 14, PAL.k);                 // 铁艺招牌底
+          fill(ctx, 124, 13, 30, 10, PAL.w);
+          fill(ctx, 120, 9, 40, 2, PAL.k);                   // 横杆
+          fill(ctx, 128, 15, 2, 6, PAL.k);                   // 「CAFE」笔画
+          fill(ctx, 133, 15, 5, 1, PAL.k);
+          fill(ctx, 133, 17, 3, 1, PAL.k);
+          fill(ctx, 133, 19, 5, 1, PAL.k);
+          fill(ctx, 141, 15, 1, 6, PAL.k);
+          fill(ctx, 143, 15, 5, 1, PAL.k);
+          fill(ctx, 143, 21, 4, 1, PAL.k);
+          fill(ctx, 115, 13, 2, 2, PAL.y);                   // 暖色氛围灯
+          fill(ctx, 113, 12, 6, 1, PAL.k);
+          alphaFill(ctx, 111, 10, 10, 6, PAL.y, 0.3);
+          fill(ctx, 155, 13, 2, 2, PAL.y);
+          alphaFill(ctx, 153, 10, 6, 6, PAL.y, 0.3);
+        }
+      ]
+    },
+
+    /* ---------------------------------- 03 · 日本拉面馆 ----------------------------------
+       木质屋梁 + 富士山 / 樱花背景 + 榻榻米席纹 */
+    ramen_shop: {
+      shell: function (ctx, fr) {
+        var x, y;
+        fill(ctx, 0, 0, LUT_W, 4, SPAL.b);                   // 木质屋梁
+        fill(ctx, 0, 4, LUT_W, 1, PAL.k);
+        for (x = 6; x < LUT_W; x += 25) fill(ctx, x, 5, 3, 2, SPAL.b);   // 椽头
+        /* 富士山剪影（贴墙，雪顶） */
+        for (y = 0; y < 18; y++) {
+          var hw = 2 + Math.floor(y * 1.5);
+          fill(ctx, 78 - hw, 28 - 18 + y, hw * 2, 1, SPAL.t);
+        }
+        fill(ctx, 68, 17, 20, 4, PAL.w);                     // 雪顶
+        fill(ctx, 70, 15, 16, 2, PAL.w);
+        fill(ctx, 74, 13, 8, 2, PAL.w);
+        /* 樱花点 */
+        for (x = 8; x < LUT_W; x += 19) {
+          var yy = 12 + ((x * 7) % 9);
+          fill(ctx, x, yy, 2, 2, PAL.r);
+          fill(ctx, x + 3, yy + 3, 1, 1, PAL.r);
+        }
+        /* 地面：榻榻米席纹（草黄底 + 木色席边）。
+           最后一排的席边会落到画布下边之外，用 alphaFillIn 夹住。 */
+        for (y = 28; y < LUT_H; y += 15) {
+          fillIn(ctx, 0, y, LUT_W, 2, SPAL.b);
+          alphaFillIn(ctx, 0, y + 2, LUT_W, 1, PAL.k, 0.18);
+        }
+        for (x = 0; x < LUT_W; x += 26) alphaFill(ctx, x, 30, 1, LUT_H - 30, PAL.k, 0.12);
+      },
+      decor: [
+        /* Lv1 · 纸灯笼 + 红暖帘 */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 44, 9, 60, 16, glow);
+          fill(ctx, 46, 10, 34, 12, PAL.r);                  // 暖帘布
+          fill(ctx, 46, 10, 34, 2, PAL.k);                   // 帘杆
+          var k;
+          for (k = 0; k < 4; k++) fill(ctx, 50 + k * 8, 12, 2, 10, PAL.k);   // 竖缝
+          fill(ctx, 48, 12, 2, 8, PAL.w);                    // 布面字
+          fill(ctx, 62, 12, 4, 2, PAL.w);
+          fill(ctx, 62, 16, 4, 2, PAL.w);
+          fill(ctx, 84, 8, 2, 3, PAL.k);                     // 灯笼挂绳
+          fill(ctx, 82, 11, 10, 9, PAL.w);                   // 纸灯笼
+          fill(ctx, 82, 11, 10, 1, PAL.k);
+          fill(ctx, 84, 13, 6, 1, PAL.r);                    // 红纹
+          fill(ctx, 84, 17, 6, 1, PAL.r);
+          fill(ctx, 85, 20, 4, 2, PAL.k);                    // 底
+        },
+        /* Lv2 · 木质屏风（右地板空档） */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 108, 29, 46, 23, glow);
+          fill(ctx, 110, 30, 44, 22, SPAL.b);
+          var k;
+          for (k = 0; k < 5; k++) {
+            fill(ctx, 110 + k * 9, 30, 1, 22, PAL.k);        // 折页立筋
+            fill(ctx, 113 + k * 9, 32, 5, 18, PAL.w);        // 纸面
+            fill(ctx, 115 + k * 9, 36, 2, 2, PAL.m);         // 竹纹
+          }
+          fill(ctx, 108, 28, 48, 2, PAL.k);                  // 上框
+          fill(ctx, 108, 52, 48, 2, PAL.k);                  // 下框
+        },
+        /* Lv3 · 招财猫 + 樱花盆栽（左地板空档） */
+        function (ctx, fr, glow) {
+          var up = (fr % 44 < 22) ? 0 : 1;
+          glowBox(ctx, 2, 28, 25, 18, glow);
+          fill(ctx, 4, 40, 11, 6, PAL.w);                    // 招财猫身
+          fill(ctx, 4, 38, 11, 3, PAL.w);                    // 头
+          fill(ctx, 3, 36, 2, 3, PAL.w);                     // 左耳
+          fill(ctx, 14, 36, 2, 3, PAL.w);                    // 右耳
+          fill(ctx, 6, 39, 2, 1, PAL.k);                     // 眼
+          fill(ctx, 11, 39, 2, 1, PAL.k);
+          fill(ctx, 8, 41, 3, 1, PAL.r);                     // 项圈
+          fill(ctx, 13, 38 - up, 3, 4, PAL.w);               // 招财手
+          fill(ctx, 15, 37 - up, 2, 2, PAL.y);               // 金币
+          fill(ctx, 3, 45, 14, 1, PAL.k);
+          fill(ctx, 19, 34, 2, 8, SPAL.b);                   // 樱花枝
+          fill(ctx, 18, 32, 2, 2, PAL.r);                    // 樱花
+          fill(ctx, 21, 33, 2, 2, PAL.r);
+          fill(ctx, 20, 36, 2, 2, PAL.w);
+        }
+      ]
+    },
+
+    /* ---------------------------------- 04 · 意大利披萨店 ----------------------------------
+       暖色砖墙 + 木梁 + 窗外水城，地面木条 */
+    pizza_house: {
+      shell: function (ctx, fr) {
+        var x, y, off;
+        fill(ctx, 0, 0, LUT_W, 5, SPAL.b);                   // 木梁
+        fill(ctx, 0, 5, LUT_W, 1, PAL.k);
+        /* 砖墙：错缝砖 + 灰浆 */
+        var rows = 0;
+        for (y = 8; y < WALL_Y - 2; y += 5) {
+          off = (rows % 2) ? 0 : 9;
+          for (x = off; x < LUT_W; x += 18) {
+            alphaFillIn(ctx, x, y, 16, 4, PAL.k, 0.12);
+            alphaFillIn(ctx, x + 16, y, 2, 4, PAL.k, 0.22);
+          }
+          alphaFill(ctx, 0, y + 4, LUT_W, 1, PAL.k, 0.22);
+          rows++;
+        }
+        /* 窗外水城：窗框 + 蓝色水道 + 小船 */
+        fill(ctx, 96, 8, 62, 12, PAL.k);
+        fill(ctx, 98, 10, 58, 8, SPAL.t);
+        fill(ctx, 98, 16, 58, 2, PAL.k);                     // 水平线
+        fill(ctx, 104, 13, 10, 3, PAL.w);                    // 小船
+        fill(ctx, 106, 12, 6, 1, PAL.k);
+        fill(ctx, 104, 10, 2, 6, SPAL.s);                    // 远处楼影
+        fill(ctx, 138, 9, 2, 7, SPAL.s);
+        fill(ctx, 143, 11, 2, 5, SPAL.s);
+        fill(ctx, 148, 10, 2, 6, SPAL.s);
+        /* 地面：木条长纹 */
+        for (y = 30; y < LUT_H; y += 4) alphaFill(ctx, 0, y, LUT_W, 1, PAL.k, 0.16);
+        for (x = 0; x < LUT_W; x += 30) alphaFill(ctx, x, 28, 1, LUT_H - 28, PAL.k, 0.16);
+      },
+      decor: [
+        /* Lv1 · 意式吊灯（从木梁垂下来两盏） */
+        function (ctx, fr, glow) {
+          var sway = (fr % 50 < 25) ? 0 : 1;
+          glowBox(ctx, 42, 4, 42, 13, glow);
+          fill(ctx, 52 + sway, 5, 1, 6, PAL.k);              // 吊链
+          fill(ctx, 47 + sway, 11, 11, 1, PAL.y);            // 灯罩
+          fill(ctx, 49 + sway, 13, 7, 3, PAL.y);
+          fill(ctx, 51 + sway, 16, 3, 1, PAL.w);             // 灯泡
+          alphaFill(ctx, 46 + sway, 14, 13, 6, PAL.y, 0.3);
+          fill(ctx, 76 + sway, 5, 1, 6, PAL.k);
+          fill(ctx, 71 + sway, 11, 11, 1, PAL.y);
+          fill(ctx, 73 + sway, 13, 7, 3, PAL.y);
+          fill(ctx, 75 + sway, 16, 3, 1, PAL.w);
+          alphaFill(ctx, 70 + sway, 14, 13, 6, PAL.y, 0.3);
+        },
+        /* Lv2 · 大理石台面加宽 + 木桶（右地板空档） */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 106, 29, 50, 23, glow);
+          fill(ctx, 106, 30, 52, 3, SPAL.s);                 // 大理石台面
+          fill(ctx, 106, 30, 52, 1, PAL.w);
+          fill(ctx, 110, 33, 2, 8, SPAL.s);                  // 台脚
+          fill(ctx, 150, 33, 2, 8, SPAL.s);
+          fill(ctx, 124, 34, 14, 17, SPAL.b);                // 木桶
+          fill(ctx, 124, 34, 14, 2, PAL.k);
+          fill(ctx, 124, 40, 14, 1, PAL.k);                  // 桶箍
+          fill(ctx, 124, 47, 14, 1, PAL.k);
+          fill(ctx, 124, 49, 14, 2, PAL.k);
+          fill(ctx, 127, 36, 2, 10, PAL.r);                  // 桶身亮条
+          fill(ctx, 140, 37, 6, 6, PAL.r);                   // 番茄
+          fill(ctx, 141, 36, 2, 2, PAL.m);
+        },
+        /* Lv3 · 彩绘瓷砖 + 披萨烤炉 */
+        function (ctx, fr, glow) {
+          var fire = (fr % 8 < 5) ? 0 : 1;
+          glowBox(ctx, 2, 28, 26, 18, glow);
+          fill(ctx, 2, 30, 24, 15, SPAL.b);                  // 砖砌烤炉
+          fill(ctx, 2, 30, 24, 2, PAL.k);
+          fill(ctx, 8, 33, 12, 9, PAL.k);                    // 炉口
+          fill(ctx, 9, 39, 10, 3, fire ? PAL.y : PAL.r);     // 火光
+          fill(ctx, 11, 37, 6, 3, fire ? PAL.y : PAL.r);
+          fill(ctx, 2, 45, 24, 2, PAL.k);
+          var k;
+          for (k = 0; k < 8; k++) {                          // 彩绘瓷砖带（灶台前的地面）
+            var tx = 30 + k * 9, col = [PAL.m, PAL.y, PAL.w, PAL.r][k % 4];
+            fill(ctx, tx, 82, 7, 6, col);
+            fill(ctx, tx, 82, 7, 1, PAL.k);
+            fill(ctx, tx, 87, 7, 1, PAL.k);
+          }
+        }
+      ]
+    },
+
+    /* ---------------------------------- 05 · 墨西哥塔可摊 ----------------------------------
+       彩色木条拼接墙 + 暖黄天幕 + 沙色地 */
+    taco_stand: {
+      shell: function (ctx, fr) {
+        var x, y;
+        fill(ctx, 0, 0, LUT_W, 4, PAL.y);                    // 暖黄天幕
+        fill(ctx, 0, 4, LUT_W, 1, PAL.k);
+        for (x = 4; x < LUT_W; x += 22) fillIn(ctx, x, 0, 8, 4, PAL.r);   // 天幕红条纹
+        /* 彩色木条拼接墙（最后一条要夹住，否则捅出右边界） */
+        var wood = [SPAL.b, PAL.r, PAL.y, PAL.m, SPAL.b, PAL.y];
+        for (x = 0, y = 0; x < LUT_W; x += 11, y++) {
+          fillIn(ctx, x, 5, 10, WALL_Y - 5, wood[y % wood.length]);
+          alphaFillIn(ctx, x + 10, 5, 1, WALL_Y - 5, PAL.k, 0.35);
+        }
+        alphaFill(ctx, 0, 5, LUT_W, 1, PAL.k, 0.35);
+        fill(ctx, 0, WALL_Y - 2, LUT_W, 2, PAL.k);           // 踢脚
+        /* 地面：沙色细点 */
+        for (y = 32; y < LUT_H; y += 6) {
+          for (x = ((y / 6) | 0) % 2 ? 3 : 11; x < LUT_W; x += 17) {
+            alphaFill(ctx, x, y, 1, 1, PAL.k, 0.22);
+          }
+        }
+      },
+      decor: [
+        /* Lv1 · 仙人掌盆栽（左地板空档，一大一小） */
+        function (ctx, fr, glow) {
+          glowBox(ctx, 2, 28, 25, 18, glow);
+          fill(ctx, 4, 40, 12, 6, SPAL.b);                   // 大盆
+          fill(ctx, 3, 39, 14, 2, PAL.k);
+          fill(ctx, 8, 30, 4, 10, PAL.m);                    // 主干
+          fill(ctx, 5, 33, 3, 2, PAL.m);                     // 侧枝
+          fill(ctx, 5, 33, 2, 4, PAL.m);
+          fill(ctx, 12, 34, 3, 2, PAL.m);
+          fill(ctx, 13, 34, 2, 4, PAL.m);
+          fill(ctx, 9, 29, 2, 1, PAL.m);
+          fill(ctx, 19, 42, 8, 4, PAL.r);                    // 小盆
+          fill(ctx, 18, 41, 10, 2, PAL.k);
+          fill(ctx, 21, 36, 3, 6, PAL.m);
+          fill(ctx, 20, 38, 2, 2, PAL.m);
+          fill(ctx, 24, 39, 2, 2, PAL.m);
+        },
+        /* Lv2 · 剪纸彩旗（跨屏串旗，轻轻飘） */
+        function (ctx, fr, glow) {
+          var sway = (fr % 36 < 18) ? 0 : 1, k;
+          glowBox(ctx, 28, 6, 132, 14, glow);
+          fill(ctx, 28, 7, 132, 1, PAL.k);                   // 旗绳
+          var cols = [PAL.r, PAL.m, PAL.w, PAL.y];
+          for (k = 0; k < 11; k++) {
+            var fx = 30 + k * 11, fd = 1 + (k % 3);
+            fill(ctx, fx, 8, 7, 1, cols[k % 4]);
+            fill(ctx, fx, 9, 7 - fd, 1, cols[k % 4]);
+            fill(ctx, fx + fd, 10, 7 - fd * 2, 1, cols[k % 4]);
+            if (sway && k % 2 === 0) fill(ctx, fx, 10, 2, 1, cols[k % 4]);
+          }
+        },
+        /* Lv3 · 彩色编织毯 + 悬挂皮纳塔 */
+        function (ctx, fr, glow) {
+          var swing = (fr % 48 < 24) ? 0 : 1;
+          glowBox(ctx, 40, 80, 84, 10, glow);
+          var cols = [PAL.r, PAL.y, PAL.m, PAL.w, SPAL.b], k;
+          for (k = 0; k < 5; k++) fill(ctx, 42, 81 + k * 2, 80, 1, cols[k]);   // 条纹毯
+          fill(ctx, 40, 80, 2, 10, PAL.k);                   // 毯边流苏
+          fill(ctx, 122, 80, 2, 10, PAL.k);
+          glowBox(ctx, 122, 8, 20, 20, glow);
+          fill(ctx, 131, 4, 1, 5, PAL.k);                    // 吊绳
+          fill(ctx, 126, 9, 11, 11, PAL.r);                  // 皮纳塔身
+          fill(ctx, 126, 9, 11, 3, PAL.y);
+          fill(ctx, 126, 15, 11, 2, PAL.m);
+          fill(ctx, 124, 11, 3, 3, PAL.r);                   // 头
+          fill(ctx, 136, 11, 3, 3, PAL.r);
+          fill(ctx, 125, 9, 2, 2, PAL.m);                    // 耳
+          fill(ctx, 136, 9, 2, 2, PAL.m);
+          fill(ctx, 128, 12, 1, 1, PAL.k);
+          if (swing) fill(ctx, 127, 20, 9, 1, PAL.y);        // 飘带
+          fill(ctx, 130, 21, 1, 3, PAL.y);
+          fill(ctx, 134, 21, 1, 2, PAL.m);
+        }
+      ]
+    }
+  };
 
   /* ======================== 纯函数：布局 ======================== */
   /**
@@ -5693,12 +6659,23 @@ TC.bootError = null;
       out.plates.push({ x: px0 + j * (PLATE + PLATE_GAP), y: py0, w: PLATE, h: PLATE, index: j });
     }
 
-    /* 墙上装饰：每个地区 3 件，位置固定 */
+    /* 墙上装饰：每个地区 3 件，位置固定（槽位始终是 3 个，on 表示当前是否已解锁） */
     var rg = (run && run.region) || D.REGIONS[0];
     var dec = rg.decor || [];
+    var lv = (run && run.save) ? C.decorLv(run.save, rg.id) : 0;
+    out.decorLv = lv;
+    out.decorGlow = (run && run.save) ? C.decorGlow(run.save, rg.id) : 0;
+    out.shellId = rg.shellId || rg.id;
+    out.pal = {
+      wall: SPAL[rg.wall] || PAL.k,
+      floor: SPAL[rg.floor] || PAL.y,
+      accent: SPAL[rg.accent] || PAL.r
+    };
     for (var k = 0; k < dec.length; k++) {
       out.decor.push({
         id: dec[k], name: (rg.decorName && rg.decorName[k]) || '',
+        /** 已解锁（「装饰布置」等级覆盖到第 k 件）。Lv1 解开第 1 件，依此类推 */
+        on: k < lv,
         x: SC.DECOR.x0 + k * SC.DECOR.step, y: SC.DECOR.y, w: SC.DECOR.w, h: SC.DECOR.h, index: k
       });
     }
@@ -5823,9 +6800,12 @@ TC.bootError = null;
   SC.draw = function (ctx, run, lay, t) {
     if (!ctx || !run || !lay) return 0;
     var rg = run.region || D.REGIONS[0];
-    var wall = PAL[rg.wall] || PAL.k;
-    var floor = PAL[rg.floor] || PAL.y;
-    var accent = PAL[rg.accent] || PAL.r;
+    /* 墙/地/主色从场景调色板取（含新增的木材棕 / 石材灰 / 晴空蓝），
+       lay.pal 在 layout 里算好，没走 layout 的调用方直接按地区 id 兜底。 */
+    var pal = lay.pal || {};
+    var wall = pal.wall || SPAL[rg.wall] || PAL.k;
+    var floor = pal.floor || SPAL[rg.floor] || PAL.y;
+    var accent = pal.accent || SPAL[rg.accent] || PAL.r;
     var frame = t || 0;
     var n = 0;
 
@@ -5863,14 +6843,21 @@ TC.bootError = null;
     fill(ctx, 0, WALL_Y - 2, LUT_W, 2, PAL.k);            // 踢脚线
     n += 1;
 
-    /* --- 墙上装饰（地区特色，3 件） --- */
+    /* --- 地区店铺外壳（第十一优先级）：棚顶 / 墙面背景 / 地面纹理 ---
+       只画在上部装饰带与地板空档里，绝不碰四区坐标（热区与教程高亮依赖它们）。 */
+    var sh = shellOf(lay.shellId || rg.id);
+    if (sh && sh.shell) { sh.shell(ctx, frame); n += 1; }
+
+    /* --- 地区特色装饰：按「装饰布置」等级逐件解锁 ---
+       每件由该地区的 shell 自己决定画在哪（有的挂墙、有的落地），
+       lay.decor 里的槽位矩形只是逻辑占位，不等于实际绘制范围。 */
+    var glow = lay.decorGlow || 0;
     for (var d = 0; d < lay.decor.length; d++) {
       var dc = lay.decor[d];
-      var hangY = dc.y + 2 + (frame % 4 === 0 ? 0 : 0);
-      fill(ctx, dc.x + dc.w / 2 - 1, dc.y - 2, 2, 4, PAL.k);            // 挂绳
-      fill(ctx, dc.x, hangY, dc.w, dc.h, PAL.k);                        // 外框
-      fill(ctx, dc.x + 2, hangY + 2, dc.w - 4, dc.h - 4, accent);
-      fill(ctx, dc.x + dc.w - 8, hangY + 4, 4, dc.h - 8, PAL.w);        // 高光条
+      if (!dc.on) continue;                                  // 没解锁就不画
+      var paintDecor = sh && sh.decor ? sh.decor[dc.index] : null;
+      if (!paintDecor) continue;
+      paintDecor(ctx, frame, glow);
       n += 1;
     }
 
@@ -6054,12 +7041,28 @@ TC.bootError = null;
   SC.run = function () { return curRun; };
   SC.isRunning = function () { return running; };
 
+  /**
+   * 布局重算签名：尺寸之外，还要盯住「会影响画面内容」的那些状态。
+   * 第十一优先级把装修算进来了 —— 买了加座 / 招牌灯箱 / 装饰布置之后，
+   * 不用重开一局，下一帧就会重算布局并把新装饰画出来。
+   */
+  SC.sceneSig = function (run) {
+    if (!run) return '';
+    var save = run.save;
+    return run.pots.length + '|' + (run.regionId || '') + '|' +
+      (save ? C.decorLv(save, run.regionId) : 0) + '|' +
+      C.upVal(save, 'seats') + '|' + C.upVal(save, 'signboard');
+  };
+
+  /** 强制下一帧重算布局（升级页买完之后调用；不在经营页时不用管，start 会重置） */
+  SC.invalidate = function () { curLayout = null; return true; };
+
   /** 画一帧（无 2D 上下文时安静跳过，绝不让 jsdom / 老浏览器崩掉） */
   SC.render = function () {
     if (!curRun) return false;
     var size = SC.resize();
     if (!size || !ctx2d) return false;
-    var sig = curRun.pots.length + '|' + (curRun.regionId || '');
+    var sig = SC.sceneSig(curRun);
     if (!curLayout || curLayout.w !== size.w || curLayout.h !== size.h || curLayout.sig !== sig) {
       curLayout = SC.layout(size.w, size.h, curRun);
       curLayout.sig = sig;
@@ -6083,6 +7086,9 @@ TC.bootError = null;
     if (TC.UI) {
       if (TC.UI.onRunEvents) TC.UI.onRunEvents(curRun, events);
       if (TC.UI.syncCook) TC.UI.syncCook(curRun);
+      /* 教程的状态判定每帧跑一次：玩家做到就自动走下一步，没做到就停在原地等。
+         放在 syncCook 之后，保证教程量高亮矩形时 DOM 已经是最新的。 */
+      if (TC.UI.tutSync) TC.UI.tutSync();
     }
     if (curRun.over) {
       SC.stop();
@@ -6091,9 +7097,30 @@ TC.bootError = null;
     return events;
   };
 
+  /**
+   * 换地区时的转场幕布（第十一优先级）：新的一局开局时用一层米白幕布淡出，
+   * 避免「上一个地区的厨房 → 下一个地区的厨房」生硬闪一下。
+   * 幕布是 .stage-wrap 里的 absolute 元素（不参与布局），所以教程高亮量实测矩不受影响。
+   * jsdom / 老浏览器上没有这个节点就安静跳过。
+   */
+  function playSceneFade() {
+    if (typeof document === 'undefined' || !document.getElementById) return false;
+    var el = document.getElementById('sceneFade');
+    if (!el || !el.classList) return false;
+    el.classList.remove('is-on');
+    void el.offsetWidth;                 // 强制回流：让同一个 class 连着加两次也能重播动画
+    el.classList.add('is-on');
+    return true;
+  }
+  SC.playSceneFade = playSceneFade;
+
   /** 浏览器 rAF 驱动；opts.loop === false 时只做准备，便于单测手动 step */
   SC.start = function (run, opts) {
     opts = opts || {};
+    /* 只有「真的换了地区」才播转场；同一关重开（结算页再来一次）不播，
+       否则每次点重玩都白闪一下。opts.fade 可以强制。 */
+    var prevRegion = curRun ? curRun.regionId : null;
+    var fade = (opts.fade != null) ? !!opts.fade : (prevRegion !== null && prevRegion !== run.regionId);
     curRun = run;
     curLayout = null;
     frameNo = 0;
@@ -6102,6 +7129,7 @@ TC.bootError = null;
     ctx2d = SC.getContext();
     SC.resize();
     SC.render();
+    if (fade) playSceneFade();
     if (opts.loop === false) return true;
     if (typeof window !== 'undefined' && window.requestAnimationFrame) {
       raf = window.requestAnimationFrame(function (ts) { SC.frame(ts); });
@@ -7308,7 +8336,7 @@ TC.bootError = null;
        ② 把当前步的高亮目标量成屏幕矩形 → 画聚光块 + 气泡
        ③ 把玩家真实做的动作翻译成「这一步完成了」
      ======================================================================== */
-  var tut = { on: false, i: 0, run: null, auto: false, done: false };
+  var tut = { on: false, i: 0, run: null, auto: false, done: false, at: 0 };
 
   /** 不是 id 的高亮目标 → 选择器 */
   var TUT_SEL = {
@@ -7320,9 +8348,96 @@ TC.bootError = null;
 
   function tutStep() { return D.TUTORIAL[tut.i] || null; }
 
-  /** 当前步的高亮目标 → 屏幕矩形（CSS 像素，相对视口）；量不出来返回 null */
-  function tutTargetRect(spot) {
-    if (!spot) return null;
+  /** 每一步至少停留这么久再自动前进：既让玩家读得完，也保证同一次点击不可能连跳两步 */
+  var TUT_DWELL = 700;
+  UI.TUT_DWELL = TUT_DWELL;
+  /** 停留时间做成可调：调试/验收时设成 0 就能同步推进 */
+  function tutDwell() {
+    return (typeof UI.TUT_DWELL === 'number') ? UI.TUT_DWELL : TUT_DWELL;
+  }
+
+  /** 教程认定的「当前这口锅」：优先订单绑定的锅，其次还没出锅的锅，最后退回任意一口有菜的锅 */
+  function tutPotOf(run) {
+    if (!run || !run.pots) return null;
+    var o = TC.Level.currentOrder(run);
+    if (o && o.pot) return o.pot;
+    /* 注意：兜底不能只认 prep/cooking 的锅 —— 菜出锅后 state 变成 'ready'，
+       订单上的 pot 会跟着失效，如果这时候把它当"不存在"，「等进度圈变绿」那一步
+       就永远判定不成立（实测踩过：序列卡在 index 6 不动）。 */
+    var busy = null, any = null;
+    for (var i = 0; i < run.pots.length; i++) {
+      var p = run.pots[i];
+      if (!p) continue;
+      if (!any) any = p;
+      if (!busy && (p.state === 'prep' || p.state === 'cooking')) busy = p;
+    }
+    return busy || any;
+  }
+
+  /**
+   * 状态判定：只读游戏状态，绝不看「触发了什么动作事件」。
+   * 这是「误跳步」的根治手段 —— 同一次点击可以触发两个动作事件（点配料 → 自动开火），
+   * 但游戏状态只会前进一格，所以教程也就只会前进一格。
+   */
+  function tutCheck(kind, step) {
+    var run = tut.run || UI.run;
+    if (!run || !kind) return false;
+    var o = TC.Level.currentOrder(run);
+    if (kind === 'ing') {
+      var s = (o && o.steps) ? o.steps[step.ing] : null;
+      return !!(s && s.done);
+    }
+    var pot = tutPotOf(run);
+    if (kind === 'cooking') return !!(pot && (pot.state === 'cooking' || pot.state === 'ready'));
+    if (kind === 'ready') return !!(pot && pot.state === 'ready');
+    if (kind === 'plated') return (run.plates || []).length >= 1;
+    if (kind === 'served') return (run.served || 0) >= 1;
+    return false;
+  }
+
+  /**
+   * 文案里的 {ing} 换成「当前订单里真正该点的那一样」的名字。
+   * 实测教程第 1 关是炒面（面条 → 青菜 → 酱汁），所以绝不能把配料名写死在步骤表里，
+   * 否则教程换到别的关卡就变成假话了。
+   */
+  function tutStepText(step) {
+    var t = step.text || '';
+    if (t.indexOf('{ing}') === -1) return t;
+    var o = TC.Level.currentOrder(tut.run || UI.run);
+    var s = (o && o.steps) ? o.steps[step.ing] : null;
+    return t.replace('{ing}', s ? s.name : '配料');
+  }
+
+  /**
+   * 刷新气泡文案。订单是「切到经营页之后」才到位的，所以文案必须每帧跟着刷新 ——
+   * 只在切步那一刻写一次的话，玩家会看到占位词「配料」（实测踩过）。
+   */
+  function tutRefreshText(step) {
+    var t = tutStepText(step);
+    if (t === tut.text) return false;
+    tut.text = t;
+    setText('tutText', t);
+    return true;
+  }
+
+  /**
+   * 当前步的高亮目标 → 屏幕矩形（CSS 像素，相对视口）；量不出来返回 null
+   * 收整个 step（而不是 spot 字符串）：配料步要按 step.ing 解析成「具体那一颗按钮」。
+   */
+  function tutTargetRect(step) {
+    if (!step || !step.spot) return null;
+    var spot = step.spot;
+    /* 配料步：只高亮当前菜谱里该点的那一样，点别的不算 */
+    if (spot === 'ingredient') {
+      var o = TC.Level.currentOrder(tut.run || UI.run);
+      var need = (o && o.steps) ? o.steps[step.ing] : null;
+      if (!need) return null;
+      var btn = q1('#pantryBand [data-ing="' + need.id + '"]');
+      if (!btn || !btn.getBoundingClientRect) return null;
+      var br = btn.getBoundingClientRect();
+      if (!br || (!br.width && !br.height)) return null;
+      return { x: br.left, y: br.top, w: br.width, h: br.height };
+    }
     if (TUT_STATION[spot]) {
       var cv = $('scene'), run = UI.run;
       if (!cv || !cv.getBoundingClientRect || !run) return null;
@@ -7341,18 +8456,44 @@ TC.bootError = null;
     return { x: r.left, y: r.top, w: r.width, h: r.height };
   }
 
-  /** 气泡放在高亮块的下方；下面放不下就放上方，都放不下就居中 */
+  /**
+   * 摆气泡。规则（对应「弹窗位置要跟着高亮区动态调整」）：
+   *   高亮块在上半屏 → 气泡放它下面；在下半屏 → 放它上面；
+   *   上下都塞不下（高亮块太高）→ 选空间更大的一侧贴边，且保证不压在高亮块上；
+   *   横向跟着高亮块走（不再永远屏幕居中 —— 那样看着就像"偏移"），并夹在视口内。
+   */
   function tutPlaceBubble(r) {
     var b = $('tutBubble');
     if (!b || !b.style) return false;
-    var vh = (typeof window !== 'undefined' && window.innerHeight) || 640;
+    var vw = (typeof window !== 'undefined' && window.innerWidth) || 390;
+    var vh = (typeof window !== 'undefined' && window.innerHeight) || 844;
     var card = b.firstElementChild;
-    var H = (card && card.getBoundingClientRect && card.getBoundingClientRect().height) || 180;
+    var cr = (card && card.getBoundingClientRect) ? card.getBoundingClientRect() : null;
+    var W = (cr && cr.width) || Math.min(vw * 0.8, 306);
+    var H = (cr && cr.height) || 180;
+    var PAD = 8;     /* 离视口边缘的最小距离 */
+    var GAP = 14;    /* 离高亮块的最小距离 */
+
     var top;
-    if (r && r.y + r.h + H + 30 < vh) top = r.y + r.h + 22;
-    else if (r && r.y - H - 26 > 8) top = r.y - H - 22;
-    else top = Math.round(vh * 0.34);
-    b.style.top = Math.round(U.clamp(top, 10, Math.max(10, vh - H - 12))) + 'px';
+    if (!r) {
+      top = Math.round(vh * 0.34);
+    } else {
+      var belowOK = (r.y + r.h + GAP + H) <= (vh - PAD);
+      var aboveOK = (r.y - GAP - H) >= PAD;
+      if (belowOK) top = r.y + r.h + GAP;
+      else if (aboveOK) top = r.y - GAP - H;
+      else top = (r.y > vh - (r.y + r.h)) ? PAD : (vh - H - PAD);
+      /* 兜底：万一还是压在高亮块上，推到更远的那一侧 */
+      if (top < r.y + r.h && (top + H) > r.y) {
+        top = belowOK ? (r.y + r.h + GAP) : Math.max(PAD, r.y - GAP - H);
+      }
+    }
+    b.style.top = Math.round(U.clamp(top, PAD, Math.max(PAD, vh - H - PAD))) + 'px';
+
+    var half = W / 2;
+    var cx = r ? (r.x + r.w / 2) : (vw / 2);
+    cx = U.clamp(cx, half + PAD, Math.max(half + PAD, vw - half - PAD));
+    b.style.left = Math.round(cx) + 'px';
     return true;
   }
 
@@ -7410,11 +8551,13 @@ TC.bootError = null;
     return true;
   }
 
-  /** 重画遮罩：高亮位置 + 文案 + 进度点 + 按钮 */
-  UI.tutPaint = function () {
-    var step = tutStep(), host = $('tutHost');
-    if (!host || !step) return false;
-    var r = tutTargetRect(step.spot);
+  /**
+   * 摆高亮框 + 压暗板 + 气泡。tutSync 每帧都会调一次。
+   * 为什么必须每帧摆：切视图、字体加载完之后布局才真正稳定，只在切换那一刻摆一次就会摆歪
+   * —— 这就是「弹窗位置经常偏移、有时还挡住高亮区」的根源。
+   */
+  function tutLayout(step) {
+    var r = tutTargetRect(step);
     var spot = $('tutSpot');
     if (spot && spot.style) {
       if (r) {
@@ -7430,18 +8573,26 @@ TC.bootError = null;
       }
     }
     tutPlaceDim(r);
+    tutPlaceBubble(r);
+    return r;
+  }
+
+  /** 重画遮罩：先写文案再摆位（气泡高度跟着文案走） */
+  UI.tutPaint = function () {
+    var step = tutStep(), host = $('tutHost');
+    if (!host || !step) return false;
     setText('tutStepLab', '第 ' + (tut.i + 1) + ' / ' + D.TUTORIAL.length + ' 步');
-    setText('tutText', step.text);
-    setText('tutTip', step.act ? '照着画面做一次，会自动进入下一步' : '看完点「下一步」继续');
+    tutRefreshText(step);
+    setText('tutTip', step.check ? '照着画面做一次，会自动进入下一步' : '看完点「下一步」继续');
     var next = $('btnTutNext');
     if (next) {
-      next.hidden = !!step.act;
+      next.hidden = !!step.check;   /* 有状态判定的步骤自动前进，只有纯讲解步骤才给按钮 */
       next.textContent = (tut.i >= D.TUTORIAL.length - 1) ? '完成教程' : '下一步';
     }
     setHtml('tutDots', D.TUTORIAL.map(function (s, i) {
       return '<i class="' + (i < tut.i ? 'is-done' : (i === tut.i ? 'is-on' : '')) + '"></i>';
     }).join(''));
-    tutPlaceBubble(r);
+    tutLayout(step);
     return true;
   };
 
@@ -7486,6 +8637,7 @@ TC.bootError = null;
   UI.tutGo = function (n) {
     if (!tut.on) return false;
     tut.i = U.clamp(Math.floor(n), 0, D.TUTORIAL.length - 1);
+    tut.at = Date.now();          /* 进入这一步的时刻：自动前进要等够 TUT_DWELL */
     var step = tutStep();
     if (!step) return UI.tutStop();
     if (step.view === 'result') {
@@ -7504,12 +8656,40 @@ TC.bootError = null;
     return UI.tutGo(n);
   };
 
-  /** 玩家做了一个真实动作；正好是当前步要求的动作就自动前进 */
-  UI.tutAction = function (action) {
+  /** 玩家做了一个真实动作 → 立刻按「游戏状态」重算一次该不该前进。
+      不再比对动作标签：一次点击可能连着触发「点配料」和「自动开火」两个事件，
+      按标签匹配就会连跳两步。改成读状态后，一次点击最多推进一步。 */
+  UI.tutAction = function () {
+    if (!tut.on) return false;
+    return UI.tutSync();
+  };
+
+  /**
+   * 状态驱动的推进（每帧都会调）：只有「当前步的判定条件」在游戏状态里真的成立时才前进，
+   * 且每步至少停留 TUT_DWELL 毫秒。玩家做到了立刻走，没做到就停着等 —— 既不跳步也不卡死。
+   */
+  UI.tutSync = function (now) {
     if (!tut.on) return false;
     var step = tutStep();
-    if (!step || step.act !== action) return false;
-    return UI.tutNext();
+    if (!step) return false;
+    tutRefreshText(step); /* 文案要跟着订单刷新（配料名是动态的） */
+    tutLayout(step);      /* 每帧校正一次高亮/弹窗位置：视图切换后布局才稳定 */
+    if (!step.check) return false;
+    var t = (now == null) ? Date.now() : now;
+    if (tut.at && (t - tut.at) < tutDwell()) return false;
+    /* 自愈：三样料都下锅了、锅却没点着（tapPot 被拒）→ 教程替玩家把火点上，
+       否则会永远停在「自动开火」这一步（之前玩家反馈的「卡在等待开火」）。 */
+    if (step.check === 'cooking') {
+      var run = tut.run || UI.run;
+      var o = TC.Level.currentOrder(run);
+      var pot = o && o.pot;
+      if (pot && pot.state === 'prep' && pot.done.length >= pot.steps.length) {
+        var idx = run.pots.indexOf(pot);
+        if (idx >= 0 && UI.autoFire) UI.autoFire({ potIdx: idx, pot: pot });
+      }
+    }
+    if (!tutCheck(step.check, step)) return false;
+    return UI.tutGo(tut.i + 1);
   };
 
   /**
@@ -7523,6 +8703,7 @@ TC.bootError = null;
     if (!run) return false;
     tut.on = true;
     tut.i = 0;
+    tut.at = Date.now();
     tut.auto = !!opts.auto;
     tut.done = false;
     tut.run = run;
@@ -7638,42 +8819,109 @@ TC.bootError = null;
     var nodes = host.querySelectorAll('[data-uid]');
     var out = [];
     for (var i = 0; i < nodes.length; i++) {
-      var r = nodes[i].getBoundingClientRect ? nodes[i].getBoundingClientRect() : null;
+      var n = nodes[i];
+      /* 正在离场（上菜走掉 / 等太久生气）的顾客不能当落点：
+         卡片正在淡出、逻辑上也不再 waiting，接了只会弹「已经不在等了」。
+         门口排队（is-queue）的同样不算 —— 他还没入座，逻辑上根本不能上菜。 */
+      if (n.classList && (n.classList.contains('is-leaving') ||
+                          n.classList.contains('is-gone') ||
+                          n.classList.contains('is-lost') ||
+                          n.classList.contains('is-queue'))) continue;
+      var r = n.getBoundingClientRect ? n.getBoundingClientRect() : null;
       if (!r) continue;
       out.push({
-        uid: nodes[i].getAttribute('data-uid'),
+        uid: n.getAttribute('data-uid'),
         x: r.left, y: r.top, w: r.width, h: r.height
       });
     }
     return out;
   };
 
+  /** 顾客离场（上菜 / 等太久）后退场动画播多久；播完就从顾客带里摘掉 */
+  UI.CUST_LEAVE_MS = 640;
+  /** 顾客带最多同时显示几位 */
+  UI.CUST_SHOW = 6;
+
   /** 顾客带的「长相签名」：只有它变了才整条重绘（每帧只改耐心条宽度，代价极小） */
   UI.custSig = function (run) {
     if (!run || !run.customers) return '';
-    return run.customers.slice(-6).map(function (c) {
-      return c.uid + ':' + c.state + ':' + (run.selected === c.uid ? 1 : 0);
+    return run.customers.slice(-8).map(function (c) {
+      var life = 'w';                        /* w = 还在等 / 还在门口排队 */
+      if (c.state !== 'waiting' && c.state !== 'queue') {
+        /* x = 退场动画已播完（下一帧起不再进带子）；l = 正在播退场动画 */
+        life = (c.leftAt != null && run.runtime - c.leftAt >= UI.CUST_LEAVE_MS) ? 'x' : 'l';
+      }
+      return c.uid + ':' + c.state + ':' + (run.selected === c.uid ? 1 : 0) + ':' + life;
     }).join('|');
   };
 
-  /** 一位顾客的卡片；scale 决定立绘像素倍率（座位多时缩小，2 行 3 列也放得下） */
-  function custHtml(c, run, scale) {
+  /**
+   * 该进顾客带的顾客（最多 6 位）。
+   * 已经离场、且退场动画播完的会被摘掉 —— 否则它们会永久占着一个网格，
+   * 把还在等的顾客挤到别处，看上去就是「残影 + 耐心条重叠」。
+   * 排序：已入座的排前面、门口排队的排后面（第十一优先级）。座位上的顾客**永远不让位**，
+   * 否则他会失去拖拽落点、只能眼睁睁等超时；队尾被挤掉时用一行小字补位说明。
+   */
+  UI.custList = function (run) {
+    var raw = run.customers.slice(-8);
+    var i, c;
+    for (i = 0; i < raw.length; i++) {
+      c = raw[i];
+      /* 老存档 / 直接构造出来的顾客可能没有离场时刻，补登一次（当作刚走） */
+      if (c.state !== 'waiting' && c.state !== 'queue' && c.leftAt == null) c.leftAt = run.runtime;
+    }
+    var seated = [], queued = [];
+    for (i = 0; i < raw.length; i++) {
+      c = raw[i];
+      if (c.state !== 'waiting' && c.state !== 'queue' &&
+          run.runtime - c.leftAt >= UI.CUST_LEAVE_MS) continue;
+      (c.state === 'queue' ? queued : seated).push(c);
+    }
+    var out = seated.slice(0, UI.CUST_SHOW);
+    for (i = 0; i < queued.length && out.length < UI.CUST_SHOW; i++) out.push(queued[i]);
+    return out;
+  };
+
+  /** 门口排队但没挤进顾客带的还有几位（用于补一行小字说明，别让玩家以为没人来） */
+  UI.queueHidden = function (run) {
+    var shown = 0, list = UI.custList(run);
+    for (var i = 0; i < list.length; i++) if (list[i].state === 'queue') shown += 1;
+    return Math.max(0, TC.Level.queued(run).length - shown);
+  };
+
+  /**
+   * 一位顾客的卡片；scale 决定立绘像素倍率（座位多时缩小，2 行 3 列也放得下）
+   * @param {'leaving'|'gone'|'seated'|null} [mode] leaving = 这一帧首次渲染到已离场顾客（播动画）；
+   *        gone = 已经播过动画了（静态隐藏，不重播）；seated = 刚门口排队 → 入座（播一次弹跳）
+   */
+  function custHtml(c, run, scale, mode) {
     var dish = D.dish(c.dishId) || {};
     var ratio = c.patienceMax ? U.clamp(c.patienceLeft / c.patienceMax, 0, 1) : 1;
-    var low = c.state === 'waiting' && ratio <= 0.3;
-    var mid = c.state === 'waiting' && ratio <= 0.6 && !low;
+    var waiting = c.state === 'waiting';
+    var queued = c.state === 'queue';
+    var low = waiting && ratio <= 0.3;
+    var mid = waiting && ratio <= 0.6 && !low;
+    /* 门口排队时的耐心条按「有点急但还没翻脸」处理，视觉上比座上低一档就够 */
+    if (queued) { low = ratio <= 0.15; mid = ratio <= 0.45 && !low; }
     var cls = 'cust' +
-      (run.selected === c.uid ? ' is-sel' : '') +
+      (waiting && run.selected === c.uid ? ' is-sel' : '') +
       (c.state === 'lost' ? ' is-lost' : '') +
-      (c.state === 'served' ? ' is-leaving' : '') +
+      (c.state === 'served' ? ' is-served' : '') +
+      (queued ? ' is-queue' : '') +
+      (mode === 'leaving' ? ' is-leaving' : '') +
+      (mode === 'gone' ? ' is-gone' : '') +
+      (mode === 'seated' ? ' is-seated' : '') +
       (c.special ? ' is-special' : '') +
       (low ? ' is-angry' : '');
     scale = scale || 3;
     var W = P.CUST_W * scale, H = P.CUST_H * scale;
+    /* 头顶小表情：上完菜冒 ❤️、等太久冒 😠、特殊顾客用他自己的图标 */
+    var flag = c.state === 'served' ? '❤️' : (c.special ? (c.icon || '⭐') : '😤');
 
     return '<button class="' + cls + '" data-uid="' + esc(c.uid) + '" type="button" ' +
-             'aria-label="' + esc(c.name + ' 想要 ' + (dish.name || '')) + '">' +
-      '<span class="cust-flag" aria-hidden="true">' + (c.special ? (c.icon || '⭐') : '😤') + '</span>' +
+             'aria-label="' + esc(c.name + (queued ? ' 在门口排队，' : '') + '想要 ' + (dish.name || '')) + '">' +
+      '<span class="cust-flag" aria-hidden="true">' + flag + '</span>' +
+      (queued ? '<span class="cust-queue-tag" aria-hidden="true">🚪 等位</span>' : '') +
       '<span class="cust-bubble">' +
         '<canvas class="cb-ico" width="16" height="16" aria-hidden="true"></canvas>' +
         '<span class="cb-name">' + esc(dish.name || '') + '</span>' +
@@ -7708,29 +8956,64 @@ TC.bootError = null;
     return n;
   }
 
-  /** 重绘整条顾客带 */
+  /**
+   * 重绘整条顾客带（每次都是「先彻底清空、再整条重画」，不留上一帧节点）。
+   * 两个状态表分别保证：入场动画只播一次、退场动画也只播一次 —— 这是
+   * 「连续点击顾客出现残影」的根治点：重绘不会让任何动画重播。
+   */
   UI.renderCustBand = function (run) {
     var host = $('custBand');
     if (!host) return false;
     if (!run) run = UI.run;
     if (!run) return false;
-    var list = run.customers.slice(-6);
+    var list = UI.custList(run);
     UI._custSig = UI.custSig(run);
     var scale = UI.custScale(list.length);
     if (host.classList) host.classList.toggle('is-tight', scale < 3);
-    if (!list.length) {
-      host.innerHTML = '<span class="cust-hint">顾客马上就到…</span>';
-      return false;
-    }
-    host.innerHTML = list.map(function (c) { return custHtml(c, run, scale); }).join('');
-    /* 只给「这一局第一次露面」的顾客加右侧滑入动画 —— 整条带子每次都会重建，
-       不加这层过滤的话每次刷新都会满屏抖一下。 */
+    /* 教学局挂一个标记类：里面的排队呼吸动画会被关掉（教程高亮框量的是实测矩形，不能被动画抖到） */
+    if (host.classList) host.classList.toggle('is-tut', !!run.tutorial);
+
+    /* 这一局每张卡片的状态表（按 run.uid 分代，换局自动清零） */
     var seen = UI._custSeen;
     if (!seen || seen.run !== run.uid) seen = UI._custSeen = { run: run.uid, ids: {} };
+    var left = UI._custLeft;
+    if (!left || left.run !== run.uid) left = UI._custLeft = { run: run.uid, ids: {} };
+    var seat = UI._custSeat;
+    if (!seat || seat.run !== run.uid) seat = UI._custSeat = { run: run.uid, ids: {} };
+
+    var hiddenQ = UI.queueHidden(run);
+    var chip = hiddenQ > 0
+      ? '<span class="cust-queue-hint">🚪 门口还有 ' + hiddenQ + ' 位在排队</span>' : '';
+
+    if (!list.length) {
+      host.innerHTML = chip || '<span class="cust-hint">顾客马上就到…</span>';
+      return false;
+    }
+
+    /* 先彻底清空上一帧，再整条重画 */
+    host.innerHTML = '';
+    var html = [];
     for (var i = 0; i < list.length; i++) {
-      if (seen.ids[list[i].uid]) continue;
-      seen.ids[list[i].uid] = 1;
-      var card = host.querySelector('[data-uid="' + list[i].uid + '"]');
+      var c = list[i];
+      var mode = null;
+      if (c.state !== 'waiting' && c.state !== 'queue') {
+        mode = left.ids[c.uid] ? 'gone' : 'leaving';   /* 只有第一次播退场动画 */
+        left.ids[c.uid] = 1;
+      } else if (c.seatedAt != null && !seat.ids[c.uid]) {
+        /* 门口排队 → 入座：只弹一次，之后不再重播（和入场/退场动画同一套去重思路） */
+        seat.ids[c.uid] = 1;
+        mode = 'seated';
+      }
+      html.push(custHtml(c, run, scale, mode));
+    }
+    host.innerHTML = html.join('') + chip;
+
+    /* 只给「这一局第一次露面」的顾客加右侧滑入动画 —— 整条带子每次都会重建，
+       不加这层过滤的话每次刷新都会满屏抖一下。 */
+    for (var k = 0; k < list.length; k++) {
+      if (seen.ids[list[k].uid]) continue;
+      seen.ids[list[k].uid] = 1;
+      var card = host.querySelector('[data-uid="' + list[k].uid + '"]');
       if (card && card.classList) card.classList.add('is-new');
     }
     paintCustSprites(host, list, scale);
@@ -7753,10 +9036,12 @@ TC.bootError = null;
         if (run.customers[j].uid === uid) { c = run.customers[j]; break; }
       }
       if (!c) continue;
+      /* 正在淡出的离场卡片没必要再刷耐心条；门口排队的要刷（他一样在掉耐心） */
+      if (c.state !== 'waiting' && c.state !== 'queue') continue;
       var ratio = c.patienceMax ? U.clamp(c.patienceLeft / c.patienceMax, 0, 1) : 1;
       var bar = nodes[i].querySelector('.cust-wait');
-      var isLow = c.state === 'waiting' && ratio <= 0.3;
-      var isMid = c.state === 'waiting' && ratio <= 0.6 && !isLow;
+      var isLow = (c.state === 'waiting' && ratio <= 0.3) || (c.state === 'queue' && ratio <= 0.15);
+      var isMid = !isLow && ((c.state === 'waiting' && ratio <= 0.6) || (c.state === 'queue' && ratio <= 0.45));
       if (bar && bar.classList) {
         bar.classList.toggle('is-low', isLow);
         bar.classList.toggle('is-mid', isMid);
@@ -7887,8 +9172,11 @@ TC.bootError = null;
     if (!host) return false;
     var list = D.TOOLS;
     var sig = list.map(function (t) {
-      return t.id + ':' + Math.ceil(TC.Level.toolCdLeft(run, t.id) / 1000);
-    }).join(',') + '|' + (UI._toolOpen ? '1' : '0');
+      /* 把「免费剩余次数 / 钻石价 / 钻石余额」也纳入签名，
+         否则用完免费额度或钻石变动时按钮标签不会刷新 */
+      return t.id + ':' + Math.ceil(TC.Level.toolCdLeft(run, t.id) / 1000) +
+        ':' + TC.Level.toolCost(run, t.id) + ':' + ((run.toolFree && run.toolFree[t.id]) || 0);
+    }).join(',') + '|' + (UI._toolOpen ? '1' : '0') + '|' + (run.save ? run.save.gems : 0);
     if (sig === UI._toolSig) return true;
     UI._toolSig = sig;
 
@@ -7927,9 +9215,19 @@ TC.bootError = null;
     for (var i = 0; i < btns.length; i++) {
       var id = btns[i].getAttribute('data-tool');
       var left = TC.Level.toolCdLeft(run, id);
+      var cost = TC.Level.toolCost(run, id);
+      var free = (run.toolFree && run.toolFree[id]) || 0;
       var cd = btns[i].querySelector('.tt-cd');
-      if (cd) cd.textContent = left > 0 ? String(Math.ceil(left / 1000)) : '';
+      if (cd) cd.textContent = left > 0 ? String(Math.ceil(left / 1000)) : (cost > 0 ? '💎' + cost : '');
       if (btns[i].classList) btns[i].classList.toggle('is-cd', left > 0);
+      /* 免费次数用完、钻石又不够 → 置灰（点了会给「钻石不够」的提示） */
+      if (btns[i].classList) btns[i].classList.toggle('is-poor', cost > 0 && !TC.Level.canUseTool(run, id));
+      var t = D.tool(id);
+      if (t) {
+        btns[i].setAttribute('title', t.desc + (free > 0 ? '（本局还剩 ' + free + ' 次免费）' : '（' + cost + ' 💎/次）'));
+        btns[i].setAttribute('aria-label', (t.name + '：' + t.desc) +
+          (free > 0 ? '，本局还剩 ' + free + ' 次免费' : '，每次消耗 ' + cost + ' 颗钻石'));
+      }
     }
     return true;
   };
@@ -8058,6 +9356,18 @@ TC.bootError = null;
        { transform: 'translateY(-52px) scale(1.15)', opacity: 0 }]);
   };
 
+  /** 顾客头上冒一个小表情（❤️ 上菜成功 / 😠 生气走人） */
+  UI.flyEmote = function (uid, emoji) {
+    var host = $('custBand');
+    var card = (host && host.querySelector && uid) ? host.querySelector('[data-uid="' + uid + '"]') : null;
+    var box = card && card.getBoundingClientRect ? card.getBoundingClientRect() : null;
+    var top = box ? box.top + 'px' : '36%';
+    return UI.spawnFx('fly-emote', emoji, top, 820,
+      [{ transform: 'translateY(0) scale(.7)', opacity: 0 },
+       { transform: 'translateY(-14px) scale(1.25)', opacity: 1 },
+       { transform: 'translateY(-42px) scale(1)', opacity: 0 }]);
+  };
+
   /* ------------------------- 与逻辑层对话 ------------------------- */
   UI.tapIngredient = function (ingredientId) {
     var run = UI.run;
@@ -8155,9 +9465,35 @@ TC.bootError = null;
     return res;
   };
 
+  /** 只就地切换「选中」高亮，绝不重建顾客带（点击顾客不能重生成顾客卡片） */
+  UI.paintCustSel = function (run) {
+    var host = $('custBand');
+    if (!host || !host.querySelectorAll || !run) return false;
+    var nodes = host.querySelectorAll('[data-uid]');
+    for (var i = 0; i < nodes.length; i++) {
+      if (!nodes[i].classList) continue;
+      var sel = run.selected != null && nodes[i].getAttribute('data-uid') === run.selected;
+      nodes[i].classList.toggle('is-sel', sel);
+    }
+    return true;
+  };
+
+  /**
+   * 点击顾客：端着盘子就是「上菜」，否则就是「选他为当前订单」。
+   * 这里刻意不重建顾客带 —— 重建会让已离场顾客的退场动画重播，
+   * 那就是「模型残影 + 耐心条重叠」的来源。只改高亮的 class。
+   */
   UI.pickCustomer = function (uid) {
     var run = UI.run;
     if (!run || run.over) return false;
+    /* 门口排队（还没入座）的顾客不能点单、也不能上菜：
+       给一句明确交代，别让玩家以为「点了没反应」 */
+    var target = TC.Level.customer ? TC.Level.customer(run, uid) : null;
+    if (target && target.state === 'queue') {
+      UI.toast('🚪 ' + target.name + ' 还在门口等位，有空座就进来', 'gold');
+      sfx('deny');
+      return false;
+    }
     if (UI._held != null) {
       var served = UI.servePlateTo(UI._held, uid);
       if (served) return served;
@@ -8165,7 +9501,8 @@ TC.bootError = null;
     var res = TC.Level.select(run, uid);
     if (res.ok) {
       sfx('tap');
-      UI.renderCustBand(run);
+      UI.paintCustSel(run);
+      UI._custSig = UI.custSig(run);       /* 同步签名，避免下一帧又触发整条重建 */
     }
     return res.ok;
   };
@@ -8369,7 +9706,8 @@ TC.bootError = null;
   UI.servePlateTo = function (plateIdx, uid) {
     var run = UI.run;
     if (!run || run.over) return false;
-    var res = TC.Level.serve(run, plateIdx, uid);
+    /* manual:true —— 这是玩家亲手送的，服务员 Lv2 的小费 +10% 只认这条路 */
+    var res = TC.Level.serve(run, plateIdx, uid, { manual: true });
     if (!res.ok) {
       if (res.reason === 'dish-mismatch') UI.toast('🤔 他要的不是这道菜', 'gold');
       else if (res.reason === 'not-waiting') UI.toast('这位顾客已经不在等了');
@@ -8378,6 +9716,11 @@ TC.bootError = null;
     }
     UI._held = null;
     UI.flyGain(uid, '+' + num(res.coins + res.tips));
+    UI.flyEmote(uid, '❤️');                      /* 上菜成功的开心反馈 */
+    /* 提示优先级从低到高依次覆盖：服务员加成 → Perfect → 连击。
+       stageToast 是单槽位，后写的会盖掉先写的，所以最想让玩家看到的放最后。 */
+    if (res.manual) UI.stageToast('🤵 服务员加成 · 小费 +10%');
+    if (res.boost) UI.stageToast('🤵 全员耐心 +10%');
     if (res.perfect) {
       UI.stageToast('PERFECT!');
       sfx('perfect');
@@ -8413,13 +9756,27 @@ TC.bootError = null;
     for (var i = 0; i < events.length; i++) {
       var e = events[i];
       if (e.type === 'ready') { UI.stageToast('🔥 出锅！'); sfx('ready'); n += 1; }
-      else if (e.type === 'lost') { UI.toast('😤 ' + e.customer.name + ' 等太久走了', 'red'); sfx('lost'); n += 1; }
+      else if (e.type === 'lost') {
+        UI.toast('😤 ' + e.customer.name + ' 等太久走了', 'red');
+        UI.flyEmote(e.customer.uid, '😠');          /* 生气离场的反馈 */
+        sfx('lost');
+        n += 1;
+      }
       else if (e.type === 'plate-expired') { UI.toast('🍽 一盘菜凉掉了', 'red'); n += 1; }
-      else if (e.type === 'helper-prep') { UI.stageToast('👩‍🍳 帮厨备料'); n += 1; }
       else if (e.type === 'auto-serve') {
         UI.flyGain(e.customer.uid, '+' + num((e.coins || 0) + (e.tips || 0)));
+        UI.flyEmote(e.customer.uid, '❤️');
         n += 1;
       } else if (e.type === 'spawn') { sfx('door'); n += 1; }
+      else if (e.type === 'seated') { UI.flyEmote(e.customer.uid, '💺'); n += 1; }
+      else if (e.type === 'waiter-boost') { UI.stageToast('🤵 全员耐心 +10%'); n += 1; }
+      else if (e.type === 'pot-cleared') {
+        /* 半成品锅没人要了 → 自动刷干净，免得永久占灶（见 L.tick 的自愈） */
+        UI.stageToast('🍳 没人要这道菜 · 锅刷干净了');
+        UI._orderSig = null;
+        UI._pantrySig = null;
+        n += 1;
+      }
     }
     return n;
   };
@@ -8480,6 +9837,9 @@ TC.bootError = null;
     UI._settled = false;
     UI._held = null;
     UI._custSig = null;
+    UI._custSeen = null;               /* 入场/退场动画状态表按局清零 */
+    UI._custLeft = null;
+    UI._alerted = null;
     UI._orderSig = null;
     UI._pantrySig = null;
     UI._toolSig = null;
@@ -8672,7 +10032,11 @@ TC.bootError = null;
       '</div>' +
       '<div class="money-box is-tip">' +
         '<div class="mb-lab">小费</div><div class="mb-val">🪙 ' + num(res.tips) + '</div>' +
-      '</div>');
+      '</div>' +
+      /* 钻石只有真拿到时才显示这一格（特殊顾客满意上菜才会给） */
+      (res.gems ? '<div class="money-box is-gem">' +
+        '<div class="mb-lab">钻石</div><div class="mb-val">💎 ' + num(res.gems) + '</div>' +
+      '</div>' : ''));
 
     var li = res.levelState || { level: s.level, exp: s.exp, expToNext: C.expToNext(s.level) };
     var gained = (res.expInfo && res.expInfo.gained) || 0;
@@ -8766,8 +10130,22 @@ TC.bootError = null;
     return true;
   };
 
+  /**
+   * 「装饰布置」这类**每地区独立**的升级，作用于哪个地区？
+   * 优先玩家正在浏览的地区（从地图点进某个地区 / 刚打完那关），
+   * 都没有就退到「最近玩过的一关」，再没有就取最后一个已解锁地区。
+   */
+  UI.upRegionId = function () {
+    if (UI.regionId && D.region(UI.regionId)) return UI.regionId;
+    var lid = UI.save && UI.save.lastLevelId;
+    var lv = lid ? D.level(lid) : null;
+    if (lv) return lv.regionId;
+    var un = C.unlockedRegionIds(UI.save);
+    return un.length ? un[un.length - 1] : D.REGIONS[0].id;
+  };
+
   UI.renderUpList = function () {
-    var rows = TC.Upgrade.rows(UI.save, UI.upTab);
+    var rows = TC.Upgrade.rows(UI.save, UI.upTab, UI.upRegionId());
     setHtml('upList', rows.length
       ? rows.map(upRowHtml).join('')
       : '<p class="pantry-hint">这个分类还没有可升级的项目</p>');
@@ -8781,14 +10159,23 @@ TC.bootError = null;
       ? '<span class="up-lv">已满级</span>'
       : '<button class="btn btn-primary up-buy" data-up="' + esc(r.id) + '" type="button"' +
           (r.affordable ? '' : ' aria-disabled="true"') + '>🪙 ' + num(r.cost) + '</button>';
-    return '<div class="up-row' + (r.maxed ? ' is-max' : '') + '">' +
+    /* 每地区独立的升级要显式标出「这是哪个地区的」，否则玩家会以为买了全区生效 */
+    var rgName = '';
+    if (r.perRegion) {
+      var rg = D.region(r.regionId);
+      rgName = '<span class="up-region">📍 ' + esc(rg ? rg.name : '') + '</span>';
+    }
+    var effect = r.maxed ? '' : (r.nextEffect
+      ? '<div class="up-next">下一级：' + esc(r.nextEffect) + '</div>' : '');
+    return '<div class="up-row' + (r.maxed ? ' is-max' : '') + (r.perRegion ? ' is-region' : '') + '">' +
       '<div class="up-ico" aria-hidden="true">' + (r.icon || '⬆') + '</div>' +
       '<div class="up-body">' +
-        '<div class="up-name">' + esc(r.name) +
+        '<div class="up-name">' + esc(r.name) + rgName +
           '<span class="up-lv">Lv.' + r.level + '/' + r.maxLevel + '</span>' +
         '</div>' +
         '<div class="up-desc">' + esc(r.u.desc || '') + '</div>' +
         '<div class="up-dots" aria-hidden="true">' + dots + '</div>' +
+        effect +
       '</div>' +
       '<div class="up-act">' + act + '</div>' +
     '</div>';
@@ -8796,10 +10183,11 @@ TC.bootError = null;
 
   /** 买一次升级（规则与扣费都在 TC.Upgrade / TC.Save 里） */
   UI.buyUpgrade = function (id) {
-    var res = TC.Upgrade.buy(UI.save, id);
+    var res = TC.Upgrade.buy(UI.save, id, UI.upRegionId());
     if (!res.ok) {
       if (res.reason === 'poor') UI.toast('还差 🪙 ' + num(res.short), 'gold');
       else if (res.reason === 'max') UI.toast('这项已经满级了');
+      else if (res.reason === 'no-region') UI.toast('请先进入一个地区再装修');
       else UI.toast('暂时买不了');
       sfx('deny');
       return false;
@@ -8813,6 +10201,9 @@ TC.bootError = null;
     setText('upCoinTxt', '🪙 ' + num(UI.save.coins));
     UI.updateTopbar(TC.Router.current);
     UI.refreshBadges();
+    /* 装修立刻生效：重算布局 + 如果正开着经营页就马上重绘，不用重开一局 */
+    TC.Scene.invalidate();
+    if (TC.Router.current === 'cook' && TC.Scene.isRunning()) TC.Scene.render();
     return res;
   };
 
